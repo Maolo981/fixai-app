@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, LogOut, User, Clock, Briefcase, Calendar, Star, MessageCircle } from "lucide-react";
+import { Camera, LogOut, User, Clock, Briefcase, Calendar, Star, MessageCircle, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MobileLayout } from "@/components/MobileLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,16 @@ import { ReviewDialog } from "@/components/ReviewDialog";
 import { ChatDialog } from "@/components/ChatDialog";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { useNotifications } from "@/hooks/useNotifications";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Diagnosis {
   id: string;
@@ -52,6 +62,8 @@ const Dashboard = () => {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [diagnosisToDelete, setDiagnosisToDelete] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -117,6 +129,35 @@ const Dashboard = () => {
       description: "Sei stato disconnesso con successo",
     });
     navigate("/");
+  };
+
+  const handleDeleteDiagnosis = async () => {
+    if (!diagnosisToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('diagnoses')
+        .delete()
+        .eq('id', diagnosisToDelete);
+
+      if (error) throw error;
+
+      toast({
+        title: "Diagnosi eliminata",
+        description: "La diagnosi è stata eliminata con successo",
+      });
+
+      loadDiagnoses();
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: "Impossibile eliminare la diagnosi",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setDiagnosisToDelete(null);
+    }
   };
 
   const getUrgencyLabel = (urgency: string) => {
@@ -251,8 +292,21 @@ const Dashboard = () => {
               ) : (
                 <div className="grid gap-4 sm:gap-6 px-4 sm:px-0 sm:grid-cols-2 lg:grid-cols-3">
                   {diagnoses.map((diagnosis) => (
-                    <Link key={diagnosis.id} to={`/results/${diagnosis.id}`}>
-                      <Card className="shadow-soft hover:shadow-medium transition-all cursor-pointer touch-manipulation active:scale-98 h-full">
+                    <Card key={diagnosis.id} className="shadow-soft hover:shadow-medium transition-all h-full relative group">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 z-10 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDiagnosisToDelete(diagnosis.id);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Link to={`/results/${diagnosis.id}`} className="block">
                         <CardHeader className="pb-3">
                           <div className="flex justify-between items-start gap-2">
                             <CardTitle className="text-base sm:text-lg line-clamp-2">{diagnosis.problem_type}</CardTitle>
@@ -279,8 +333,8 @@ const Dashboard = () => {
                             Costo stimato: €{diagnosis.estimated_cost_min} - €{diagnosis.estimated_cost_max}
                           </p>
                         </CardContent>
-                      </Card>
-                    </Link>
+                      </Link>
+                    </Card>
                   ))}
                 </div>
               )}
@@ -416,6 +470,23 @@ const Dashboard = () => {
           </Tabs>
         </div>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Elimina diagnosi</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare questa diagnosi? Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteDiagnosis} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {selectedJob && (
         <>

@@ -6,7 +6,7 @@ export const BottomNav = () => {
   const location = useLocation();
 
   const navItems = [
-    { path: "/", icon: Home, label: "Home" },
+    { path: "/dashboard", icon: Home, label: "Home" },
     { path: "/diagnose", icon: Camera, label: "Diagnosi" },
     { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/profile", icon: User, label: "Profilo" },
