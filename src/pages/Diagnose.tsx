@@ -120,40 +120,28 @@ const Diagnose = () => {
     const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/diagnose-chat`;
 
     try {
-      let mediaUrl = userMessage.imageUrl || userMessage.videoUrl;
-      let mediaType = userMessage.mediaType;
-      
-      // Upload media if present
-      if (userMessage.imageFile) {
-        toast({
-          title: "Caricamento immagine...",
-          description: "Sto caricando la tua foto",
-        });
-        mediaUrl = await uploadMedia(userMessage.imageFile, "image");
-        mediaType = "image";
-      } else if (userMessage.videoFile) {
-        toast({
-          title: "Caricamento video...",
-          description: "Sto caricando il tuo video (potrebbe richiedere qualche secondo)",
-        });
-        mediaUrl = await uploadMedia(userMessage.videoFile, "video");
-        mediaType = "video";
-      }
-
-      const messagesForAPI = messages.map(m => ({
-        role: m.role,
-        content: m.content,
-        imageUrl: m.imageUrl,
-        videoUrl: m.videoUrl,
-        mediaType: m.mediaType
-      }));
+      // Build messages for API - filter out blob URLs
+      const messagesForAPI = messages
+        .filter(m => {
+          // Only include messages with valid public URLs or no media
+          const hasValidImage = !m.imageUrl || m.imageUrl.startsWith('http');
+          const hasValidVideo = !m.videoUrl || m.videoUrl.startsWith('http');
+          return hasValidImage && hasValidVideo;
+        })
+        .map(m => ({
+          role: m.role,
+          content: m.content,
+          imageUrl: m.imageUrl,
+          videoUrl: m.videoUrl,
+          mediaType: m.mediaType
+        }));
 
       messagesForAPI.push({
         role: userMessage.role,
         content: userMessage.content,
-        imageUrl: mediaType === "image" ? mediaUrl : undefined,
-        videoUrl: mediaType === "video" ? mediaUrl : undefined,
-        mediaType
+        imageUrl: userMessage.imageUrl,
+        videoUrl: userMessage.videoUrl,
+        mediaType: userMessage.mediaType
       });
 
       const resp = await fetch(CHAT_URL, {
@@ -251,32 +239,56 @@ const Diagnose = () => {
   const handleSend = async () => {
     if ((!input.trim() && !selectedImage && !selectedVideo) || isLoading) return;
 
-    const userMessage: Message = {
-      role: "user",
-      content: input || (selectedVideo ? "Analizza questo video" : "Analizza questa immagine"),
-      imageFile: selectedImage || undefined,
-      videoFile: selectedVideo || undefined,
-      mediaType: selectedVideo ? "video" : selectedImage ? "image" : undefined,
-    };
-
-    // Add message with preview
-    setMessages((prev) => [
-      ...prev,
-      {
-        ...userMessage,
-        imageUrl: imagePreview || undefined,
-        videoUrl: videoPreview || undefined,
-      },
-    ]);
-
-    setInput("");
-    setSelectedImage(null);
-    setSelectedVideo(null);
-    setImagePreview("");
-    setVideoPreview("");
     setIsLoading(true);
+    
+    try {
+      let publicMediaUrl: string | undefined;
+      let mediaType: "image" | "video" | undefined;
 
-    await streamChat(userMessage);
+      // Upload media first and get public URL
+      if (selectedImage) {
+        toast({
+          title: "Caricamento immagine...",
+          description: "Sto caricando la tua foto",
+        });
+        publicMediaUrl = await uploadMedia(selectedImage, "image");
+        mediaType = "image";
+      } else if (selectedVideo) {
+        toast({
+          title: "Caricamento video...",
+          description: "Sto caricando il tuo video (potrebbe richiedere qualche secondo)",
+        });
+        publicMediaUrl = await uploadMedia(selectedVideo, "video");
+        mediaType = "video";
+      }
+
+      const userMessage: Message = {
+        role: "user",
+        content: input || (selectedVideo ? "Analizza questo video" : selectedImage ? "Analizza questa immagine" : ""),
+        imageUrl: mediaType === "image" ? publicMediaUrl : undefined,
+        videoUrl: mediaType === "video" ? publicMediaUrl : undefined,
+        mediaType,
+      };
+
+      // Add message with public URL
+      setMessages((prev) => [...prev, userMessage]);
+
+      setInput("");
+      setSelectedImage(null);
+      setSelectedVideo(null);
+      setImagePreview("");
+      setVideoPreview("");
+
+      await streamChat(userMessage);
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Errore caricamento",
+        description: "Impossibile caricare il file. Riprova.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
