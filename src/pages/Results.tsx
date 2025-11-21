@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users, MapPin, Navigation, Calendar } from "lucide-react";
+import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users, MapPin, Navigation, Calendar, Map } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MobileLayout } from "@/components/MobileLayout";
@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { TechnicianMap } from "@/components/TechnicianMap";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Diagnosis {
   id: string;
@@ -36,6 +38,8 @@ interface Technician {
   rating: number;
   total_jobs: number;
   distance_km?: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 const Results = () => {
@@ -351,55 +355,129 @@ const Results = () => {
               }
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 sm:space-y-4">
-            {technicians.length === 0 ? (
-              <Alert>
-                <AlertDescription className="text-xs sm:text-sm">
-                  {coordinates 
-                    ? 'Nessun tecnico trovato nel raggio di 50 km'
-                    : 'Nessun tecnico disponibile al momento'
-                  }
-                </AlertDescription>
-              </Alert>
-            ) : (
-              technicians.map((tech) => (
-                <Card key={tech.id} className="bg-gradient-card border-border touch-manipulation active:scale-[0.98] transition-transform">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                          <CardTitle className="text-base sm:text-lg truncate">{tech.full_name}</CardTitle>
-                          {tech.distance_km && (
-                            <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                              <MapPin className="h-3 w-3" />
-                              <span className="text-xs">{formatDistance(tech.distance_km)}</span>
-                            </Badge>
-                          )}
+          
+          {coordinates && technicians.length > 0 && technicians.some(t => t.latitude && t.longitude) ? (
+            <Tabs defaultValue="list" className="w-full">
+              <div className="px-6 pb-4">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="list" className="text-sm sm:text-base">
+                    <Users className="mr-2 h-4 w-4" />
+                    Lista
+                  </TabsTrigger>
+                  <TabsTrigger value="map" className="text-sm sm:text-base">
+                    <Map className="mr-2 h-4 w-4" />
+                    Mappa
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value="list" className="mt-0">
+                <CardContent className="space-y-3 sm:space-y-4">
+                  {technicians.map((tech) => (
+                    <Card key={tech.id} className="bg-gradient-card border-border touch-manipulation active:scale-[0.98] transition-transform">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                              <CardTitle className="text-base sm:text-lg truncate">{tech.full_name}</CardTitle>
+                              {tech.distance_km && (
+                                <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                                  <MapPin className="h-3 w-3" />
+                                  <span className="text-xs">{formatDistance(tech.distance_km)}</span>
+                                </Badge>
+                              )}
+                            </div>
+                            <CardDescription className="text-xs sm:text-sm line-clamp-1">
+                              {tech.specialties.join(', ')}
+                            </CardDescription>
+                          </div>
+                          <Badge variant="secondary" className="shrink-0 text-sm">⭐ {tech.rating}</Badge>
                         </div>
-                        <CardDescription className="text-xs sm:text-sm line-clamp-1">
-                          {tech.specialties.join(', ')}
-                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                          <div className="text-xs sm:text-sm text-muted-foreground">
+                            {tech.total_jobs} lavori • €{tech.hourly_rate}/ora
+                          </div>
+                          <Button 
+                            className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation active:scale-95 transition-transform"
+                            onClick={() => handleBookingClick(tech)}
+                          >
+                            Prenota Ora
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </CardContent>
+              </TabsContent>
+
+              <TabsContent value="map" className="mt-0">
+                <CardContent>
+                  <TechnicianMap
+                    userLocation={{
+                      latitude: coordinates.latitude,
+                      longitude: coordinates.longitude,
+                    }}
+                    technicians={technicians.filter((t): t is Technician & { latitude: number; longitude: number } => 
+                      t.latitude !== undefined && t.longitude !== undefined
+                    )}
+                    onTechnicianSelect={(tech) => handleBookingClick(tech as Technician)}
+                  />
+                </CardContent>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <CardContent className="space-y-3 sm:space-y-4">
+              {technicians.length === 0 ? (
+                <Alert>
+                  <AlertDescription className="text-xs sm:text-sm">
+                    {coordinates 
+                      ? 'Nessun tecnico trovato nel raggio di 50 km'
+                      : 'Nessun tecnico disponibile al momento'
+                    }
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                technicians.map((tech) => (
+                  <Card key={tech.id} className="bg-gradient-card border-border touch-manipulation active:scale-[0.98] transition-transform">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                            <CardTitle className="text-base sm:text-lg truncate">{tech.full_name}</CardTitle>
+                            {tech.distance_km && (
+                              <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                                <MapPin className="h-3 w-3" />
+                                <span className="text-xs">{formatDistance(tech.distance_km)}</span>
+                              </Badge>
+                            )}
+                          </div>
+                          <CardDescription className="text-xs sm:text-sm line-clamp-1">
+                            {tech.specialties.join(', ')}
+                          </CardDescription>
+                        </div>
+                        <Badge variant="secondary" className="shrink-0 text-sm">⭐ {tech.rating}</Badge>
                       </div>
-                      <Badge variant="secondary" className="shrink-0 text-sm">⭐ {tech.rating}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                      <div className="text-xs sm:text-sm text-muted-foreground">
-                        {tech.total_jobs} lavori • €{tech.hourly_rate}/ora
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                        <div className="text-xs sm:text-sm text-muted-foreground">
+                          {tech.total_jobs} lavori • €{tech.hourly_rate}/ora
+                        </div>
+                        <Button 
+                          className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation active:scale-95 transition-transform"
+                          onClick={() => handleBookingClick(tech)}
+                        >
+                          Prenota Ora
+                        </Button>
                       </div>
-                      <Button 
-                        className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation active:scale-95 transition-transform"
-                        onClick={() => handleBookingClick(tech)}
-                      >
-                        Prenota Ora
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </CardContent>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </CardContent>
+          )}
         </Card>
       </div>
 

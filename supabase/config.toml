@@ -1,4 +1,7 @@
 project_id = "rquhjtommcyiuqaxkeum"
 
+[functions.get-mapbox-token]
+verify_jwt = false
+
 [functions.analyze-repair]
 verify_jwt = true
