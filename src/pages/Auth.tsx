@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { MobileLayout } from "@/components/MobileLayout";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -108,23 +109,24 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+    <MobileLayout showBottomNav={false}>
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-6">
       <Card className="w-full max-w-md shadow-medium">
         <CardHeader>
-          <CardTitle className="text-2xl">
+          <CardTitle className="text-xl sm:text-2xl">
             {isLogin ? "Bentornato" : "Crea Account"}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm sm:text-base">
             {isLogin
-              ? "Accedi per accedere alla tua dashboard riparazioni"
-              : "Registrati per iniziare a diagnosticare i tuoi problemi di riparazione"}
+              ? "Accedi per accedere alla tua dashboard"
+              : "Registrati per iniziare a diagnosticare"}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="fullName">Nome Completo</Label>
+                <Label htmlFor="fullName" className="text-sm sm:text-base">Nome Completo</Label>
                 <Input
                   id="fullName"
                   type="text"
@@ -132,11 +134,12 @@ const Auth = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required={!isLogin}
+                  className="h-11 sm:h-12 text-base"
                 />
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -144,10 +147,11 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-11 sm:h-12 text-base"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -156,18 +160,23 @@ const Auth = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                className="h-11 sm:h-12 text-base"
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <CardFooter className="flex flex-col space-y-3 sm:space-y-4">
+            <Button 
+              type="submit" 
+              className="w-full h-12 sm:h-14 text-base sm:text-lg touch-manipulation active:scale-95 transition-transform" 
+              disabled={loading}
+            >
+              {loading && <Loader2 className="mr-2 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />}
               {isLogin ? "Accedi" : "Crea Account"}
             </Button>
             <Button
               type="button"
               variant="ghost"
-              className="w-full"
+              className="w-full h-11 sm:h-12 text-sm sm:text-base touch-manipulation"
               onClick={() => setIsLogin(!isLogin)}
             >
               {isLogin
@@ -178,6 +187,7 @@ const Auth = () => {
         </form>
       </Card>
     </div>
+    </MobileLayout>
   );
 };
 

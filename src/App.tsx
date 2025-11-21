@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import Diagnose from "./pages/Diagnose";
 import Results from "./pages/Results";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/diagnose" element={<Diagnose />} />
           <Route path="/results/:id" element={<Results />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/install" element={<Install />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
