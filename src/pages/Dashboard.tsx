@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, LogOut, User, Clock } from "lucide-react";
+import { Camera, LogOut, User, Clock, Briefcase, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MobileLayout } from "@/components/MobileLayout";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Diagnosis {
   id: string;
@@ -17,9 +18,28 @@ interface Diagnosis {
   estimated_cost_max: number;
 }
 
+interface Job {
+  id: string;
+  created_at: string;
+  scheduled_date: string | null;
+  status: string;
+  payment_status: string;
+  diagnosis_id: string;
+  technician_id: string;
+  diagnoses?: {
+    problem_type: string;
+    urgency_level: string;
+  };
+  technicians?: {
+    full_name: string;
+    hourly_rate: number;
+  };
+}
+
 const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
   const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -27,6 +47,7 @@ const Dashboard = () => {
   useEffect(() => {
     checkUser();
     loadDiagnoses();
+    loadJobs();
   }, []);
 
   const checkUser = async () => {
@@ -56,6 +77,25 @@ const Dashboard = () => {
     }
   };
 
+  const loadJobs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select(`
+          *,
+          diagnoses (problem_type, urgency_level),
+          technicians (full_name, hourly_rate)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setJobs(data || []);
+    } catch (error: any) {
+      console.error('Error loading jobs:', error);
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     toast({
@@ -75,6 +115,39 @@ const Dashboard = () => {
         return 'bassa';
       default:
         return urgency;
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'In Attesa';
+      case 'confirmed':
+        return 'Confermato';
+      case 'in_progress':
+        return 'In Corso';
+      case 'completed':
+        return 'Completato';
+      case 'cancelled':
+        return 'Annullato';
+      default:
+        return status;
+    }
+  };
+
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'secondary';
+      case 'confirmed':
+      case 'in_progress':
+        return 'default';
+      case 'completed':
+        return 'secondary';
+      case 'cancelled':
+        return 'destructive';
+      default:
+        return 'default';
     }
   };
 
@@ -127,58 +200,133 @@ const Dashboard = () => {
             </Link>
           </div>
 
-          {/* Recent Diagnoses */}
-          <div>
-            <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 px-4 sm:px-0">Le Tue Diagnosi Recenti</h3>
-            {diagnoses.length === 0 ? (
-              <Card className="text-center py-8 sm:py-12 shadow-soft mx-4 sm:mx-0">
-                <CardContent>
-                  <Camera className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-sm sm:text-base text-muted-foreground mb-4 px-4">
-                    Nessuna diagnosi ancora. Inizia caricando la tua prima immagine!
-                  </p>
-                  <Link to="/diagnose" className="inline-block w-full max-w-xs px-4">
-                    <Button className="w-full h-12 sm:h-14 touch-manipulation">Crea Prima Diagnosi</Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4 sm:gap-6 px-4 sm:px-0 sm:grid-cols-2 lg:grid-cols-3">
-                {diagnoses.map((diagnosis) => (
-                  <Link key={diagnosis.id} to={`/results/${diagnosis.id}`}>
-                    <Card className="shadow-soft hover:shadow-medium transition-all cursor-pointer touch-manipulation active:scale-98 h-full">
+          {/* Tabs for Diagnoses and Jobs */}
+          <Tabs defaultValue="diagnoses" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6 h-12 sm:h-14 mx-4 sm:mx-0">
+              <TabsTrigger value="diagnoses" className="text-sm sm:text-base">
+                <Camera className="mr-2 h-4 w-4" />
+                Diagnosi
+              </TabsTrigger>
+              <TabsTrigger value="bookings" className="text-sm sm:text-base">
+                <Briefcase className="mr-2 h-4 w-4" />
+                Prenotazioni
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="diagnoses">
+              <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 px-4 sm:px-0">Le Tue Diagnosi Recenti</h3>
+              {diagnoses.length === 0 ? (
+                <Card className="text-center py-8 sm:py-12 shadow-soft mx-4 sm:mx-0">
+                  <CardContent>
+                    <Camera className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-sm sm:text-base text-muted-foreground mb-4 px-4">
+                      Nessuna diagnosi ancora. Inizia caricando la tua prima immagine!
+                    </p>
+                    <Link to="/diagnose" className="inline-block w-full max-w-xs px-4">
+                      <Button className="w-full h-12 sm:h-14 touch-manipulation">Crea Prima Diagnosi</Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 sm:gap-6 px-4 sm:px-0 sm:grid-cols-2 lg:grid-cols-3">
+                  {diagnoses.map((diagnosis) => (
+                    <Link key={diagnosis.id} to={`/results/${diagnosis.id}`}>
+                      <Card className="shadow-soft hover:shadow-medium transition-all cursor-pointer touch-manipulation active:scale-98 h-full">
+                        <CardHeader className="pb-3">
+                          <div className="flex justify-between items-start gap-2">
+                            <CardTitle className="text-base sm:text-lg line-clamp-2">{diagnosis.problem_type}</CardTitle>
+                            <Badge 
+                              variant={
+                                diagnosis.urgency_level === 'high' 
+                                  ? 'destructive' 
+                                  : diagnosis.urgency_level === 'medium'
+                                  ? 'default'
+                                  : 'secondary'
+                              }
+                              className="shrink-0"
+                            >
+                              {getUrgencyLabel(diagnosis.urgency_level)}
+                            </Badge>
+                          </div>
+                          <CardDescription className="flex items-center gap-1 text-xs sm:text-sm">
+                            <Clock className="h-3 w-3" />
+                            {new Date(diagnosis.created_at).toLocaleDateString('it-IT')}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <p className="text-xs sm:text-sm text-muted-foreground">
+                            Costo stimato: €{diagnosis.estimated_cost_min} - €{diagnosis.estimated_cost_max}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="bookings">
+              <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 px-4 sm:px-0">Le Tue Prenotazioni</h3>
+              {jobs.length === 0 ? (
+                <Card className="text-center py-8 sm:py-12 shadow-soft mx-4 sm:mx-0">
+                  <CardContent>
+                    <Briefcase className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-sm sm:text-base text-muted-foreground mb-4 px-4">
+                      Nessuna prenotazione attiva. Trova un tecnico per iniziare!
+                    </p>
+                    <Link to="/diagnose" className="inline-block w-full max-w-xs px-4">
+                      <Button className="w-full h-12 sm:h-14 touch-manipulation">Inizia Nuova Diagnosi</Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 sm:gap-6 px-4 sm:px-0 sm:grid-cols-2 lg:grid-cols-3">
+                  {jobs.map((job) => (
+                    <Card key={job.id} className="shadow-soft hover:shadow-medium transition-all cursor-pointer touch-manipulation active:scale-98 h-full">
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start gap-2">
-                          <CardTitle className="text-base sm:text-lg line-clamp-2">{diagnosis.problem_type}</CardTitle>
-                          <Badge 
-                            variant={
-                              diagnosis.urgency_level === 'high' 
-                                ? 'destructive' 
-                                : diagnosis.urgency_level === 'medium'
-                                ? 'default'
-                                : 'secondary'
-                            }
-                            className="shrink-0"
-                          >
-                            {getUrgencyLabel(diagnosis.urgency_level)}
+                          <CardTitle className="text-base sm:text-lg line-clamp-2">
+                            {job.diagnoses?.problem_type || 'Riparazione'}
+                          </CardTitle>
+                          <Badge variant={getStatusVariant(job.status)} className="shrink-0">
+                            {getStatusLabel(job.status)}
                           </Badge>
                         </div>
-                        <CardDescription className="flex items-center gap-1 text-xs sm:text-sm">
-                          <Clock className="h-3 w-3" />
-                          {new Date(diagnosis.created_at).toLocaleDateString('it-IT')}
+                        <CardDescription className="text-xs sm:text-sm space-y-1">
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {job.technicians?.full_name || 'Tecnico non assegnato'}
+                          </div>
+                          {job.scheduled_date && (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(job.scheduled_date).toLocaleDateString('it-IT', {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          )}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="pt-0">
-                        <p className="text-xs sm:text-sm text-muted-foreground">
-                          Costo stimato: €{diagnosis.estimated_cost_min} - €{diagnosis.estimated_cost_max}
-                        </p>
+                        <div className="flex items-center justify-between text-xs sm:text-sm">
+                          <span className="text-muted-foreground">
+                            {job.technicians && `€${job.technicians.hourly_rate}/ora`}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {job.payment_status === 'pending' ? 'Da pagare' : 
+                             job.payment_status === 'paid' ? 'Pagato' : job.payment_status}
+                          </Badge>
+                        </div>
                       </CardContent>
                     </Card>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
