@@ -74,34 +74,44 @@ export function useNotifications(userId: string | undefined) {
           const oldJob = payload.old as any;
 
           if (newJob.status !== oldJob.status) {
-            let statusText = "";
-            switch (newJob.status) {
-              case "confirmed":
-                statusText = "confermato";
-                break;
-              case "in_progress":
-                statusText = "in corso";
-                break;
-              case "completed":
-                statusText = "completato";
-                break;
-              case "cancelled":
-                statusText = "cancellato";
-                break;
-            }
+            // Notifica speciale quando il tecnico accetta
+            if (oldJob.status === 'requested' && newJob.status === 'confirmed') {
+              showNotification("✅ Tecnico Confermato!", {
+                body: "Il professionista ha accettato la tua richiesta. Puoi contattarlo in chat!",
+                tag: `job-${newJob.id}`,
+                requireInteraction: true,
+              });
+            } else {
+              let statusText = "";
+              switch (newJob.status) {
+                case "confirmed":
+                  statusText = "confermato";
+                  break;
+                case "in_progress":
+                  statusText = "in corso";
+                  break;
+                case "completed":
+                  statusText = "completato";
+                  break;
+                case "cancelled":
+                  statusText = "cancellato";
+                  break;
+              }
 
-            showNotification("Aggiornamento Lavoro", {
-              body: `Il tuo lavoro è stato ${statusText}`,
-              tag: `job-${newJob.id}`,
-              requireInteraction: true,
-            });
+              showNotification("Aggiornamento Lavoro", {
+                body: `Il tuo lavoro è stato ${statusText}`,
+                tag: `job-${newJob.id}`,
+                requireInteraction: true,
+              });
+            }
           }
 
           if (newJob.scheduled_date !== oldJob.scheduled_date && newJob.scheduled_date) {
             const date = new Date(newJob.scheduled_date);
-            showNotification("Appuntamento Programmato", {
-              body: `Nuovo appuntamento: ${date.toLocaleString("it-IT")}`,
+            showNotification("📅 Appuntamento Fissato", {
+              body: `Appuntamento confermato per ${date.toLocaleString("it-IT")}`,
               tag: `job-scheduled-${newJob.id}`,
+              requireInteraction: true,
             });
           }
         }
