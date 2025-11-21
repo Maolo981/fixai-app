@@ -255,7 +255,7 @@ const Results = () => {
       });
 
       // Naviga alla pagina JobDetails con la chat aperta
-      navigate(`/job/${newJob.id}?new=true`);
+      navigate(`/jobs/${newJob.id}?new=true`);
     } catch (error: any) {
       console.error('Booking error:', error);
       toast({

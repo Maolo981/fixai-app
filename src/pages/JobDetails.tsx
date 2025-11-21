@@ -71,7 +71,7 @@ const JobDetails = () => {
       setShowConfirmation(true);
       setChatDialogOpen(true);
       // Rimuovi il parametro dall'URL
-      window.history.replaceState({}, '', `/job/${id}`);
+      window.history.replaceState({}, '', `/jobs/${id}`);
     }
   }, [id]);
 
