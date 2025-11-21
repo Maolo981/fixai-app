@@ -223,6 +223,44 @@ const Results = () => {
     return `${distance.toFixed(1)} km`;
   };
 
+  const getBestOffer = () => {
+    if (technicians.length === 0) return null;
+    
+    // Filtra solo tecnici con distanza disponibile
+    const techsWithDistance = technicians.filter(t => t.distance_km !== undefined);
+    if (techsWithDistance.length === 0) return null;
+
+    // Trova min/max per normalizzare
+    const minDistance = Math.min(...techsWithDistance.map(t => t.distance_km!));
+    const maxDistance = Math.max(...techsWithDistance.map(t => t.distance_km!));
+    const minRate = Math.min(...techsWithDistance.map(t => t.hourly_rate));
+    const maxRate = Math.max(...techsWithDistance.map(t => t.hourly_rate));
+
+    // Calcola score per ogni tecnico (più basso è meglio)
+    const scores = techsWithDistance.map(tech => {
+      const distanceScore = maxDistance !== minDistance 
+        ? (tech.distance_km! - minDistance) / (maxDistance - minDistance) 
+        : 0;
+      const rateScore = maxRate !== minRate 
+        ? (tech.hourly_rate - minRate) / (maxRate - minRate) 
+        : 0;
+      
+      // 50% peso distanza, 50% peso prezzo
+      const totalScore = distanceScore * 0.5 + rateScore * 0.5;
+      
+      return { id: tech.id, score: totalScore };
+    });
+
+    // Trova il tecnico con lo score migliore (più basso)
+    const best = scores.reduce((prev, current) => 
+      current.score < prev.score ? current : prev
+    );
+
+    return best.id;
+  };
+
+  const bestOfferId = getBestOffer();
+
   const handleBookingClick = async (technician: Technician) => {
     if (!diagnosis) return;
     
@@ -466,7 +504,7 @@ const Results = () => {
               <TabsContent value="list" className="mt-0">
                 <CardContent className="space-y-3 sm:space-y-4">
                   {technicians.map((tech) => (
-                    <Card key={tech.id} className="bg-gradient-card border-border touch-manipulation active:scale-[0.98] transition-transform">
+                    <Card key={tech.id} className={`bg-gradient-card border-border touch-manipulation active:scale-[0.98] transition-transform ${tech.id === bestOfferId ? 'ring-2 ring-primary' : ''}`}>
                       <CardHeader className="pb-3">
                         <div className="flex items-start gap-3">
                           {/* Avatar */}
@@ -488,6 +526,11 @@ const Results = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
                               <CardTitle className="text-base sm:text-lg truncate">{tech.full_name}</CardTitle>
+                              {tech.id === bestOfferId && (
+                                <Badge className="bg-primary text-primary-foreground text-xs whitespace-nowrap">
+                                  🏆 Offerta Migliore
+                                </Badge>
+                              )}
                               <div className="flex items-center gap-2">
                                 <Badge variant="secondary" className="shrink-0 text-sm">⭐ {tech.rating}</Badge>
                                 {tech.distance_km && (
