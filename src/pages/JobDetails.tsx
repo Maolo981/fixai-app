@@ -135,9 +135,20 @@ const JobDetails = () => {
           )
         `)
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        toast({
+          title: "Prenotazione non trovata",
+          description: "Questa prenotazione non esiste o è stata eliminata",
+          variant: "destructive",
+        });
+        navigate("/dashboard");
+        return;
+      }
+      
       setJob(data as unknown as Job);
     } catch (error: any) {
       toast({
@@ -261,7 +272,7 @@ const JobDetails = () => {
           )}
 
           {/* Diagnosis Details */}
-          {job.diagnoses && (
+          {job.diagnoses ? (
             <Card>
               <CardHeader>
                 <CardTitle>Dettagli Diagnosi</CardTitle>
@@ -282,21 +293,33 @@ const JobDetails = () => {
                      job.diagnoses.urgency_level === 'medium' ? 'Media' : 'Bassa'}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Tempo stimato</span>
-                  <span className="font-medium">{job.diagnoses.estimated_time_hours}h</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Costo stimato</span>
-                  <span className="font-medium">
-                    €{job.diagnoses.estimated_cost_min} - €{job.diagnoses.estimated_cost_max}
-                  </span>
-                </div>
+                {job.diagnoses.estimated_time_hours && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Tempo stimato</span>
+                    <span className="font-medium">{job.diagnoses.estimated_time_hours}h</span>
+                  </div>
+                )}
+                {job.diagnoses.estimated_cost_min && job.diagnoses.estimated_cost_max && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Costo stimato</span>
+                    <span className="font-medium">
+                      €{job.diagnoses.estimated_cost_min} - €{job.diagnoses.estimated_cost_max}
+                    </span>
+                  </div>
+                )}
                 {job.diagnoses.ai_analysis && (
                   <div className="pt-3 border-t">
                     <p className="text-sm text-muted-foreground">{job.diagnoses.ai_analysis}</p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground text-center">
+                  Dettagli diagnosi non disponibili
+                </p>
               </CardContent>
             </Card>
           )}
