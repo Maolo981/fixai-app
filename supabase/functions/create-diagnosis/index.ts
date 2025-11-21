@@ -37,32 +37,20 @@ serve(async (req) => {
 
     const { messages } = await req.json() as { messages: Message[] };
 
-    // Analizza la conversazione con l'AI per estrarre dati strutturati
+    // Analizza la conversazione con l'AI per estrarre dati strutturati usando tool calling
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY non configurata');
     }
 
-    const analysisPrompt = `Analizza questa conversazione di diagnosi e estrai le seguenti informazioni in formato JSON:
-- problem_type: tipo di problema (es. "Elettrico", "Idraulico", "Riscaldamento", ecc.)
-- urgency_level: livello di urgenza ("low", "medium", "high")
-- recommended_specialty: specialità raccomandata (es. "Elettricista", "Idraulico", "Tecnico HVAC", ecc.)
-- ai_analysis: un breve riassunto dell'analisi (max 200 caratteri)
-- possible_cause: possibile causa del problema
-- estimated_cost_min: costo minimo stimato in euro (numero)
-- estimated_cost_max: costo massimo stimato in euro (numero)
-- estimated_time_hours: ore stimate per la riparazione (numero)
-- image_url: URL dell'immagine se presente nella conversazione, altrimenti stringa vuota
-
-Rispondi SOLO con un oggetto JSON valido, senza altro testo.`;
+    const systemPrompt = `Sei un assistente specializzato nell'analisi di problemi di riparazione domestica. 
+Analizza la conversazione e estrai informazioni strutturate sul problema descritto dall'utente.`;
 
     const aiMessages = [
-      { role: 'system', content: analysisPrompt },
+      { role: 'system', content: systemPrompt },
       ...messages.map(m => ({
         role: m.role,
-        content: m.content,
-        ...(m.imageUrl && { imageUrl: m.imageUrl }),
-        ...(m.videoUrl && { videoUrl: m.videoUrl })
+        content: m.content
       }))
     ];
 
@@ -75,32 +63,76 @@ Rispondi SOLO con un oggetto JSON valido, senza altro testo.`;
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: aiMessages,
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "create_diagnosis",
+              description: "Crea una diagnosi strutturata del problema di riparazione",
+              parameters: {
+                type: "object",
+                properties: {
+                  problem_type: {
+                    type: "string",
+                    description: "Tipo di problema (es. Elettrico, Idraulico, Riscaldamento)"
+                  },
+                  urgency_level: {
+                    type: "string",
+                    enum: ["low", "medium", "high"],
+                    description: "Livello di urgenza del problema"
+                  },
+                  recommended_specialty: {
+                    type: "string",
+                    description: "Specialità raccomandata (es. Elettricista, Idraulico, Tecnico HVAC)"
+                  },
+                  ai_analysis: {
+                    type: "string",
+                    description: "Breve riassunto dell'analisi (max 200 caratteri)"
+                  },
+                  possible_cause: {
+                    type: "string",
+                    description: "Possibile causa del problema"
+                  },
+                  estimated_cost_min: {
+                    type: "number",
+                    description: "Costo minimo stimato in euro"
+                  },
+                  estimated_cost_max: {
+                    type: "number",
+                    description: "Costo massimo stimato in euro"
+                  },
+                  estimated_time_hours: {
+                    type: "number",
+                    description: "Ore stimate per la riparazione"
+                  }
+                },
+                required: ["problem_type", "urgency_level", "recommended_specialty", "ai_analysis"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "create_diagnosis" } }
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('Errore AI:', errorText);
+      console.error('Errore AI:', aiResponse.status, errorText);
       throw new Error('Errore nell\'analisi AI');
     }
 
     const aiData = await aiResponse.json();
-    const content = aiData.choices[0].message.content;
+    console.log('AI Response:', JSON.stringify(aiData));
     
-    // Estrai JSON dal contenuto
-    let diagnosisData;
-    try {
-      // Prova a fare il parse diretto
-      diagnosisData = JSON.parse(content);
-    } catch {
-      // Se fallisce, cerca un blocco JSON nel testo
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        diagnosisData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('Impossibile estrarre dati strutturati dalla conversazione');
-      }
+    // Estrai i dati dalla chiamata alla funzione
+    const toolCall = aiData.choices[0].message.tool_calls?.[0];
+    if (!toolCall || !toolCall.function.arguments) {
+      console.error('Nessuna chiamata alla funzione trovata:', aiData);
+      throw new Error('Impossibile estrarre dati strutturati dalla conversazione');
     }
+
+    const diagnosisData = JSON.parse(toolCall.function.arguments);
 
     // Salva la diagnosi nel database
     const { data: diagnosis, error: dbError } = await supabase
