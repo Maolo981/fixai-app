@@ -4,11 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, LogOut, User, Clock, Briefcase, Calendar, Star } from "lucide-react";
+import { Camera, LogOut, User, Clock, Briefcase, Calendar, Star, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MobileLayout } from "@/components/MobileLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReviewDialog } from "@/components/ReviewDialog";
+import { ChatDialog } from "@/components/ChatDialog";
 
 interface Diagnosis {
   id: string;
@@ -47,6 +48,7 @@ const Dashboard = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -336,6 +338,21 @@ const Dashboard = () => {
                           </Badge>
                         </div>
 
+                        {(job.status === 'scheduled' || job.status === 'in_progress') && job.technician_id && (
+                          <Button
+                            onClick={() => {
+                              setSelectedJob(job);
+                              setChatDialogOpen(true);
+                            }}
+                            size="sm"
+                            variant="outline"
+                            className="w-full touch-manipulation"
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Apri Chat
+                          </Button>
+                        )}
+
                         {job.status === 'completed' && !job.user_rating && (
                           <Button
                             onClick={() => {
@@ -382,13 +399,21 @@ const Dashboard = () => {
       </div>
 
       {selectedJob && (
-        <ReviewDialog
-          open={reviewDialogOpen}
-          onOpenChange={setReviewDialogOpen}
-          jobId={selectedJob.id}
-          technicianName={selectedJob.technicians?.full_name || "Tecnico"}
-          onReviewSubmitted={loadJobs}
-        />
+        <>
+          <ReviewDialog
+            open={reviewDialogOpen}
+            onOpenChange={setReviewDialogOpen}
+            jobId={selectedJob.id}
+            technicianName={selectedJob.technicians?.full_name || "Tecnico"}
+            onReviewSubmitted={loadJobs}
+          />
+          <ChatDialog
+            open={chatDialogOpen}
+            onOpenChange={setChatDialogOpen}
+            jobId={selectedJob.id}
+            technicianName={selectedJob.technicians?.full_name || "Tecnico"}
+          />
+        </>
       )}
     </div>
     </MobileLayout>
