@@ -31,8 +31,8 @@ const Auth = () => {
     
     if (!email || !password) {
       toast({
-        title: "Error",
-        description: "Please fill in all fields",
+        title: "Errore",
+        description: "Compila tutti i campi",
         variant: "destructive",
       });
       return;
@@ -49,22 +49,22 @@ const Auth = () => {
 
         if (error) {
           toast({
-            title: "Login Failed",
+            title: "Accesso Fallito",
             description: error.message,
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Success",
-            description: "Logged in successfully",
+            title: "Successo",
+            description: "Accesso effettuato con successo",
           });
           navigate("/dashboard");
         }
       } else {
         if (!fullName) {
           toast({
-            title: "Error",
-            description: "Please enter your full name",
+            title: "Errore",
+            description: "Inserisci il tuo nome completo",
             variant: "destructive",
           });
           setLoading(false);
@@ -84,22 +84,22 @@ const Auth = () => {
 
         if (error) {
           toast({
-            title: "Signup Failed",
+            title: "Registrazione Fallita",
             description: error.message,
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Success",
-            description: "Account created! You can now log in.",
+            title: "Successo",
+            description: "Account creato! Ora puoi accedere.",
           });
           navigate("/dashboard");
         }
       }
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "An unexpected error occurred",
+        title: "Errore",
+        description: error.message || "Si è verificato un errore imprevisto",
         variant: "destructive",
       });
     } finally {
@@ -112,23 +112,23 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-medium">
         <CardHeader>
           <CardTitle className="text-2xl">
-            {isLogin ? "Welcome Back" : "Create Account"}
+            {isLogin ? "Bentornato" : "Crea Account"}
           </CardTitle>
           <CardDescription>
             {isLogin
-              ? "Sign in to access your repair dashboard"
-              : "Sign up to start diagnosing your repair problems"}
+              ? "Accedi per accedere alla tua dashboard riparazioni"
+              : "Registrati per iniziare a diagnosticare i tuoi problemi di riparazione"}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName">Nome Completo</Label>
                 <Input
                   id="fullName"
                   type="text"
-                  placeholder="John Doe"
+                  placeholder="Mario Rossi"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required={!isLogin}
@@ -140,7 +140,7 @@ const Auth = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="tua@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -162,7 +162,7 @@ const Auth = () => {
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLogin ? "Sign In" : "Create Account"}
+              {isLogin ? "Accedi" : "Crea Account"}
             </Button>
             <Button
               type="button"
@@ -171,8 +171,8 @@ const Auth = () => {
               onClick={() => setIsLogin(!isLogin)}
             >
               {isLogin
-                ? "Don't have an account? Sign up"
-                : "Already have an account? Sign in"}
+                ? "Non hai un account? Registrati"
+                : "Hai già un account? Accedi"}
             </Button>
           </CardFooter>
         </form>
