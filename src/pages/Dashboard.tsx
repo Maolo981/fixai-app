@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, LogOut, User, Clock, Briefcase, Calendar } from "lucide-react";
+import { Camera, LogOut, User, Clock, Briefcase, Calendar, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MobileLayout } from "@/components/MobileLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReviewDialog } from "@/components/ReviewDialog";
 
 interface Diagnosis {
   id: string;
@@ -26,9 +27,13 @@ interface Job {
   payment_status: string;
   diagnosis_id: string;
   technician_id: string;
+  user_rating: number | null;
+  user_review: string | null;
+  final_cost: number | null;
   diagnoses?: {
     problem_type: string;
     urgency_level: string;
+    estimated_time_hours: number;
   };
   technicians?: {
     full_name: string;
@@ -41,6 +46,8 @@ const Dashboard = () => {
   const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -83,7 +90,7 @@ const Dashboard = () => {
         .from('jobs')
         .select(`
           *,
-          diagnoses (problem_type, urgency_level),
+          diagnoses (problem_type, urgency_level, estimated_time_hours),
           technicians (full_name, hourly_rate)
         `)
         .order('created_at', { ascending: false })
@@ -282,7 +289,7 @@ const Dashboard = () => {
               ) : (
                 <div className="grid gap-4 sm:gap-6 px-4 sm:px-0 sm:grid-cols-2 lg:grid-cols-3">
                   {jobs.map((job) => (
-                    <Card key={job.id} className="shadow-soft hover:shadow-medium transition-all cursor-pointer touch-manipulation active:scale-98 h-full">
+                    <Card key={job.id} className="shadow-soft hover:shadow-medium transition-all h-full">
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start gap-2">
                           <CardTitle className="text-base sm:text-lg line-clamp-2">
@@ -308,18 +315,62 @@ const Dashboard = () => {
                               })}
                             </div>
                           )}
+                          {job.diagnoses?.estimated_time_hours && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              Durata stimata: {job.diagnoses.estimated_time_hours}h
+                            </div>
+                          )}
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="pt-0">
+                      <CardContent className="pt-0 space-y-3">
                         <div className="flex items-center justify-between text-xs sm:text-sm">
                           <span className="text-muted-foreground">
-                            {job.technicians && `€${job.technicians.hourly_rate}/ora`}
+                            {job.final_cost 
+                              ? `€${job.final_cost}` 
+                              : job.technicians && `€${job.technicians.hourly_rate}/ora`}
                           </span>
                           <Badge variant="outline" className="text-xs">
                             {job.payment_status === 'pending' ? 'Da pagare' : 
                              job.payment_status === 'paid' ? 'Pagato' : job.payment_status}
                           </Badge>
                         </div>
+
+                        {job.status === 'completed' && !job.user_rating && (
+                          <Button
+                            onClick={() => {
+                              setSelectedJob(job);
+                              setReviewDialogOpen(true);
+                            }}
+                            size="sm"
+                            className="w-full touch-manipulation"
+                          >
+                            <Star className="h-4 w-4 mr-2" />
+                            Lascia una recensione
+                          </Button>
+                        )}
+
+                        {job.user_rating && (
+                          <div className="pt-3 border-t space-y-2">
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`h-4 w-4 ${
+                                    star <= job.user_rating!
+                                      ? "fill-yellow-400 text-yellow-400"
+                                      : "text-muted-foreground"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            {job.user_review && (
+                              <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3">
+                                {job.user_review}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
@@ -329,6 +380,16 @@ const Dashboard = () => {
           </Tabs>
         </div>
       </div>
+
+      {selectedJob && (
+        <ReviewDialog
+          open={reviewDialogOpen}
+          onOpenChange={setReviewDialogOpen}
+          jobId={selectedJob.id}
+          technicianName={selectedJob.technicians?.full_name || "Tecnico"}
+          onReviewSubmitted={loadJobs}
+        />
+      )}
     </div>
     </MobileLayout>
   );
