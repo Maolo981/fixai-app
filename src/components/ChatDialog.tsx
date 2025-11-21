@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { MessageCircle, Send, X } from "lucide-react";
+import { MessageCircle, Send, X, Image as ImageIcon, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ interface Message {
   id: string;
   sender_id: string;
   message: string;
+  image_url?: string | null;
   created_at: string;
   read: boolean;
 }
@@ -38,7 +39,10 @@ export function ChatDialog({
   const [newMessage, setNewMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [isSending, setIsSending] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -130,17 +134,84 @@ export function ChatDialog({
     }
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Errore",
+        description: "L'immagine deve essere inferiore a 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${currentUserId}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from("chat-images")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("chat-images")
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      return null;
+    }
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!newMessage.trim() || isSending) return;
+    if ((!newMessage.trim() && !selectedImage) || isSending) return;
 
     setIsSending(true);
+
+    let imageUrl: string | null = null;
+
+    if (selectedImage) {
+      imageUrl = await uploadImage(selectedImage);
+      if (!imageUrl) {
+        toast({
+          title: "Errore",
+          description: "Impossibile caricare l'immagine",
+          variant: "destructive",
+        });
+        setIsSending(false);
+        return;
+      }
+    }
 
     const { error } = await supabase.from("chat_messages").insert({
       job_id: jobId,
       sender_id: currentUserId,
-      message: newMessage.trim(),
+      message: newMessage.trim() || "📷 Immagine",
+      image_url: imageUrl,
     });
 
     setIsSending(false);
@@ -155,6 +226,7 @@ export function ChatDialog({
     }
 
     setNewMessage("");
+    removeImage();
   };
 
   const formatTime = (timestamp: string) => {
@@ -214,6 +286,14 @@ export function ChatDialog({
                           : "bg-muted"
                       }`}
                     >
+                      {msg.image_url && (
+                        <img
+                          src={msg.image_url}
+                          alt="Allegato"
+                          className="rounded-lg mb-2 max-w-full cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => window.open(msg.image_url!, "_blank")}
+                        />
+                      )}
                       <p className="text-sm break-words">{msg.message}</p>
                       <p
                         className={`text-xs mt-1 ${
@@ -232,25 +312,64 @@ export function ChatDialog({
           </div>
         </ScrollArea>
 
-        <form
-          onSubmit={handleSend}
-          className="p-4 border-t flex gap-2 items-center"
-        >
-          <Input
-            placeholder="Scrivi un messaggio..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            disabled={isSending}
-            className="flex-1"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!newMessage.trim() || isSending}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
+        <div className="p-4 border-t">
+          {imagePreview && (
+            <div className="mb-3 relative inline-block">
+              <img
+                src={imagePreview}
+                alt="Anteprima"
+                className="max-h-32 rounded-lg"
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="destructive"
+                className="absolute -top-2 -right-2 h-6 w-6"
+                onClick={removeImage}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+          
+          <form onSubmit={handleSend} className="flex gap-2 items-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+              disabled={isSending}
+            />
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isSending}
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+            <Input
+              placeholder="Scrivi un messaggio..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              disabled={isSending}
+              className="flex-1"
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={(!newMessage.trim() && !selectedImage) || isSending}
+            >
+              {isSending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
