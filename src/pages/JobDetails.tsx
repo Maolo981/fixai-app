@@ -60,9 +60,19 @@ const JobDetails = () => {
   const [loading, setLoading] = useState(true);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
     loadJobDetails();
+    
+    // Controlla se è una nuova prenotazione
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('new') === 'true') {
+      setShowConfirmation(true);
+      setChatDialogOpen(true);
+      // Rimuovi il parametro dall'URL
+      window.history.replaceState({}, '', `/job/${id}`);
+    }
   }, [id]);
 
   const loadJobDetails = async () => {
@@ -171,6 +181,25 @@ const JobDetails = () => {
         </header>
 
         <div className="container mx-auto px-4 py-6 space-y-6 max-w-3xl">
+          {/* Confirmation Banner */}
+          {showConfirmation && (
+            <Card className="bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-8 w-8 text-green-600" />
+                  <div>
+                    <h3 className="font-semibold text-green-900 dark:text-green-100">
+                      Prenotazione Confermata!
+                    </h3>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      Ora puoi chattare con il tecnico nella chat qui sotto.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Status Card */}
           <Card>
             <CardHeader>
@@ -332,7 +361,7 @@ const JobDetails = () => {
 
           {/* Actions */}
           <div className="space-y-3 pb-6">
-            {(job.status === 'confirmed' || job.status === 'in_progress') && job.technician_id && (
+            {(job.status === 'pending' || job.status === 'confirmed' || job.status === 'in_progress') && job.technician_id && (
               <Button
                 onClick={() => setChatDialogOpen(true)}
                 size="lg"
