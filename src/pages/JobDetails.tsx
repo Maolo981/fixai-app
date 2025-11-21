@@ -21,6 +21,23 @@ import {
 } from "lucide-react";
 import { ChatDialog } from "@/components/ChatDialog";
 import { ReviewDialog } from "@/components/ReviewDialog";
+import { QuoteRequestCard } from "@/components/QuoteRequestCard";
+
+interface Quote {
+  id: string;
+  description: string;
+  estimated_hours: number;
+  hourly_rate: number;
+  total_cost: number;
+  parts_cost: number;
+  notes: string | null;
+  status: string;
+  expires_at: string;
+  technicians: {
+    full_name: string;
+    avatar_url: string | null;
+  } | null;
+}
 
 interface Job {
   id: string;
@@ -50,6 +67,7 @@ interface Job {
     total_jobs: number;
     avatar_url?: string;
   };
+  quotes?: Quote[];
 }
 
 const JobDetails = () => {
@@ -102,13 +120,25 @@ const JobDetails = () => {
             specialties,
             rating,
             total_jobs
+          ),
+          quotes (
+            id,
+            description,
+            estimated_hours,
+            hourly_rate,
+            total_cost,
+            parts_cost,
+            notes,
+            status,
+            expires_at,
+            technicians (full_name, avatar_url)
           )
         `)
         .eq('id', id)
         .single();
 
       if (error) throw error;
-      setJob(data);
+      setJob(data as unknown as Job);
     } catch (error: any) {
       toast({
         title: "Errore",
@@ -269,6 +299,20 @@ const JobDetails = () => {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Quotes Section */}
+          {job.quotes && job.quotes.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold">Preventivi Ricevuti</h2>
+              {job.quotes.map((quote) => (
+                <QuoteRequestCard
+                  key={quote.id}
+                  quote={quote}
+                  onQuoteUpdated={loadJobDetails}
+                />
+              ))}
+            </div>
           )}
 
           {/* Technician Details */}

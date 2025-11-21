@@ -105,6 +105,7 @@ export type Database = {
           final_cost: number | null
           id: string
           payment_status: string | null
+          quote_id: string | null
           scheduled_date: string | null
           status: string | null
           technician_id: string | null
@@ -120,6 +121,7 @@ export type Database = {
           final_cost?: number | null
           id?: string
           payment_status?: string | null
+          quote_id?: string | null
           scheduled_date?: string | null
           status?: string | null
           technician_id?: string | null
@@ -135,6 +137,7 @@ export type Database = {
           final_cost?: number | null
           id?: string
           payment_status?: string | null
+          quote_id?: string | null
           scheduled_date?: string | null
           status?: string | null
           technician_id?: string | null
@@ -149,6 +152,13 @@ export type Database = {
             columns: ["diagnosis_id"]
             isOneToOne: false
             referencedRelation: "diagnoses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
           {
@@ -201,6 +211,72 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      quotes: {
+        Row: {
+          created_at: string | null
+          description: string
+          estimated_hours: number
+          expires_at: string
+          hourly_rate: number
+          id: string
+          job_id: string
+          notes: string | null
+          parts_cost: number | null
+          status: string
+          technician_id: string
+          total_cost: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          estimated_hours: number
+          expires_at?: string
+          hourly_rate: number
+          id?: string
+          job_id: string
+          notes?: string | null
+          parts_cost?: number | null
+          status?: string
+          technician_id: string
+          total_cost: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          estimated_hours?: number
+          expires_at?: string
+          hourly_rate?: number
+          id?: string
+          job_id?: string
+          notes?: string | null
+          parts_cost?: number | null
+          status?: string
+          technician_id?: string
+          total_cost?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       technicians: {
         Row: {
