@@ -236,14 +236,14 @@ const Results = () => {
         return;
       }
 
-      // Crea il job direttamente
+      // Crea il job con status 'requested' (in attesa di accettazione dal tecnico)
       const { data: newJob, error } = await supabase
         .from('jobs')
         .insert({
           user_id: user.id,
           diagnosis_id: diagnosis.id,
           technician_id: technician.id,
-          status: 'pending',
+          status: 'requested',
           payment_status: 'pending'
         })
         .select()
@@ -252,11 +252,27 @@ const Results = () => {
       if (error) throw error;
 
       toast({
-        title: "Prenotazione Confermata!",
-        description: `Hai prenotato ${technician.full_name}. Ora puoi chattare con il tecnico.`,
+        title: "Richiesta Inviata!",
+        description: `Richiesta inviata a ${technician.full_name}. Riceverai una notifica quando accetterà.`,
       });
 
-      // Naviga alla pagina JobDetails con la chat aperta
+      // Simula l'accettazione del tecnico dopo 5 secondi
+      setTimeout(async () => {
+        const scheduledDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000); // 2 giorni da ora
+        const { error: updateError } = await supabase
+          .from('jobs')
+          .update({
+            status: 'confirmed',
+            scheduled_date: scheduledDate.toISOString(),
+          })
+          .eq('id', newJob.id);
+
+        if (updateError) {
+          console.error("Errore nell'aggiornamento del job:", updateError);
+        }
+      }, 5000);
+
+      // Naviga alla pagina JobDetails
       navigate(`/jobs/${newJob.id}?new=true`);
     } catch (error: any) {
       console.error('Booking error:', error);

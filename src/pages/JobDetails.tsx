@@ -123,6 +123,8 @@ const JobDetails = () => {
 
   const getStatusInfo = (status: string) => {
     switch (status.toLowerCase()) {
+      case 'requested':
+        return { label: 'Richiesto', icon: Clock, color: 'text-blue-500' };
       case 'pending':
         return { label: 'In Attesa', icon: Clock, color: 'text-yellow-600' };
       case 'confirmed':
@@ -361,7 +363,7 @@ const JobDetails = () => {
 
           {/* Actions */}
           <div className="space-y-3 pb-6">
-            {(job.status === 'pending' || job.status === 'confirmed' || job.status === 'in_progress') && job.technician_id && (
+            {(job.status === 'requested' || job.status === 'pending' || job.status === 'confirmed' || job.status === 'in_progress') && job.technician_id && (
               <Button
                 onClick={() => setChatDialogOpen(true)}
                 size="lg"
