@@ -33,11 +33,21 @@ const Diagnose = () => {
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [videoPreview, setVideoPreview] = useState<string>("");
+  const [showQuickReplies, setShowQuickReplies] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const quickReplies = [
+    { icon: "⚡", text: "Problema elettrico", color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
+    { icon: "💧", text: "Perdita acqua", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+    { icon: "🔊", text: "Rumore anomalo", color: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
+    { icon: "🔥", text: "Problema riscaldamento", color: "bg-red-500/10 text-red-600 border-red-500/20" },
+    { icon: "❄️", text: "Problema raffreddamento", color: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20" },
+    { icon: "🚪", text: "Problema porte/finestre", color: "bg-green-500/10 text-green-600 border-green-500/20" },
+  ];
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -239,6 +249,7 @@ const Diagnose = () => {
   const handleSend = async () => {
     if ((!input.trim() && !selectedImage && !selectedVideo) || isLoading) return;
 
+    setShowQuickReplies(false);
     setIsLoading(true);
     
     try {
@@ -289,6 +300,11 @@ const Diagnose = () => {
       });
       setIsLoading(false);
     }
+  };
+
+  const handleQuickReply = (text: string) => {
+    setInput(text);
+    setShowQuickReplies(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -353,6 +369,32 @@ const Diagnose = () => {
                 </div>
               </div>
             ))}
+            
+            {/* Quick Replies */}
+            {showQuickReplies && messages.length === 1 && !isLoading && (
+              <div className="space-y-3 animate-fade-in">
+                <p className="text-sm text-muted-foreground text-center">
+                  Oppure seleziona un tipo di problema:
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {quickReplies.map((reply, idx) => (
+                    <Button
+                      key={idx}
+                      variant="outline"
+                      className={cn(
+                        "h-auto py-3 px-4 justify-start gap-2 text-left border-2 hover:scale-105 transition-all",
+                        reply.color
+                      )}
+                      onClick={() => handleQuickReply(reply.text)}
+                    >
+                      <span className="text-xl">{reply.icon}</span>
+                      <span className="text-sm font-medium">{reply.text}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-muted rounded-2xl px-4 py-3">
