@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MobileLayout } from "@/components/MobileLayout";
 import { TechnicianMap } from "@/components/TechnicianMap";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BookingDialog } from "@/components/BookingDialog";
 
 interface Diagnosis {
   id: string;
@@ -47,6 +48,8 @@ const Results = () => {
   const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
 
   useEffect(() => {
     loadDiagnosis();
@@ -223,27 +226,43 @@ const Results = () => {
   const handleBookingClick = async (technician: Technician) => {
     if (!diagnosis) return;
     
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast({
+        title: "Errore",
+        description: "Devi essere autenticato per prenotare",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    // Apri il dialog per selezionare data e ora
+    setSelectedTechnician(technician);
+    setBookingDialogOpen(true);
+  };
+
+  const handleBookingConfirm = async (appointmentDate: Date, time: string) => {
+    if (!diagnosis || !selectedTechnician) return;
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        toast({
-          title: "Errore",
-          description: "Devi essere autenticato per prenotare",
-          variant: "destructive",
-        });
         navigate("/auth");
         return;
       }
 
-      // Crea il job con status 'requested' (in attesa di accettazione dal tecnico)
+      // Crea il job con la data selezionata e status 'requested'
       const { data: newJob, error } = await supabase
         .from('jobs')
         .insert({
           user_id: user.id,
           diagnosis_id: diagnosis.id,
-          technician_id: technician.id,
+          technician_id: selectedTechnician.id,
           status: 'requested',
+          scheduled_date: appointmentDate.toISOString(),
           payment_status: 'pending'
         })
         .select()
@@ -253,17 +272,15 @@ const Results = () => {
 
       toast({
         title: "Richiesta Inviata!",
-        description: `Richiesta inviata a ${technician.full_name}. Riceverai una notifica quando accetterà.`,
+        description: `Richiesta inviata a ${selectedTechnician.full_name} per il ${appointmentDate.toLocaleDateString('it-IT')} alle ${time}`,
       });
 
       // Simula l'accettazione del tecnico dopo 5 secondi
       setTimeout(async () => {
-        const scheduledDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000); // 2 giorni da ora
         const { error: updateError } = await supabase
           .from('jobs')
           .update({
             status: 'confirmed',
-            scheduled_date: scheduledDate.toISOString(),
           })
           .eq('id', newJob.id);
 
@@ -572,6 +589,16 @@ const Results = () => {
         </Card>
       </div>
     </div>
+
+    {/* Booking Dialog */}
+    {selectedTechnician && (
+      <BookingDialog
+        open={bookingDialogOpen}
+        onOpenChange={setBookingDialogOpen}
+        technicianName={selectedTechnician.full_name}
+        onConfirm={handleBookingConfirm}
+      />
+    )}
     </MobileLayout>
   );
 };
