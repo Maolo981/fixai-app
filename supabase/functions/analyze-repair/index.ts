@@ -39,20 +39,20 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert home repair diagnostician. Analyze repair images and provide structured analysis.
+            content: `Sei un esperto diagnostico di riparazioni domestiche. Analizza le immagini di riparazione e fornisci un'analisi strutturata IN ITALIANO.
             
-            CRITICAL: Return ONLY valid JSON without markdown code blocks. Use \\n for line breaks in text.
+            CRITICO: Restituisci SOLO JSON valido senza blocchi di codice markdown. Usa \\n per le interruzioni di riga nel testo.
             
-            Return this exact JSON structure:
+            Restituisci questa esatta struttura JSON (tutti i testi devono essere IN ITALIANO):
             {
-              "problemType": "Brief problem name (max 5 words)",
+              "problemType": "Nome breve del problema (max 5 parole)",
               "urgencyLevel": "low" OR "medium" OR "high",
-              "possibleCause": "Detailed explanation",
+              "possibleCause": "Spiegazione dettagliata",
               "estimatedCostMin": number,
               "estimatedCostMax": number,
               "estimatedTimeHours": number,
               "recommendedSpecialty": "Plumbing" OR "Electrical" OR "HVAC" OR "Appliances" OR "Heating" OR "Boiler" OR "General",
-              "aiAnalysis": "Detailed analysis text"
+              "aiAnalysis": "Testo di analisi dettagliata"
             }`
           },
           {
@@ -60,7 +60,7 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: 'Please analyze this home repair issue and provide a detailed diagnosis. Return ONLY the JSON object, no markdown formatting.'
+                text: 'Per favore analizza questo problema di riparazione domestica e fornisci una diagnosi dettagliata IN ITALIANO. Restituisci SOLO l\'oggetto JSON, senza formattazione markdown.'
               },
               {
                 type: 'image_url',
