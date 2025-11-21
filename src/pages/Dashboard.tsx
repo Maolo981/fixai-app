@@ -358,15 +358,16 @@ const Dashboard = () => {
                 <div className="grid gap-4 sm:gap-6 px-4 sm:px-0 sm:grid-cols-2 lg:grid-cols-3">
                   {jobs.map((job) => (
                     <Card key={job.id} className="shadow-soft hover:shadow-medium transition-all h-full">
-                      <CardHeader className="pb-3">
-                        <div className="flex justify-between items-start gap-2">
-                          <CardTitle className="text-base sm:text-lg line-clamp-2">
-                            {job.diagnoses?.problem_type || 'Riparazione'}
-                          </CardTitle>
-                          <Badge variant={getStatusVariant(job.status)} className="shrink-0">
-                            {getStatusLabel(job.status)}
-                          </Badge>
-                        </div>
+                      <Link to={job.diagnosis_id ? `/results/${job.diagnosis_id}` : '#'} className="block">
+                        <CardHeader className="pb-3">
+                          <div className="flex justify-between items-start gap-2">
+                            <CardTitle className="text-base sm:text-lg line-clamp-2">
+                              {job.diagnoses?.problem_type || 'Riparazione'}
+                            </CardTitle>
+                            <Badge variant={getStatusVariant(job.status)} className="shrink-0">
+                              {getStatusLabel(job.status)}
+                            </Badge>
+                          </div>
                         <CardDescription className="text-xs sm:text-sm space-y-1">
                           <div className="flex items-center gap-1">
                             <User className="h-3 w-3" />
@@ -391,6 +392,7 @@ const Dashboard = () => {
                           )}
                         </CardDescription>
                       </CardHeader>
+                      </Link>
                       <CardContent className="pt-0 space-y-3">
                         <div className="flex items-center justify-between text-xs sm:text-sm">
                           <span className="text-muted-foreground">
