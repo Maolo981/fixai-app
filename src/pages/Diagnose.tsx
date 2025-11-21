@@ -1,234 +1,364 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Camera, MapPin, Navigation } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card } from "@/components/ui/card";
+import { Send, Image as ImageIcon, Loader2, Wrench, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { useGeolocation } from "@/hooks/useGeolocation";
 import { MobileLayout } from "@/components/MobileLayout";
+import { cn } from "@/lib/utils";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+  imageUrl?: string;
+  imageFile?: File;
+}
 
 const Diagnose = () => {
-  const [uploading, setUploading] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content: "Ciao! 👋 Sono l'assistente diagnostico di FIXO. Carica una foto del problema o descrivi cosa non funziona e ti aiuterò a capire cosa c'è da fare.",
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { coordinates, error: locationError, loading: locationLoading, refreshLocation } = useGeolocation();
 
   useEffect(() => {
-    // Check authentication
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         toast({
           title: "Autenticazione Richiesta",
-          description: "Accedi per utilizzare la funzione di diagnosi",
+          description: "Accedi per utilizzare la diagnosi AI",
         });
         navigate("/auth");
       }
     });
   }, [navigate, toast]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
         toast({
-          title: "File Troppo Grande",
-          description: "Seleziona un'immagine inferiore a 10MB",
+          title: "File troppo grande",
+          description: "L'immagine deve essere inferiore a 10MB",
           variant: "destructive",
         });
         return;
       }
-      setImageFile(file);
+      setSelectedImage(file);
       setImagePreview(URL.createObjectURL(file));
     }
   };
 
-  const handleUploadAndAnalyze = async () => {
-    if (!imageFile) return;
+  const uploadImage = async (file: File): Promise<string> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User not authenticated");
 
-    setUploading(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('repair-images')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('repair-images')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
+  const streamChat = async (userMessage: Message) => {
+    const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/diagnose-chat`;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      let imageUrl = userMessage.imageUrl;
       
-      if (!user) {
-        navigate("/auth");
+      // Upload image if present
+      if (userMessage.imageFile) {
+        toast({
+          title: "Caricamento immagine...",
+          description: "Sto caricando la tua foto",
+        });
+        imageUrl = await uploadImage(userMessage.imageFile);
+      }
+
+      const messagesForAPI = messages.map(m => ({
+        role: m.role,
+        content: m.content,
+        imageUrl: m.imageUrl
+      }));
+
+      messagesForAPI.push({
+        role: userMessage.role,
+        content: userMessage.content,
+        imageUrl
+      });
+
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: messagesForAPI }),
+      });
+
+      if (resp.status === 429) {
+        toast({
+          title: "Limite raggiunto",
+          description: "Troppe richieste, riprova tra poco.",
+          variant: "destructive",
+        });
         return;
       }
 
-      // Upload image to storage
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError, data } = await supabase.storage
-        .from('repair-images')
-        .upload(fileName, imageFile, {
-          cacheControl: '3600',
-          upsert: false
+      if (resp.status === 402) {
+        toast({
+          title: "Servizio non disponibile",
+          description: "Servizio temporaneamente non disponibile.",
+          variant: "destructive",
         });
-
-      if (uploadError) {
-        throw uploadError;
+        return;
       }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('repair-images')
-        .getPublicUrl(fileName);
-
-      setUploading(false);
-      setAnalyzing(true);
-
-      // Call AI analysis function
-      const { data: diagnosis, error: analysisError } = await supabase.functions.invoke('analyze-repair', {
-        body: { imageUrl: publicUrl }
-      });
-
-      if (analysisError) {
-        throw analysisError;
+      if (!resp.ok || !resp.body) {
+        throw new Error("Errore nella risposta del server");
       }
 
-      toast({
-        title: "Analisi Completata",
-        description: "La tua riparazione è stata diagnosticata con successo",
-      });
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+      let assistantContent = "";
+      let streamDone = false;
 
-      navigate(`/results/${diagnosis.id}`);
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
-    } catch (error: any) {
-      console.error('Error:', error);
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") {
+            streamDone = true;
+            break;
+          }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setMessages((prev) => {
+                const newMessages = [...prev];
+                newMessages[newMessages.length - 1] = {
+                  role: "assistant",
+                  content: assistantContent,
+                };
+                return newMessages;
+              });
+            }
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Chat error:", error);
       toast({
         title: "Errore",
-        description: error.message || "Impossibile analizzare l'immagine. Riprova.",
+        description: "Si è verificato un errore. Riprova.",
         variant: "destructive",
       });
+      setMessages((prev) => prev.slice(0, -1));
     } finally {
-      setUploading(false);
-      setAnalyzing(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleSend = async () => {
+    if ((!input.trim() && !selectedImage) || isLoading) return;
+
+    const userMessage: Message = {
+      role: "user",
+      content: input || "Analizza questa immagine",
+      imageFile: selectedImage || undefined,
+    };
+
+    // Add message with preview
+    setMessages((prev) => [
+      ...prev,
+      {
+        ...userMessage,
+        imageUrl: imagePreview || undefined,
+      },
+    ]);
+
+    setInput("");
+    setSelectedImage(null);
+    setImagePreview("");
+    setIsLoading(true);
+
+    await streamChat(userMessage);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
   return (
     <MobileLayout>
-    <div className="min-h-screen bg-muted/30 py-6 sm:py-12 px-4">
-      <div className="container max-w-3xl mx-auto">
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 bg-gradient-hero bg-clip-text text-transparent">
-            Diagnosi Riparazione AI
-          </h1>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground px-4">
-            Carica una foto per un'analisi AI istantanea
-          </p>
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Header */}
+        <div className="border-b bg-card sticky top-0 z-10">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center">
+                <Wrench className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold">Diagnosi AI</h1>
+                <p className="text-xs text-muted-foreground">Assistente diagnostico FIXO</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Location Status */}
-        <div className="mb-4 sm:mb-6">
-          {locationLoading && (
-            <Alert className="text-sm">
-              <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-              <AlertDescription>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs sm:text-sm">Rilevamento posizione...</span>
-                  <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {locationError && (
-            <Alert className="text-sm">
-              <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-              <AlertDescription className="flex items-center justify-between gap-2">
-                <span className="text-xs sm:text-sm line-clamp-2">{locationError}</span>
-                <Button variant="outline" size="sm" onClick={refreshLocation} className="shrink-0 h-8 touch-manipulation">
-                  <Navigation className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Riprova</span>
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {coordinates && !locationLoading && (
-            <Alert className="text-sm">
-              <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-              <AlertDescription>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs sm:text-sm">✓ Posizione rilevata</span>
-                  <Button variant="ghost" size="sm" onClick={refreshLocation} className="shrink-0 h-8 touch-manipulation">
-                    <Navigation className="h-4 w-4" />
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
-
-        <Card className="shadow-medium">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg sm:text-xl">Carica Immagine Riparazione</CardTitle>
-            <CardDescription className="text-sm sm:text-base">
-              Scatta una foto chiara del problema
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 sm:space-y-6">
-            {!imagePreview ? (
-              <label className="flex flex-col items-center justify-center w-full h-56 sm:h-64 border-2 border-dashed border-border rounded-xl cursor-pointer bg-muted/50 active:bg-muted transition-colors touch-manipulation">
-                <div className="flex flex-col items-center justify-center py-5">
-                  <Camera className="w-14 h-14 sm:w-16 sm:h-16 text-muted-foreground mb-4" />
-                  <p className="mb-2 text-sm sm:text-base text-muted-foreground text-center px-4">
-                    <span className="font-semibold">Tocca per caricare</span>
-                  </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">PNG, JPG o JPEG (MAX. 10MB)</p>
-                </div>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleFileSelect}
-                />
-              </label>
-            ) : (
-              <div className="space-y-4">
-                <div className="relative">
-                  <img
-                    src={imagePreview}
-                    alt="Anteprima"
-                    className="w-full h-56 sm:h-64 object-cover rounded-xl"
-                  />
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-3 right-3 h-9 sm:h-10 touch-manipulation"
-                    onClick={() => {
-                      setImageFile(null);
-                      setImagePreview("");
-                    }}
-                  >
-                    Rimuovi
-                  </Button>
-                </div>
-                
-                <Button
-                  onClick={handleUploadAndAnalyze}
-                  disabled={uploading || analyzing}
-                  className="w-full h-14 sm:h-16 text-base sm:text-lg touch-manipulation active:scale-95 transition-transform"
-                  size="lg"
+        {/* Messages */}
+        <ScrollArea className="flex-1 px-4 py-6" ref={scrollRef}>
+          <div className="container max-w-3xl mx-auto space-y-4">
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={cn(
+                  "flex",
+                  msg.role === "user" ? "justify-end" : "justify-start"
+                )}
+              >
+                <div
+                  className={cn(
+                    "max-w-[85%] rounded-2xl px-4 py-3",
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-foreground"
+                  )}
                 >
-                  {uploading && <Loader2 className="mr-2 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />}
-                  {analyzing && <Loader2 className="mr-2 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />}
-                  {uploading ? "Caricamento..." : analyzing ? "Analisi con AI..." : "Analizza Immagine"}
-                </Button>
+                  {msg.imageUrl && (
+                    <img
+                      src={msg.imageUrl}
+                      alt="Uploaded"
+                      className="rounded-lg mb-2 max-w-full"
+                    />
+                  )}
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-muted rounded-2xl px-4 py-3">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </ScrollArea>
+
+        {/* Input Area */}
+        <div className="border-t bg-card sticky bottom-0">
+          <div className="container max-w-3xl mx-auto px-4 py-4">
+            {imagePreview && (
+              <Card className="mb-3 p-2 relative">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-24 h-24 object-cover rounded-lg"
+                />
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                  onClick={() => {
+                    setSelectedImage(null);
+                    setImagePreview("");
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Card>
+            )}
+            <div className="flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageSelect}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+              >
+                <ImageIcon className="h-5 w-5" />
+              </Button>
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Descrivi il problema o carica una foto..."
+                disabled={isLoading}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleSend}
+                disabled={isLoading || (!input.trim() && !selectedImage)}
+                size="icon"
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
     </MobileLayout>
   );
 };

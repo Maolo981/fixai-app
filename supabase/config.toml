@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.analyze-repair]
 verify_jwt = true
+
+[functions.diagnose-chat]
+verify_jwt = true
+
+[functions.support-chat]
+verify_jwt = false
