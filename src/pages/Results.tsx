@@ -63,6 +63,11 @@ const Results = () => {
   }, [id]);
 
   useEffect(() => {
+    // Carica comunque una lista di tecnici raccomandati, anche se la posizione non è disponibile
+    loadAllTechnicians();
+  }, []);
+
+  useEffect(() => {
     if (coordinates) {
       loadNearbyTechnicians();
     }
@@ -461,8 +466,8 @@ const Results = () => {
                 <Alert>
                   <AlertDescription className="text-xs sm:text-sm">
                     {coordinates 
-                      ? 'Nessun tecnico trovato nel raggio di 50 km'
-                      : 'Nessun tecnico disponibile al momento'
+                      ? 'Nessun tecnico trovato vicino alla tua posizione'
+                      : 'Nessun tecnico disponibile al momento nella tua zona'
                     }
                   </AlertDescription>
                 </Alert>
