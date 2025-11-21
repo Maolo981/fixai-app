@@ -10,6 +10,8 @@ import { MobileLayout } from "@/components/MobileLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { ChatDialog } from "@/components/ChatDialog";
+import { NotificationSettings } from "@/components/NotificationSettings";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface Diagnosis {
   id: string;
@@ -52,6 +54,9 @@ const Dashboard = () => {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Initialize notifications
+  useNotifications(user?.id);
 
   useEffect(() => {
     checkUser();
@@ -211,14 +216,21 @@ const Dashboard = () => {
 
           {/* Tabs for Diagnoses and Jobs */}
           <Tabs defaultValue="diagnoses" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6 h-12 sm:h-14 mx-4 sm:mx-0">
-              <TabsTrigger value="diagnoses" className="text-sm sm:text-base">
-                <Camera className="mr-2 h-4 w-4" />
-                Diagnosi
+            <TabsList className="grid w-full grid-cols-3 mb-6 h-12 sm:h-14 mx-4 sm:mx-0">
+              <TabsTrigger value="diagnoses" className="text-xs sm:text-base">
+                <Camera className="mr-1 sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Diagnosi</span>
+                <span className="sm:hidden">Diagnosi</span>
               </TabsTrigger>
-              <TabsTrigger value="bookings" className="text-sm sm:text-base">
-                <Briefcase className="mr-2 h-4 w-4" />
-                Prenotazioni
+              <TabsTrigger value="bookings" className="text-xs sm:text-base">
+                <Briefcase className="mr-1 sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Prenotazioni</span>
+                <span className="sm:hidden">Lavori</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="text-xs sm:text-base">
+                <User className="mr-1 sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Impostazioni</span>
+                <span className="sm:hidden">Altro</span>
               </TabsTrigger>
             </TabsList>
 
@@ -393,6 +405,13 @@ const Dashboard = () => {
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="settings">
+              <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
+                <h3 className="text-xl sm:text-2xl font-bold">Impostazioni</h3>
+                <NotificationSettings userId={user?.id} />
+              </div>
             </TabsContent>
           </Tabs>
         </div>
