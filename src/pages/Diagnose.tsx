@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Loader2, Camera } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Camera, MapPin, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useGeolocation } from "@/hooks/useGeolocation";
 
 const Diagnose = () => {
   const [uploading, setUploading] = useState(false);
@@ -13,6 +15,7 @@ const Diagnose = () => {
   const [imagePreview, setImagePreview] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { coordinates, error: locationError, loading: locationLoading, refreshLocation } = useGeolocation();
 
   useEffect(() => {
     // Check authentication
@@ -118,6 +121,48 @@ const Diagnose = () => {
           <p className="text-xl text-muted-foreground">
             Carica una foto del tuo problema di riparazione per un'analisi AI istantanea
           </p>
+        </div>
+
+        {/* Location Status */}
+        <div className="mb-6">
+          {locationLoading && (
+            <Alert>
+              <MapPin className="h-4 w-4" />
+              <AlertDescription>
+                <div className="flex items-center justify-between">
+                  <span>Rilevamento posizione in corso...</span>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {locationError && (
+            <Alert>
+              <MapPin className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>{locationError}</span>
+                <Button variant="outline" size="sm" onClick={refreshLocation}>
+                  <Navigation className="mr-2 h-4 w-4" />
+                  Riprova
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {coordinates && !locationLoading && (
+            <Alert>
+              <MapPin className="h-4 w-4 text-green-600" />
+              <AlertDescription>
+                <div className="flex items-center justify-between">
+                  <span>✓ Posizione rilevata - Ti mostreremo i tecnici più vicini</span>
+                  <Button variant="ghost" size="sm" onClick={refreshLocation}>
+                    <Navigation className="h-4 w-4" />
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
         <Card className="shadow-medium">
