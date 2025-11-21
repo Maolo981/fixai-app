@@ -202,6 +202,7 @@ export type Database = {
       technicians: {
         Row: {
           availability_status: string | null
+          avatar_url: string | null
           created_at: string | null
           full_name: string
           hourly_rate: number | null
@@ -217,6 +218,7 @@ export type Database = {
         }
         Insert: {
           availability_status?: string | null
+          avatar_url?: string | null
           created_at?: string | null
           full_name: string
           hourly_rate?: number | null
@@ -232,6 +234,7 @@ export type Database = {
         }
         Update: {
           availability_status?: string | null
+          avatar_url?: string | null
           created_at?: string | null
           full_name?: string
           hourly_rate?: number | null
