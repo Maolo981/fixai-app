@@ -94,15 +94,37 @@ const Results = () => {
     if (!coordinates) return;
 
     try {
-      const { data, error } = await supabase.rpc('get_nearby_technicians', {
+      // First try with 100km radius
+      let { data, error } = await supabase.rpc('get_nearby_technicians', {
         user_lat: coordinates.latitude,
         user_lon: coordinates.longitude,
-        max_distance_km: 50,
+        max_distance_km: 100,
         limit_count: 10
       });
 
       if (error) throw error;
+      
+      // If no technicians found within 100km, try 300km
+      if (!data || data.length === 0) {
+        console.log("No technicians within 100km, expanding search to 300km");
+        const result = await supabase.rpc('get_nearby_technicians', {
+          user_lat: coordinates.latitude,
+          user_lon: coordinates.longitude,
+          max_distance_km: 300,
+          limit_count: 10
+        });
+        
+        if (result.error) throw result.error;
+        data = result.data;
+      }
+      
       setTechnicians(data || []);
+      
+      // If still no results, fallback to all technicians
+      if (!data || data.length === 0) {
+        console.log("No technicians found nearby, loading all technicians");
+        loadAllTechnicians();
+      }
     } catch (error: any) {
       console.error("Error loading nearby technicians:", error);
       // Fallback: load all technicians without distance
@@ -116,7 +138,8 @@ const Results = () => {
         .from('technicians')
         .select('*')
         .eq('verified', true)
-        .limit(3);
+        .order('rating', { ascending: false })
+        .limit(10);
 
       if (error) throw error;
       setTechnicians(data || []);
@@ -347,6 +370,11 @@ const Results = () => {
             <CardTitle className="flex items-center text-base sm:text-lg">
               <Users className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
               {coordinates ? 'Tecnici Nelle Vicinanze' : 'Tecnici Raccomandati'}
+              {technicians.length > 0 && technicians[0]?.distance_km && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  (fino a {Math.round(technicians[technicians.length - 1].distance_km)} km)
+                </span>
+              )}
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
               {coordinates 
