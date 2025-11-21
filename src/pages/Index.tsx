@@ -1,135 +1,194 @@
 import { Button } from "@/components/ui/button";
-import { Camera, Clock, DollarSign, Shield, Users, Zap } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Camera, Clock, Shield, Users, Zap, Wrench, CheckCircle, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { MobileLayout } from "@/components/MobileLayout";
 
 const Index = () => {
   return (
-    <MobileLayout>
-    <div className="min-h-screen bg-background pb-20">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-hero opacity-10"></div>
-        <div className="container mx-auto px-4 py-12 sm:py-20 relative">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-4 sm:mb-6 bg-gradient-hero bg-clip-text text-transparent">
-              Riparazioni Veloci con AI
-            </h1>
-            <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-6 sm:mb-8 px-4">
-              Scatta una foto del problema. Ottieni una diagnosi AI istantanea e connettiti con tecnici verificati.
-            </p>
-            <div className="flex flex-col gap-3 sm:gap-4 px-4">
-              <Link to="/diagnose" className="w-full">
-                <Button size="lg" className="w-full h-14 sm:h-16 text-base sm:text-lg shadow-medium touch-manipulation active:scale-95 transition-transform">
-                  <Camera className="mr-2 h-6 w-6 sm:h-7 sm:w-7" />
-                  Inizia Diagnosi
-                </Button>
-              </Link>
-              <Link to="/auth" className="w-full">
-                <Button size="lg" variant="outline" className="w-full h-14 sm:h-16 text-base sm:text-lg touch-manipulation active:scale-95 transition-transform">
+    <MobileLayout showBottomNav={false}>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center">
+                  <Wrench className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+                  FIXO
+                </span>
+              </div>
+              <Link to="/auth">
+                <Button variant="ghost" size="sm" className="font-medium">
                   Accedi
                 </Button>
               </Link>
             </div>
           </div>
-        </div>
-      </section>
+        </header>
 
-      {/* Features Section */}
-      <section className="py-12 sm:py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 sm:mb-12">Come Funziona</h2>
-          <div className="grid gap-6 sm:gap-8 max-w-6xl mx-auto sm:grid-cols-2 lg:grid-cols-3">
-            <div className="bg-card p-6 sm:p-8 rounded-xl shadow-soft border border-border touch-manipulation active:scale-95 transition-transform">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-primary rounded-xl flex items-center justify-center mb-4">
-                <Camera className="h-7 w-7 sm:h-8 sm:w-8 text-primary-foreground" />
+        {/* Hero Section */}
+        <section className="relative overflow-hidden pt-12 pb-20 sm:pt-20 sm:pb-32">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-background"></div>
+          <div className="container mx-auto px-4 relative">
+            <div className="max-w-3xl mx-auto text-center">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6 animate-fade-in">
+                <Zap className="h-4 w-4" />
+                Diagnosi AI Istantanea
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">1. Carica Foto</h3>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                Scatta una foto o carica un'immagine del tuo problema di riparazione
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 tracking-tight animate-fade-in">
+                Risolvi qualsiasi{" "}
+                <span className="bg-gradient-hero bg-clip-text text-transparent">
+                  problema
+                </span>
+                {" "}in 3 semplici passi
+              </h1>
+              <p className="text-lg sm:text-xl text-muted-foreground mb-8 animate-fade-in">
+                Scatta una foto, ricevi una diagnosi AI e trova il tecnico perfetto. 
+                Tutto in pochi minuti.
               </p>
-            </div>
-            
-            <div className="bg-card p-6 sm:p-8 rounded-xl shadow-soft border border-border touch-manipulation active:scale-95 transition-transform">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-secondary rounded-xl flex items-center justify-center mb-4">
-                <Zap className="h-7 w-7 sm:h-8 sm:w-8 text-secondary-foreground" />
+              <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
+                <Link to="/diagnose" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-base font-medium shadow-medium hover:shadow-strong transition-all hover:scale-105">
+                    <Camera className="mr-2 h-5 w-5" />
+                    Inizia Gratis
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">2. Diagnosi AI</h3>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                Ottieni un'analisi istantanea con stime di costo e livello di urgenza
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works */}
+        <section className="py-16 sm:py-24 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">Come funziona</h2>
+              <p className="text-muted-foreground text-lg">Semplice, veloce, efficace</p>
+            </div>
+            <div className="grid gap-6 max-w-5xl mx-auto sm:grid-cols-3">
+              <Card className="p-8 border-2 hover:border-primary hover:shadow-medium transition-all group">
+                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary group-hover:scale-110 transition-all">
+                  <Camera className="h-6 w-6 text-primary group-hover:text-white transition-colors" />
+                </div>
+                <div className="text-3xl font-bold text-primary mb-2">01</div>
+                <h3 className="text-xl font-semibold mb-3">Scatta una foto</h3>
+                <p className="text-muted-foreground">
+                  Carica un'immagine del problema da risolvere
+                </p>
+              </Card>
+
+              <Card className="p-8 border-2 hover:border-secondary hover:shadow-medium transition-all group">
+                <div className="w-12 h-12 bg-secondary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-secondary group-hover:scale-110 transition-all">
+                  <Zap className="h-6 w-6 text-secondary group-hover:text-white transition-colors" />
+                </div>
+                <div className="text-3xl font-bold text-secondary mb-2">02</div>
+                <h3 className="text-xl font-semibold mb-3">Diagnosi AI</h3>
+                <p className="text-muted-foreground">
+                  Ricevi analisi e stima costi in pochi secondi
+                </p>
+              </Card>
+
+              <Card className="p-8 border-2 hover:border-accent hover:shadow-medium transition-all group">
+                <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-accent group-hover:scale-110 transition-all">
+                  <Users className="h-6 w-6 text-accent group-hover:text-white transition-colors" />
+                </div>
+                <div className="text-3xl font-bold text-accent mb-2">03</div>
+                <h3 className="text-xl font-semibold mb-3">Trova tecnico</h3>
+                <p className="text-muted-foreground">
+                  Connettiti con professionisti verificati vicino a te
+                </p>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Benefits */}
+        <section className="py-16 sm:py-24">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">Perché scegliere FIXO</h2>
+              <p className="text-muted-foreground text-lg">La soluzione smart per le tue riparazioni</p>
+            </div>
+            <div className="grid gap-6 max-w-5xl mx-auto sm:grid-cols-2 lg:grid-cols-4">
+              <div className="text-center p-6 rounded-2xl hover:bg-muted/50 transition-colors">
+                <div className="w-14 h-14 bg-gradient-card rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-soft">
+                  <Clock className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Veloce</h3>
+                <p className="text-sm text-muted-foreground">Diagnosi in secondi, non ore</p>
+              </div>
+
+              <div className="text-center p-6 rounded-2xl hover:bg-muted/50 transition-colors">
+                <div className="w-14 h-14 bg-gradient-card rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-soft">
+                  <Shield className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Sicuro</h3>
+                <p className="text-sm text-muted-foreground">Tecnici verificati e certificati</p>
+              </div>
+
+              <div className="text-center p-6 rounded-2xl hover:bg-muted/50 transition-colors">
+                <div className="w-14 h-14 bg-gradient-card rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-soft">
+                  <CheckCircle className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Garantito</h3>
+                <p className="text-sm text-muted-foreground">Qualità del lavoro assicurata</p>
+              </div>
+
+              <div className="text-center p-6 rounded-2xl hover:bg-muted/50 transition-colors">
+                <div className="w-14 h-14 bg-gradient-card rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-soft">
+                  <Zap className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Smart</h3>
+                <p className="text-sm text-muted-foreground">Powered by AI avanzata</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="py-16 sm:py-24 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-hero opacity-95"></div>
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="max-w-3xl mx-auto text-center text-white">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+                Pronto a risolvere il tuo problema?
+              </h2>
+              <p className="text-lg sm:text-xl text-white/90 mb-8">
+                Unisciti a migliaia di utenti soddisfatti
               </p>
+              <Link to="/diagnose">
+                <Button size="lg" variant="secondary" className="h-14 px-8 text-base font-medium shadow-strong hover:scale-105 transition-all">
+                  Inizia Ora
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
             </div>
-            
-            <div className="bg-card p-6 sm:p-8 rounded-xl shadow-soft border border-border touch-manipulation active:scale-95 transition-transform sm:col-span-2 lg:col-span-1">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-accent rounded-xl flex items-center justify-center mb-4">
-                <Users className="h-7 w-7 sm:h-8 sm:w-8 text-accent-foreground" />
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="border-t border-border py-8">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-hero rounded-lg flex items-center justify-center">
+                  <Wrench className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+                  FIXO
+                </span>
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">3. Trova Tecnico</h3>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                Connettiti con tecnici verificati nelle vicinanze in pochi secondi
+              <p className="text-sm text-muted-foreground">
+                © 2024 FIXO. Riparazioni smart con AI.
               </p>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <h2 className="text-4xl font-bold text-center mb-12">Perché Scegliere AI Repair Finder</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-card rounded-full flex items-center justify-center mx-auto mb-4">
-                <Clock className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-2">Risposta Immediata</h3>
-              <p className="text-sm text-muted-foreground">Diagnosi AI in pochi secondi</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-card rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-2">Tecnici Verificati</h3>
-              <p className="text-sm text-muted-foreground">Tutti i tecnici sono verificati</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-card rounded-full flex items-center justify-center mx-auto mb-4">
-                <DollarSign className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-2">Pagamento Sicuro</h3>
-              <p className="text-sm text-muted-foreground">Protezione pagamento in-app</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-card rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-2">Garantito</h3>
-              <p className="text-sm text-muted-foreground">Qualità del lavoro garantita</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-12 sm:py-20 bg-gradient-hero">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-6">
-            Pronto a Risolvere il Tuo Problema?
-          </h2>
-          <p className="text-base sm:text-lg md:text-xl text-white/90 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
-            Unisciti a migliaia di proprietari di casa che si affidano ad AI Repair Finder
-          </p>
-          <Link to="/diagnose" className="inline-block w-full max-w-sm px-4">
-            <Button size="lg" variant="secondary" className="w-full h-14 sm:h-16 text-base sm:text-lg shadow-strong touch-manipulation active:scale-95 transition-transform">
-              Inizia Ora
-            </Button>
-          </Link>
-        </div>
-      </section>
-    </div>
+        </footer>
+      </div>
     </MobileLayout>
   );
 };
