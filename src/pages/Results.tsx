@@ -40,6 +40,7 @@ interface Technician {
   distance_km?: number;
   latitude?: number;
   longitude?: number;
+  avatar_url?: string;
 }
 
 const Results = () => {
@@ -144,6 +145,7 @@ const Results = () => {
         .select('*')
         .eq('verified', true)
         .order('rating', { ascending: false })
+        .order('total_jobs', { ascending: false })
         .limit(10);
 
       if (error) throw error;
@@ -409,36 +411,52 @@ const Results = () => {
                   {technicians.map((tech) => (
                     <Card key={tech.id} className="bg-gradient-card border-border touch-manipulation active:scale-[0.98] transition-transform">
                       <CardHeader className="pb-3">
-                        <div className="flex justify-between items-start gap-2">
+                        <div className="flex items-start gap-3">
+                          {/* Avatar */}
+                          <div className="shrink-0">
+                            {tech.avatar_url ? (
+                              <img 
+                                src={tech.avatar_url} 
+                                alt={tech.full_name}
+                                className="h-12 w-12 sm:h-14 sm:w-14 rounded-full object-cover border-2 border-border"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-primary/10 flex items-center justify-center border-2 border-border">
+                                <Users className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
                               <CardTitle className="text-base sm:text-lg truncate">{tech.full_name}</CardTitle>
-                              {tech.distance_km && (
-                                <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                                  <MapPin className="h-3 w-3" />
-                                  <span className="text-xs">{formatDistance(tech.distance_km)}</span>
-                                </Badge>
-                              )}
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="shrink-0 text-sm">⭐ {tech.rating}</Badge>
+                                {tech.distance_km && (
+                                  <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                                    <MapPin className="h-3 w-3" />
+                                    <span className="text-xs">{formatDistance(tech.distance_km)}</span>
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
-                            <CardDescription className="text-xs sm:text-sm line-clamp-1">
+                            <CardDescription className="text-xs sm:text-sm line-clamp-1 mb-2">
                               {tech.specialties.join(', ')}
                             </CardDescription>
+                            <div className="text-xs sm:text-sm text-muted-foreground">
+                              {tech.total_jobs} lavori completati • €{tech.hourly_rate}/ora
+                            </div>
                           </div>
-                          <Badge variant="secondary" className="shrink-0 text-sm">⭐ {tech.rating}</Badge>
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                          <div className="text-xs sm:text-sm text-muted-foreground">
-                            {tech.total_jobs} lavori • €{tech.hourly_rate}/ora
-                          </div>
-                          <Button 
-                            className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation active:scale-95 transition-transform"
-                            onClick={() => handleBookingClick(tech)}
-                          >
-                            Prenota Ora
-                          </Button>
-                        </div>
+                        <Button 
+                          className="w-full h-11 sm:h-10 touch-manipulation active:scale-95 transition-transform"
+                          onClick={() => handleBookingClick(tech)}
+                        >
+                          Prenota Ora
+                        </Button>
                       </CardContent>
                     </Card>
                   ))}

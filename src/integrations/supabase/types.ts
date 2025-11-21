@@ -275,6 +275,7 @@ export type Database = {
           user_lon: number
         }
         Returns: {
+          avatar_url: string
           distance_km: number
           full_name: string
           hourly_rate: number
