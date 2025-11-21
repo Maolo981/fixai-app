@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Send, Image as ImageIcon, Loader2, Wrench, X, Video } from "lucide-react";
+import { Send, Image as ImageIcon, Loader2, Wrench, X, Video, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +34,7 @@ const Diagnose = () => {
   const [imagePreview, setImagePreview] = useState<string>("");
   const [videoPreview, setVideoPreview] = useState<string>("");
   const [showQuickReplies, setShowQuickReplies] = useState(true);
+  const [isCreatingDiagnosis, setIsCreatingDiagnosis] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -307,6 +308,56 @@ const Diagnose = () => {
     setShowQuickReplies(false);
   };
 
+  const handleCreateDiagnosis = async () => {
+    if (messages.length < 2) {
+      toast({
+        title: "Conversazione troppo breve",
+        description: "Descrivi il problema prima di prenotare un tecnico",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingDiagnosis(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Autenticazione necessaria",
+          description: "Effettua l'accesso per continuare",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+
+      const response = await supabase.functions.invoke('create-diagnosis', {
+        body: { messages }
+      });
+
+      if (response.error) throw response.error;
+
+      const diagnosisId = response.data.diagnosis.id;
+
+      toast({
+        title: "Diagnosi creata!",
+        description: "Ti mostro i tecnici disponibili",
+      });
+
+      navigate(`/results/${diagnosisId}`);
+    } catch (error) {
+      console.error('Errore creazione diagnosi:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile creare la diagnosi. Riprova.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingDiagnosis(false);
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -369,6 +420,25 @@ const Diagnose = () => {
                 </div>
               </div>
             ))}
+            
+            {/* Pulsante Prenota Tecnico - mostrato dopo almeno una risposta dell'assistente */}
+            {messages.length >= 3 && messages[messages.length - 1].role === "assistant" && !isLoading && (
+              <div className="flex justify-center animate-fade-in mt-4">
+                <Button
+                  onClick={handleCreateDiagnosis}
+                  disabled={isCreatingDiagnosis}
+                  size="lg"
+                  className="gap-2 shadow-lg hover:scale-105 transition-transform"
+                >
+                  {isCreatingDiagnosis ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Calendar className="h-5 w-5" />
+                  )}
+                  {isCreatingDiagnosis ? "Creazione..." : "Prenota un Tecnico"}
+                </Button>
+              </div>
+            )}
             
             {/* Quick Replies */}
             {showQuickReplies && messages.length === 1 && !isLoading && (

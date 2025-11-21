@@ -9,5 +9,8 @@ verify_jwt = true
 [functions.diagnose-chat]
 verify_jwt = true
 
+[functions.create-diagnosis]
+verify_jwt = true
+
 [functions.support-chat]
 verify_jwt = false
