@@ -130,6 +130,9 @@ export type Database = {
           full_name: string | null
           id: string
           is_technician: boolean | null
+          latitude: number | null
+          location_updated_at: string | null
+          longitude: number | null
           phone: string | null
           updated_at: string | null
         }
@@ -140,6 +143,9 @@ export type Database = {
           full_name?: string | null
           id: string
           is_technician?: boolean | null
+          latitude?: number | null
+          location_updated_at?: string | null
+          longitude?: number | null
           phone?: string | null
           updated_at?: string | null
         }
@@ -150,6 +156,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_technician?: boolean | null
+          latitude?: number | null
+          location_updated_at?: string | null
+          longitude?: number | null
           phone?: string | null
           updated_at?: string | null
         }
@@ -216,7 +225,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_distance: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
+      }
+      get_nearby_technicians: {
+        Args: {
+          limit_count?: number
+          max_distance_km?: number
+          user_lat: number
+          user_lon: number
+        }
+        Returns: {
+          distance_km: number
+          full_name: string
+          hourly_rate: number
+          id: string
+          rating: number
+          specialties: string[]
+          total_jobs: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
