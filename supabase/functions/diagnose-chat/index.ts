@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, imageUrl } = await req.json();
+    const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -22,7 +22,7 @@ serve(async (req) => {
     const systemPrompt = `Sei un assistente esperto di FIXO, specializzato in diagnosi di problemi di riparazione domestica.
 
 Il tuo compito è:
-1. Analizzare le immagini caricate dall'utente
+1. Analizzare le immagini e i video caricati dall'utente
 2. Identificare il tipo di problema (idraulico, elettrico, edile, etc.)
 3. Fornire una diagnosi chiara e professionale
 4. Stimare i costi di riparazione (min e max in EUR)
@@ -30,7 +30,7 @@ Il tuo compito è:
 6. Suggerire la specialità del tecnico necessario
 7. Dare consigli pratici
 
-Quando analizzi un'immagine, fornisci SEMPRE:
+Quando analizzi un'immagine o video, fornisci SEMPRE:
 - Tipo di problema identificato
 - Causa probabile
 - Livello di urgenza (basso/medio/alto)
@@ -38,20 +38,36 @@ Quando analizzi un'immagine, fornisci SEMPRE:
 - Specialità tecnico consigliata
 - Tempo stimato di riparazione in ore
 
+Per i video, analizza attentamente i movimenti, i rumori visibili e tutti i dettagli dinamici che possono aiutare nella diagnosi.
+
 Rispondi sempre in italiano, in modo chiaro e professionale.`;
 
     const apiMessages = [
       { role: "system", content: systemPrompt },
       ...messages.map((msg: any) => {
+        const contentParts: any[] = [{ type: "text", text: msg.content }];
+        
         if (msg.imageUrl) {
+          contentParts.push({
+            type: "image_url",
+            image_url: { url: msg.imageUrl }
+          });
+        }
+        
+        if (msg.videoUrl) {
+          contentParts.push({
+            type: "video_url",
+            video_url: { url: msg.videoUrl }
+          });
+        }
+        
+        if (contentParts.length > 1) {
           return {
             role: msg.role,
-            content: [
-              { type: "text", text: msg.content },
-              { type: "image_url", image_url: { url: msg.imageUrl } }
-            ]
+            content: contentParts
           };
         }
+        
         return { role: msg.role, content: msg.content };
       })
     ];

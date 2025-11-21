@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Send, Image as ImageIcon, Loader2, Wrench, X } from "lucide-react";
+import { Send, Image as ImageIcon, Loader2, Wrench, X, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +14,10 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
   imageFile?: File;
+  videoFile?: File;
+  mediaType?: "image" | "video";
 }
 
 const Diagnose = () => {
@@ -27,9 +30,12 @@ const Diagnose = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
+  const [videoPreview, setVideoPreview] = useState<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -62,12 +68,32 @@ const Diagnose = () => {
         });
         return;
       }
+      setSelectedVideo(null);
+      setVideoPreview("");
       setSelectedImage(file);
       setImagePreview(URL.createObjectURL(file));
     }
   };
 
-  const uploadImage = async (file: File): Promise<string> => {
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 50 * 1024 * 1024) {
+        toast({
+          title: "Video troppo grande",
+          description: "Il video deve essere inferiore a 50MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      setSelectedImage(null);
+      setImagePreview("");
+      setSelectedVideo(file);
+      setVideoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadMedia = async (file: File, type: "image" | "video"): Promise<string> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
@@ -94,27 +120,40 @@ const Diagnose = () => {
     const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/diagnose-chat`;
 
     try {
-      let imageUrl = userMessage.imageUrl;
+      let mediaUrl = userMessage.imageUrl || userMessage.videoUrl;
+      let mediaType = userMessage.mediaType;
       
-      // Upload image if present
+      // Upload media if present
       if (userMessage.imageFile) {
         toast({
           title: "Caricamento immagine...",
           description: "Sto caricando la tua foto",
         });
-        imageUrl = await uploadImage(userMessage.imageFile);
+        mediaUrl = await uploadMedia(userMessage.imageFile, "image");
+        mediaType = "image";
+      } else if (userMessage.videoFile) {
+        toast({
+          title: "Caricamento video...",
+          description: "Sto caricando il tuo video (potrebbe richiedere qualche secondo)",
+        });
+        mediaUrl = await uploadMedia(userMessage.videoFile, "video");
+        mediaType = "video";
       }
 
       const messagesForAPI = messages.map(m => ({
         role: m.role,
         content: m.content,
-        imageUrl: m.imageUrl
+        imageUrl: m.imageUrl,
+        videoUrl: m.videoUrl,
+        mediaType: m.mediaType
       }));
 
       messagesForAPI.push({
         role: userMessage.role,
         content: userMessage.content,
-        imageUrl
+        imageUrl: mediaType === "image" ? mediaUrl : undefined,
+        videoUrl: mediaType === "video" ? mediaUrl : undefined,
+        mediaType
       });
 
       const resp = await fetch(CHAT_URL, {
@@ -210,12 +249,14 @@ const Diagnose = () => {
   };
 
   const handleSend = async () => {
-    if ((!input.trim() && !selectedImage) || isLoading) return;
+    if ((!input.trim() && !selectedImage && !selectedVideo) || isLoading) return;
 
     const userMessage: Message = {
       role: "user",
-      content: input || "Analizza questa immagine",
+      content: input || (selectedVideo ? "Analizza questo video" : "Analizza questa immagine"),
       imageFile: selectedImage || undefined,
+      videoFile: selectedVideo || undefined,
+      mediaType: selectedVideo ? "video" : selectedImage ? "image" : undefined,
     };
 
     // Add message with preview
@@ -224,12 +265,15 @@ const Diagnose = () => {
       {
         ...userMessage,
         imageUrl: imagePreview || undefined,
+        videoUrl: videoPreview || undefined,
       },
     ]);
 
     setInput("");
     setSelectedImage(null);
+    setSelectedVideo(null);
     setImagePreview("");
+    setVideoPreview("");
     setIsLoading(true);
 
     await streamChat(userMessage);
@@ -286,6 +330,13 @@ const Diagnose = () => {
                       className="rounded-lg mb-2 max-w-full"
                     />
                   )}
+                  {msg.videoUrl && (
+                    <video
+                      src={msg.videoUrl}
+                      controls
+                      className="rounded-lg mb-2 max-w-full"
+                    />
+                  )}
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 </div>
               </div>
@@ -323,34 +374,72 @@ const Diagnose = () => {
                 </Button>
               </Card>
             )}
+            {videoPreview && (
+              <Card className="mb-3 p-2 relative">
+                <video
+                  src={videoPreview}
+                  className="w-32 h-24 object-cover rounded-lg"
+                  controls
+                />
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                  onClick={() => {
+                    setSelectedVideo(null);
+                    setVideoPreview("");
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Card>
+            )}
             <div className="flex gap-2">
               <input
-                ref={fileInputRef}
+                ref={imageInputRef}
                 type="file"
                 className="hidden"
                 accept="image/*"
                 capture="environment"
                 onChange={handleImageSelect}
               />
+              <input
+                ref={videoInputRef}
+                type="file"
+                className="hidden"
+                accept="video/*"
+                capture="environment"
+                onChange={handleVideoSelect}
+              />
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => imageInputRef.current?.click()}
                 disabled={isLoading}
+                title="Carica foto"
               >
                 <ImageIcon className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => videoInputRef.current?.click()}
+                disabled={isLoading}
+                title="Carica video (max 50MB)"
+              >
+                <Video className="h-5 w-5" />
               </Button>
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Descrivi il problema o carica una foto..."
+                placeholder="Descrivi il problema..."
                 disabled={isLoading}
                 className="flex-1"
               />
               <Button
                 onClick={handleSend}
-                disabled={isLoading || (!input.trim() && !selectedImage)}
+                disabled={isLoading || (!input.trim() && !selectedImage && !selectedVideo)}
                 size="icon"
               >
                 <Send className="h-5 w-5" />
