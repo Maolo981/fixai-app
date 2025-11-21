@@ -97,7 +97,7 @@ const Results = () => {
   };
 
   const loadNearbyTechnicians = async () => {
-    if (!coordinates) return;
+    if (!coordinates || !diagnosis) return;
 
     try {
       // First try with 100km radius
@@ -105,7 +105,7 @@ const Results = () => {
         user_lat: coordinates.latitude,
         user_lon: coordinates.longitude,
         max_distance_km: 100,
-        limit_count: 10
+        limit_count: 50 // Prendi più tecnici per poi filtrare per specialità
       });
 
       if (error) throw error;
@@ -117,42 +117,72 @@ const Results = () => {
           user_lat: coordinates.latitude,
           user_lon: coordinates.longitude,
           max_distance_km: 300,
-          limit_count: 10
+          limit_count: 50
         });
         
         if (result.error) throw result.error;
         data = result.data;
       }
       
-      setTechnicians(data || []);
+      // Filtra per specialità raccomandata
+      const recommendedSpecialty = diagnosis.recommended_specialty.toLowerCase();
+      const matchingTechnicians = data?.filter(tech => 
+        tech.specialties.some(specialty => 
+          specialty.toLowerCase().includes(recommendedSpecialty) ||
+          recommendedSpecialty.includes(specialty.toLowerCase())
+        )
+      ) || [];
       
-      // If still no results, fallback to all technicians
-      if (!data || data.length === 0) {
-        console.log("No technicians found nearby, loading all technicians");
-        loadAllTechnicians();
+      setTechnicians(matchingTechnicians.slice(0, 10));
+      
+      // If still no results, fallback to all technicians with that specialty
+      if (matchingTechnicians.length === 0) {
+        console.log("No nearby technicians with matching specialty, loading all matching technicians");
+        loadTechniciansBySpecialty();
       }
     } catch (error: any) {
       console.error("Error loading nearby technicians:", error);
-      // Fallback: load all technicians without distance
-      loadAllTechnicians();
+      // Fallback: load technicians by specialty
+      loadTechniciansBySpecialty();
+    }
+  };
+
+  const loadTechniciansBySpecialty = async () => {
+    if (!diagnosis) return;
+    
+    try {
+      const recommendedSpecialty = diagnosis.recommended_specialty.toLowerCase();
+      
+      const { data, error } = await supabase
+        .from('technicians')
+        .select('*')
+        .eq('verified', true);
+
+      if (error) throw error;
+      
+      // Filtra per specialità corrispondente
+      const matchingTechnicians = data?.filter(tech => 
+        tech.specialties.some(specialty => 
+          specialty.toLowerCase().includes(recommendedSpecialty) ||
+          recommendedSpecialty.includes(specialty.toLowerCase())
+        )
+      ) || [];
+      
+      // Ordina per rating e numero di lavori
+      const sortedTechnicians = matchingTechnicians.sort((a, b) => {
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        return b.total_jobs - a.total_jobs;
+      });
+      
+      setTechnicians(sortedTechnicians.slice(0, 10));
+    } catch (error: any) {
+      console.error("Error loading technicians by specialty:", error);
     }
   };
 
   const loadAllTechnicians = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('technicians')
-        .select('*')
-        .eq('verified', true)
-        .order('rating', { ascending: false })
-        .order('total_jobs', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      setTechnicians(data || []);
-    } catch (error: any) {
-      console.error("Error loading technicians:", error);
-    }
+    // Carica tecnici filtrati per specialità invece di tutti
+    loadTechniciansBySpecialty();
   };
 
   const getUrgencyColor = (urgency: string) => {
