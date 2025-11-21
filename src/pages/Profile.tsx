@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { User, LogOut, Mail, Calendar, MapPin } from "lucide-react";
+import { User, LogOut, Mail, Calendar, MapPin, Bell } from "lucide-react";
 import { MobileLayout } from "@/components/MobileLayout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const Profile = () => {
   const [user, setUser] = useState<any>(null);
@@ -14,6 +15,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { permission, requestPermission, isSupported } = usePushNotifications(user?.id);
 
   useEffect(() => {
     checkUser();
@@ -157,6 +159,64 @@ const Profile = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Push Notifications */}
+          <Card className="shadow-medium">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Bell className="h-5 w-5" />
+                Notifiche Push
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Ricevi aggiornamenti in tempo reale
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!isSupported ? (
+                <p className="text-sm text-muted-foreground">
+                  Il tuo browser non supporta le notifiche push
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Ricevi notifiche per aggiornamenti sui tuoi lavori, nuovi messaggi e preventivi
+                  </p>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-medium">
+                        Stato: {permission === "granted" ? "✅ Attive" : "❌ Disattivate"}
+                      </p>
+                    </div>
+                    {permission !== "granted" && (
+                      <Button onClick={requestPermission} size="sm">
+                        Attiva Notifiche
+                      </Button>
+                    )}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Technician Dashboard Link */}
+          {profile?.is_technician && (
+            <Card className="shadow-medium border-primary">
+              <CardHeader>
+                <CardTitle className="text-lg sm:text-xl">Dashboard Tecnico</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Gestisci i tuoi lavori e preventivi
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={() => navigate("/technician-dashboard")}
+                  className="w-full h-12 sm:h-14 text-base sm:text-lg"
+                >
+                  Apri Dashboard Tecnico
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quick Actions */}
           <Card className="shadow-soft bg-gradient-to-br from-destructive/5 to-destructive/10 border-destructive/20">
