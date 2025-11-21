@@ -89,6 +89,12 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      padding: {
+        'safe': 'env(safe-area-inset-bottom)',
+      },
+      scale: {
+        '98': '0.98',
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Camera, MapPin, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { MobileLayout } from "@/components/MobileLayout";
 
 const Diagnose = () => {
   const [uploading, setUploading] = useState(false);
@@ -112,51 +113,52 @@ const Diagnose = () => {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 py-12 px-4">
+    <MobileLayout>
+    <div className="min-h-screen bg-muted/30 py-6 sm:py-12 px-4">
       <div className="container max-w-3xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4 bg-gradient-hero bg-clip-text text-transparent">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 bg-gradient-hero bg-clip-text text-transparent">
             Diagnosi Riparazione AI
           </h1>
-          <p className="text-xl text-muted-foreground">
-            Carica una foto del tuo problema di riparazione per un'analisi AI istantanea
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground px-4">
+            Carica una foto per un'analisi AI istantanea
           </p>
         </div>
 
         {/* Location Status */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           {locationLoading && (
-            <Alert>
-              <MapPin className="h-4 w-4" />
+            <Alert className="text-sm">
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
               <AlertDescription>
-                <div className="flex items-center justify-between">
-                  <span>Rilevamento posizione in corso...</span>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs sm:text-sm">Rilevamento posizione...</span>
+                  <Loader2 className="h-4 w-4 animate-spin shrink-0" />
                 </div>
               </AlertDescription>
             </Alert>
           )}
 
           {locationError && (
-            <Alert>
-              <MapPin className="h-4 w-4" />
-              <AlertDescription className="flex items-center justify-between">
-                <span>{locationError}</span>
-                <Button variant="outline" size="sm" onClick={refreshLocation}>
-                  <Navigation className="mr-2 h-4 w-4" />
-                  Riprova
+            <Alert className="text-sm">
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+              <AlertDescription className="flex items-center justify-between gap-2">
+                <span className="text-xs sm:text-sm line-clamp-2">{locationError}</span>
+                <Button variant="outline" size="sm" onClick={refreshLocation} className="shrink-0 h-8 touch-manipulation">
+                  <Navigation className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Riprova</span>
                 </Button>
               </AlertDescription>
             </Alert>
           )}
 
           {coordinates && !locationLoading && (
-            <Alert>
-              <MapPin className="h-4 w-4 text-green-600" />
+            <Alert className="text-sm">
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
               <AlertDescription>
-                <div className="flex items-center justify-between">
-                  <span>✓ Posizione rilevata - Ti mostreremo i tecnici più vicini</span>
-                  <Button variant="ghost" size="sm" onClick={refreshLocation}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs sm:text-sm">✓ Posizione rilevata</span>
+                  <Button variant="ghost" size="sm" onClick={refreshLocation} className="shrink-0 h-8 touch-manipulation">
                     <Navigation className="h-4 w-4" />
                   </Button>
                 </div>
@@ -166,26 +168,27 @@ const Diagnose = () => {
         </div>
 
         <Card className="shadow-medium">
-          <CardHeader>
-            <CardTitle>Carica Immagine Riparazione</CardTitle>
-            <CardDescription>
-              Scatta una foto chiara che mostri l'area del problema
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg sm:text-xl">Carica Immagine Riparazione</CardTitle>
+            <CardDescription className="text-sm sm:text-base">
+              Scatta una foto chiara del problema
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 sm:space-y-6">
             {!imagePreview ? (
-              <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-border rounded-lg cursor-pointer bg-muted/50 hover:bg-muted transition-colors">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <Camera className="w-12 h-12 text-muted-foreground mb-4" />
-                  <p className="mb-2 text-sm text-muted-foreground">
-                    <span className="font-semibold">Clicca per caricare</span> o trascina e rilascia
+              <label className="flex flex-col items-center justify-center w-full h-56 sm:h-64 border-2 border-dashed border-border rounded-xl cursor-pointer bg-muted/50 active:bg-muted transition-colors touch-manipulation">
+                <div className="flex flex-col items-center justify-center py-5">
+                  <Camera className="w-14 h-14 sm:w-16 sm:h-16 text-muted-foreground mb-4" />
+                  <p className="mb-2 text-sm sm:text-base text-muted-foreground text-center px-4">
+                    <span className="font-semibold">Tocca per caricare</span>
                   </p>
-                  <p className="text-xs text-muted-foreground">PNG, JPG o JPEG (MAX. 10MB)</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">PNG, JPG o JPEG (MAX. 10MB)</p>
                 </div>
                 <input
                   type="file"
                   className="hidden"
                   accept="image/*"
+                  capture="environment"
                   onChange={handleFileSelect}
                 />
               </label>
@@ -195,12 +198,12 @@ const Diagnose = () => {
                   <img
                     src={imagePreview}
                     alt="Anteprima"
-                    className="w-full h-64 object-cover rounded-lg"
+                    className="w-full h-56 sm:h-64 object-cover rounded-xl"
                   />
                   <Button
                     variant="destructive"
                     size="sm"
-                    className="absolute top-2 right-2"
+                    className="absolute top-3 right-3 h-9 sm:h-10 touch-manipulation"
                     onClick={() => {
                       setImageFile(null);
                       setImagePreview("");
@@ -213,11 +216,11 @@ const Diagnose = () => {
                 <Button
                   onClick={handleUploadAndAnalyze}
                   disabled={uploading || analyzing}
-                  className="w-full"
+                  className="w-full h-14 sm:h-16 text-base sm:text-lg touch-manipulation active:scale-95 transition-transform"
                   size="lg"
                 >
-                  {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {analyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {uploading && <Loader2 className="mr-2 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />}
+                  {analyzing && <Loader2 className="mr-2 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />}
                   {uploading ? "Caricamento..." : analyzing ? "Analisi con AI..." : "Analizza Immagine"}
                 </Button>
               </div>
@@ -226,6 +229,7 @@ const Diagnose = () => {
         </Card>
       </div>
     </div>
+    </MobileLayout>
   );
 };
 

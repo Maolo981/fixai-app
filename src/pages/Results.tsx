@@ -9,6 +9,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users, MapPin, Navigation } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MobileLayout } from "@/components/MobileLayout";
 
 interface Diagnosis {
   id: string;
@@ -158,40 +159,41 @@ const Results = () => {
   if (!diagnosis) return null;
 
   return (
-    <div className="min-h-screen bg-muted/30 py-12 px-4">
-      <div className="container max-w-4xl mx-auto space-y-6">
+    <MobileLayout>
+    <div className="min-h-screen bg-muted/30 py-6 sm:py-12 px-4">
+      <div className="container max-w-4xl mx-auto space-y-4 sm:space-y-6">
         <Link to="/dashboard">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" className="h-10 sm:h-11 touch-manipulation">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Torna alla Dashboard
+            <span className="text-sm sm:text-base">Dashboard</span>
           </Button>
         </Link>
 
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">{diagnosis.problem_type}</h1>
-          <Badge className={`${getUrgencyColor(diagnosis.urgency_level)} text-white`}>
+        <div className="text-center mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 px-2">{diagnosis.problem_type}</h1>
+          <Badge className={`${getUrgencyColor(diagnosis.urgency_level)} text-white text-sm sm:text-base px-3 py-1`}>
             URGENZA {getUrgencyLabel(diagnosis.urgency_level)}
           </Badge>
         </div>
 
         {/* Location Alert */}
         {locationError && (
-          <Alert>
+          <Alert className="text-sm">
             <MapPin className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>{locationError}</span>
-              <Button variant="outline" size="sm" onClick={refreshLocation}>
-                <Navigation className="mr-2 h-4 w-4" />
-                Riprova
+            <AlertDescription className="flex items-center justify-between gap-2">
+              <span className="text-xs sm:text-sm line-clamp-2">{locationError}</span>
+              <Button variant="outline" size="sm" onClick={refreshLocation} className="shrink-0 h-8 touch-manipulation">
+                <Navigation className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Riprova</span>
               </Button>
             </AlertDescription>
           </Alert>
         )}
 
         {locationLoading && (
-          <Alert>
+          <Alert className="text-sm">
             <MapPin className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-xs sm:text-sm">
               Rilevamento posizione in corso...
             </AlertDescription>
           </Alert>
@@ -202,21 +204,21 @@ const Results = () => {
           <img 
             src={diagnosis.image_url} 
             alt="Problema di riparazione" 
-            className="w-full h-64 object-cover"
+            className="w-full h-48 sm:h-64 md:h-80 object-cover"
           />
         </Card>
 
         {/* Key Details */}
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Card className="shadow-soft">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <DollarSign className="mr-2 h-4 w-4 text-primary" />
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center">
+                <DollarSign className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 Costo Stimato
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">
+              <p className="text-xl sm:text-2xl font-bold">
                 €{diagnosis.estimated_cost_min} - €{diagnosis.estimated_cost_max}
               </p>
             </CardContent>
@@ -224,27 +226,27 @@ const Results = () => {
 
           <Card className="shadow-soft">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <Clock className="mr-2 h-4 w-4 text-primary" />
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center">
+                <Clock className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 Tempo Stimato
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">
+              <p className="text-xl sm:text-2xl font-bold">
                 {diagnosis.estimated_time_hours} {diagnosis.estimated_time_hours === 1 ? 'ora' : 'ore'}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="shadow-soft">
+          <Card className="shadow-soft sm:col-span-2 lg:col-span-1">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <Wrench className="mr-2 h-4 w-4 text-primary" />
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center">
+                <Wrench className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 Specializzazione
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{diagnosis.recommended_specialty}</p>
+              <p className="text-xl sm:text-2xl font-bold">{diagnosis.recommended_specialty}</p>
             </CardContent>
           </Card>
         </div>
@@ -252,19 +254,19 @@ const Results = () => {
         {/* Analysis */}
         <Card className="shadow-medium">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <AlertCircle className="mr-2 h-5 w-5 text-primary" />
+            <CardTitle className="flex items-center text-base sm:text-lg">
+              <AlertCircle className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
               Analisi AI
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4">
             <div>
-              <h3 className="font-semibold mb-2">Possibile Causa:</h3>
-              <p className="text-muted-foreground">{diagnosis.possible_cause}</p>
+              <h3 className="font-semibold mb-2 text-sm sm:text-base">Possibile Causa:</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">{diagnosis.possible_cause}</p>
             </div>
             <div>
-              <h3 className="font-semibold mb-2">Analisi Dettagliata:</h3>
-              <p className="text-muted-foreground whitespace-pre-line">{diagnosis.ai_analysis}</p>
+              <h3 className="font-semibold mb-2 text-sm sm:text-base">Analisi Dettagliata:</h3>
+              <p className="text-sm sm:text-base text-muted-foreground whitespace-pre-line">{diagnosis.ai_analysis}</p>
             </div>
           </CardContent>
         </Card>
@@ -272,21 +274,21 @@ const Results = () => {
         {/* Matched Technicians */}
         <Card className="shadow-medium">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="mr-2 h-5 w-5 text-secondary" />
+            <CardTitle className="flex items-center text-base sm:text-lg">
+              <Users className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
               {coordinates ? 'Tecnici Nelle Vicinanze' : 'Tecnici Raccomandati'}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               {coordinates 
-                ? 'Tecnici più votati ordinati per distanza dalla tua posizione'
+                ? 'Ordinati per distanza dalla tua posizione'
                 : 'Tecnici più votati disponibili'
               }
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4">
             {technicians.length === 0 ? (
               <Alert>
-                <AlertDescription>
+                <AlertDescription className="text-xs sm:text-sm">
                   {coordinates 
                     ? 'Nessun tecnico trovato nel raggio di 50 km'
                     : 'Nessun tecnico disponibile al momento'
@@ -295,32 +297,34 @@ const Results = () => {
               </Alert>
             ) : (
               technicians.map((tech) => (
-                <Card key={tech.id} className="bg-gradient-card border-border">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <CardTitle className="text-lg">{tech.full_name}</CardTitle>
+                <Card key={tech.id} className="bg-gradient-card border-border touch-manipulation active:scale-[0.98] transition-transform">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                          <CardTitle className="text-base sm:text-lg truncate">{tech.full_name}</CardTitle>
                           {tech.distance_km && (
-                            <Badge variant="outline" className="flex items-center gap-1">
+                            <Badge variant="outline" className="flex items-center gap-1 w-fit">
                               <MapPin className="h-3 w-3" />
-                              {formatDistance(tech.distance_km)}
+                              <span className="text-xs">{formatDistance(tech.distance_km)}</span>
                             </Badge>
                           )}
                         </div>
-                        <CardDescription>
+                        <CardDescription className="text-xs sm:text-sm line-clamp-1">
                           {tech.specialties.join(', ')}
                         </CardDescription>
                       </div>
-                      <Badge variant="secondary">⭐ {tech.rating}</Badge>
+                      <Badge variant="secondary" className="shrink-0 text-sm">⭐ {tech.rating}</Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm text-muted-foreground">
-                        {tech.total_jobs} lavori completati • €{tech.hourly_rate}/ora
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                      <div className="text-xs sm:text-sm text-muted-foreground">
+                        {tech.total_jobs} lavori • €{tech.hourly_rate}/ora
                       </div>
-                      <Button>Prenota Ora</Button>
+                      <Button className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation active:scale-95 transition-transform">
+                        Prenota Ora
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -330,6 +334,7 @@ const Results = () => {
         </Card>
       </div>
     </div>
+    </MobileLayout>
   );
 };
 
