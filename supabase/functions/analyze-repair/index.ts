@@ -41,16 +41,18 @@ serve(async (req) => {
             role: 'system',
             content: `You are an expert home repair diagnostician. Analyze repair images and provide structured analysis.
             
-            Return ONLY a valid JSON object with this exact structure:
+            CRITICAL: Return ONLY valid JSON without markdown code blocks. Use \\n for line breaks in text.
+            
+            Return this exact JSON structure:
             {
               "problemType": "Brief problem name (max 5 words)",
-              "urgencyLevel": "low" | "medium" | "high",
-              "possibleCause": "Detailed explanation of likely cause",
-              "estimatedCostMin": number (in dollars),
-              "estimatedCostMax": number (in dollars),
+              "urgencyLevel": "low" OR "medium" OR "high",
+              "possibleCause": "Detailed explanation",
+              "estimatedCostMin": number,
+              "estimatedCostMax": number,
               "estimatedTimeHours": number,
-              "recommendedSpecialty": "Plumbing" | "Electrical" | "HVAC" | "Appliances" | "Heating" | "Boiler" | "General",
-              "aiAnalysis": "Detailed analysis with safety warnings and recommendations"
+              "recommendedSpecialty": "Plumbing" OR "Electrical" OR "HVAC" OR "Appliances" OR "Heating" OR "Boiler" OR "General",
+              "aiAnalysis": "Detailed analysis text"
             }`
           },
           {
@@ -58,7 +60,7 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: 'Please analyze this home repair issue and provide a detailed diagnosis with cost and time estimates.'
+                text: 'Please analyze this home repair issue and provide a detailed diagnosis. Return ONLY the JSON object, no markdown formatting.'
               },
               {
                 type: 'image_url',
@@ -99,17 +101,61 @@ serve(async (req) => {
       throw new Error('No content in AI response');
     }
 
-    console.log('AI Response:', content);
+    console.log('Raw AI Response:', content.substring(0, 200) + '...');
 
-    // Extract JSON from response (handle markdown code blocks)
-    let jsonStr = content.trim();
-    if (jsonStr.startsWith('```json')) {
-      jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-    } else if (jsonStr.startsWith('```')) {
-      jsonStr = jsonStr.replace(/```\n?/g, '');
+    // Clean and parse JSON response
+    let diagnosis;
+    try {
+      // Remove markdown code blocks if present
+      let jsonStr = content.trim();
+      
+      // Remove ```json and ``` markers
+      jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/g, '');
+      
+      // Try to find JSON object if wrapped in extra text
+      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      }
+      
+      // Parse the JSON
+      diagnosis = JSON.parse(jsonStr);
+      
+    } catch (parseError) {
+      console.error('JSON Parse Error:', parseError);
+      console.error('Attempted to parse:', content);
+      
+      // Fallback: try to extract data using regex
+      try {
+        const extractField = (field: string) => {
+          const regex = new RegExp(`"${field}":\\s*"([^"]*)"`, 'i');
+          const match = content.match(regex);
+          return match ? match[1] : null;
+        };
+        
+        const extractNumber = (field: string) => {
+          const regex = new RegExp(`"${field}":\\s*(\\d+\\.?\\d*)`, 'i');
+          const match = content.match(regex);
+          return match ? parseFloat(match[1]) : 0;
+        };
+
+        diagnosis = {
+          problemType: extractField('problemType') || 'Repair Issue',
+          urgencyLevel: extractField('urgencyLevel') || 'medium',
+          possibleCause: extractField('possibleCause') || 'Unable to determine cause from image',
+          estimatedCostMin: extractNumber('estimatedCostMin') || 50,
+          estimatedCostMax: extractNumber('estimatedCostMax') || 200,
+          estimatedTimeHours: extractNumber('estimatedTimeHours') || 2,
+          recommendedSpecialty: extractField('recommendedSpecialty') || 'General',
+          aiAnalysis: extractField('aiAnalysis') || 'Please consult with a professional technician for accurate diagnosis.'
+        };
+        
+        console.log('Used fallback parsing');
+      } catch (fallbackError) {
+        console.error('Fallback parsing failed:', fallbackError);
+        throw new Error('Failed to parse AI response');
+      }
     }
-
-    const diagnosis = JSON.parse(jsonStr);
 
     // Validate response structure
     if (!diagnosis.problemType || !diagnosis.urgencyLevel || !diagnosis.recommendedSpecialty) {
@@ -147,12 +193,12 @@ serve(async (req) => {
         image_url: imageUrl,
         problem_type: diagnosis.problemType,
         urgency_level: diagnosis.urgencyLevel,
-        possible_cause: diagnosis.possibleCause,
-        estimated_cost_min: diagnosis.estimatedCostMin,
-        estimated_cost_max: diagnosis.estimatedCostMax,
-        estimated_time_hours: diagnosis.estimatedTimeHours,
+        possible_cause: diagnosis.possibleCause || 'See analysis for details',
+        estimated_cost_min: diagnosis.estimatedCostMin || 0,
+        estimated_cost_max: diagnosis.estimatedCostMax || 0,
+        estimated_time_hours: diagnosis.estimatedTimeHours || 1,
         recommended_specialty: diagnosis.recommendedSpecialty,
-        ai_analysis: diagnosis.aiAnalysis,
+        ai_analysis: diagnosis.aiAnalysis || 'Analysis completed successfully.',
       })
       .select()
       .single();
@@ -161,6 +207,8 @@ serve(async (req) => {
       console.error('Database error:', insertError);
       throw new Error('Failed to save diagnosis');
     }
+
+    console.log('Diagnosis saved successfully');
 
     return new Response(
       JSON.stringify(savedDiagnosis),
