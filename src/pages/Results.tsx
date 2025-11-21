@@ -105,7 +105,7 @@ const Results = () => {
         user_lat: coordinates.latitude,
         user_lon: coordinates.longitude,
         max_distance_km: 100,
-        limit_count: 50 // Prendi più tecnici per poi filtrare per specialità
+        limit_count: 50
       });
 
       if (error) throw error;
@@ -124,25 +124,35 @@ const Results = () => {
         data = result.data;
       }
       
-      // Filtra per specialità raccomandata
+      // Separa tecnici con specialità corrispondente e altri
       const recommendedSpecialty = diagnosis.recommended_specialty.toLowerCase();
-      const matchingTechnicians = data?.filter(tech => 
-        tech.specialties.some(specialty => 
+      const matchingTechnicians: typeof data = [];
+      const otherTechnicians: typeof data = [];
+      
+      data?.forEach(tech => {
+        const hasMatchingSpecialty = tech.specialties.some(specialty => 
           specialty.toLowerCase().includes(recommendedSpecialty) ||
           recommendedSpecialty.includes(specialty.toLowerCase())
-        )
-      ) || [];
+        );
+        
+        if (hasMatchingSpecialty) {
+          matchingTechnicians.push(tech);
+        } else {
+          otherTechnicians.push(tech);
+        }
+      });
       
-      setTechnicians(matchingTechnicians.slice(0, 10));
+      // Mostra prima quelli con specialità corretta, poi gli altri
+      const allTechnicians = [...matchingTechnicians, ...otherTechnicians];
+      setTechnicians(allTechnicians.slice(0, 10));
       
-      // If still no results, fallback to all technicians with that specialty
-      if (matchingTechnicians.length === 0) {
-        console.log("No nearby technicians with matching specialty, loading all matching technicians");
+      // If still no results at all, fallback to all technicians
+      if (allTechnicians.length === 0) {
+        console.log("No technicians found nearby, loading all technicians");
         loadTechniciansBySpecialty();
       }
     } catch (error: any) {
       console.error("Error loading nearby technicians:", error);
-      // Fallback: load technicians by specialty
       loadTechniciansBySpecialty();
     }
   };
