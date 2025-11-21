@@ -5,8 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users } from "lucide-react";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users, MapPin, Navigation } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Diagnosis {
   id: string;
@@ -28,20 +30,27 @@ interface Technician {
   hourly_rate: number;
   rating: number;
   total_jobs: number;
+  distance_km?: number;
 }
 
 const Results = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { coordinates, error: locationError, loading: locationLoading, refreshLocation } = useGeolocation();
   const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadDiagnosis();
-    loadTechnicians();
   }, [id]);
+
+  useEffect(() => {
+    if (coordinates) {
+      loadNearbyTechnicians();
+    }
+  }, [coordinates]);
 
   const loadDiagnosis = async () => {
     try {
@@ -65,7 +74,27 @@ const Results = () => {
     }
   };
 
-  const loadTechnicians = async () => {
+  const loadNearbyTechnicians = async () => {
+    if (!coordinates) return;
+
+    try {
+      const { data, error } = await supabase.rpc('get_nearby_technicians', {
+        user_lat: coordinates.latitude,
+        user_lon: coordinates.longitude,
+        max_distance_km: 50,
+        limit_count: 10
+      });
+
+      if (error) throw error;
+      setTechnicians(data || []);
+    } catch (error: any) {
+      console.error("Error loading nearby technicians:", error);
+      // Fallback: load all technicians without distance
+      loadAllTechnicians();
+    }
+  };
+
+  const loadAllTechnicians = async () => {
     try {
       const { data, error } = await supabase
         .from('technicians')
@@ -106,6 +135,14 @@ const Results = () => {
     }
   };
 
+  const formatDistance = (distance: number | undefined) => {
+    if (!distance) return null;
+    if (distance < 1) {
+      return `${Math.round(distance * 1000)} m`;
+    }
+    return `${distance.toFixed(1)} km`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-muted/30 py-12 px-4">
@@ -136,6 +173,29 @@ const Results = () => {
             URGENZA {getUrgencyLabel(diagnosis.urgency_level)}
           </Badge>
         </div>
+
+        {/* Location Alert */}
+        {locationError && (
+          <Alert>
+            <MapPin className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>{locationError}</span>
+              <Button variant="outline" size="sm" onClick={refreshLocation}>
+                <Navigation className="mr-2 h-4 w-4" />
+                Riprova
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {locationLoading && (
+          <Alert>
+            <MapPin className="h-4 w-4" />
+            <AlertDescription>
+              Rilevamento posizione in corso...
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Image */}
         <Card className="overflow-hidden shadow-medium">
@@ -214,36 +274,58 @@ const Results = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Users className="mr-2 h-5 w-5 text-secondary" />
-              Tecnici Raccomandati
+              {coordinates ? 'Tecnici Nelle Vicinanze' : 'Tecnici Raccomandati'}
             </CardTitle>
             <CardDescription>
-              Tecnici più votati disponibili nella tua zona
+              {coordinates 
+                ? 'Tecnici più votati ordinati per distanza dalla tua posizione'
+                : 'Tecnici più votati disponibili'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {technicians.map((tech) => (
-              <Card key={tech.id} className="bg-gradient-card border-border">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{tech.full_name}</CardTitle>
-                      <CardDescription>
-                        {tech.specialties.join(', ')}
-                      </CardDescription>
+            {technicians.length === 0 ? (
+              <Alert>
+                <AlertDescription>
+                  {coordinates 
+                    ? 'Nessun tecnico trovato nel raggio di 50 km'
+                    : 'Nessun tecnico disponibile al momento'
+                  }
+                </AlertDescription>
+              </Alert>
+            ) : (
+              technicians.map((tech) => (
+                <Card key={tech.id} className="bg-gradient-card border-border">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-lg">{tech.full_name}</CardTitle>
+                          {tech.distance_km && (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {formatDistance(tech.distance_km)}
+                            </Badge>
+                          )}
+                        </div>
+                        <CardDescription>
+                          {tech.specialties.join(', ')}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="secondary">⭐ {tech.rating}</Badge>
                     </div>
-                    <Badge variant="secondary">⭐ {tech.rating}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm text-muted-foreground">
-                      {tech.total_jobs} lavori completati • €{tech.hourly_rate}/ora
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex justify-between items-center">
+                      <div className="text-sm text-muted-foreground">
+                        {tech.total_jobs} lavori completati • €{tech.hourly_rate}/ora
+                      </div>
+                      <Button>Prenota Ora</Button>
                     </div>
-                    <Button>Prenota Ora</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
