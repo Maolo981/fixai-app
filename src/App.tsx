@@ -11,6 +11,7 @@ import Results from "./pages/Results";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Install from "./pages/Install";
+import JobDetails from "./pages/JobDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/diagnose" element={<Diagnose />} />
           <Route path="/results/:id" element={<Results />} />
+          <Route path="/jobs/:id" element={<JobDetails />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/install" element={<Install />} />

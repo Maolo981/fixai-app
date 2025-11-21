@@ -358,7 +358,7 @@ const Dashboard = () => {
                 <div className="grid gap-4 sm:gap-6 px-4 sm:px-0 sm:grid-cols-2 lg:grid-cols-3">
                   {jobs.map((job) => (
                     <Card key={job.id} className="shadow-soft hover:shadow-medium transition-all h-full">
-                      <Link to={job.diagnosis_id ? `/results/${job.diagnosis_id}` : '#'} className="block">
+                      <Link to={`/jobs/${job.id}`} className="block">
                         <CardHeader className="pb-3">
                           <div className="flex justify-between items-start gap-2">
                             <CardTitle className="text-base sm:text-lg line-clamp-2">
