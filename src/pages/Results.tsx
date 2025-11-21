@@ -6,10 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users, MapPin, Navigation } from "lucide-react";
+import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users, MapPin, Navigation, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MobileLayout } from "@/components/MobileLayout";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Diagnosis {
   id: string;
@@ -42,6 +46,13 @@ const Results = () => {
   const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
+  const [bookingDialog, setBookingDialog] = useState(false);
+  const [bookingData, setBookingData] = useState({
+    scheduledDate: "",
+    notes: ""
+  });
+  const [bookingLoading, setBookingLoading] = useState(false);
 
   useEffect(() => {
     loadDiagnosis();
@@ -142,6 +153,61 @@ const Results = () => {
       return `${Math.round(distance * 1000)} m`;
     }
     return `${distance.toFixed(1)} km`;
+  };
+
+  const handleBookingClick = (technician: Technician) => {
+    setSelectedTechnician(technician);
+    setBookingDialog(true);
+  };
+
+  const handleConfirmBooking = async () => {
+    if (!selectedTechnician || !diagnosis) return;
+    
+    setBookingLoading(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Errore",
+          description: "Devi essere autenticato per prenotare",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+
+      const { error } = await supabase
+        .from('jobs')
+        .insert({
+          user_id: user.id,
+          diagnosis_id: diagnosis.id,
+          technician_id: selectedTechnician.id,
+          scheduled_date: bookingData.scheduledDate ? new Date(bookingData.scheduledDate).toISOString() : null,
+          status: 'pending',
+          payment_status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Prenotazione Confermata!",
+        description: `Hai prenotato ${selectedTechnician.full_name}. Verrai contattato a breve.`,
+      });
+
+      setBookingDialog(false);
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error('Booking error:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile completare la prenotazione. Riprova.",
+        variant: "destructive",
+      });
+    } finally {
+      setBookingLoading(false);
+    }
   };
 
   if (loading) {
@@ -322,7 +388,10 @@ const Results = () => {
                       <div className="text-xs sm:text-sm text-muted-foreground">
                         {tech.total_jobs} lavori • €{tech.hourly_rate}/ora
                       </div>
-                      <Button className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation active:scale-95 transition-transform">
+                      <Button 
+                        className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation active:scale-95 transition-transform"
+                        onClick={() => handleBookingClick(tech)}
+                      >
                         Prenota Ora
                       </Button>
                     </div>
@@ -333,6 +402,76 @@ const Results = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Booking Dialog */}
+      <Dialog open={bookingDialog} onOpenChange={setBookingDialog}>
+        <DialogContent className="max-w-md mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Conferma Prenotazione</DialogTitle>
+            <DialogDescription className="text-sm">
+              Stai per prenotare {selectedTechnician?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="scheduled-date" className="text-sm">Data Preferita (opzionale)</Label>
+              <Input
+                id="scheduled-date"
+                type="datetime-local"
+                className="h-12 text-base"
+                value={bookingData.scheduledDate}
+                onChange={(e) => setBookingData({ ...bookingData, scheduledDate: e.target.value })}
+                min={new Date().toISOString().slice(0, 16)}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="notes" className="text-sm">Note Aggiuntive (opzionale)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Descrivi meglio il problema o specifica orari preferiti..."
+                className="min-h-24 text-base"
+                value={bookingData.notes}
+                onChange={(e) => setBookingData({ ...bookingData, notes: e.target.value })}
+              />
+            </div>
+
+            <div className="bg-muted p-4 rounded-lg space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Tecnico:</span>
+                <span className="font-medium">{selectedTechnician?.full_name}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Tariffa:</span>
+                <span className="font-medium">€{selectedTechnician?.hourly_rate}/ora</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Costo stimato:</span>
+                <span className="font-medium">€{diagnosis?.estimated_cost_min} - €{diagnosis?.estimated_cost_max}</span>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setBookingDialog(false)}
+              className="h-12 touch-manipulation"
+              disabled={bookingLoading}
+            >
+              Annulla
+            </Button>
+            <Button 
+              onClick={handleConfirmBooking}
+              className="h-12 touch-manipulation"
+              disabled={bookingLoading}
+            >
+              {bookingLoading ? "Prenotazione..." : "Conferma Prenotazione"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
     </MobileLayout>
   );
