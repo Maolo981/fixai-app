@@ -53,15 +53,17 @@ const Results = () => {
   }, [id]);
 
   useEffect(() => {
-    // Carica comunque una lista di tecnici raccomandati, anche se la posizione non è disponibile
-    loadAllTechnicians();
-  }, []);
+    // Carica tecnici filtrati per specialità se la diagnosi è disponibile
+    if (diagnosis) {
+      loadAllTechnicians();
+    }
+  }, [diagnosis]);
 
   useEffect(() => {
-    if (coordinates) {
+    if (coordinates && diagnosis) {
       loadNearbyTechnicians();
     }
-  }, [coordinates]);
+  }, [coordinates, diagnosis]);
 
   const loadDiagnosis = async () => {
     try {
