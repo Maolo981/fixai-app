@@ -19,8 +19,8 @@ const Diagnose = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         toast({
-          title: "Authentication Required",
-          description: "Please sign in to use the diagnosis feature",
+          title: "Autenticazione Richiesta",
+          description: "Accedi per utilizzare la funzione di diagnosi",
         });
         navigate("/auth");
       }
@@ -32,8 +32,8 @@ const Diagnose = () => {
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
         toast({
-          title: "File Too Large",
-          description: "Please select an image under 10MB",
+          title: "File Troppo Grande",
+          description: "Seleziona un'immagine inferiore a 10MB",
           variant: "destructive",
         });
         return;
@@ -89,8 +89,8 @@ const Diagnose = () => {
       }
 
       toast({
-        title: "Analysis Complete",
-        description: "Your repair has been diagnosed successfully",
+        title: "Analisi Completata",
+        description: "La tua riparazione è stata diagnosticata con successo",
       });
 
       navigate(`/results/${diagnosis.id}`);
@@ -98,8 +98,8 @@ const Diagnose = () => {
     } catch (error: any) {
       console.error('Error:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to analyze image. Please try again.",
+        title: "Errore",
+        description: error.message || "Impossibile analizzare l'immagine. Riprova.",
         variant: "destructive",
       });
     } finally {
@@ -113,18 +113,18 @@ const Diagnose = () => {
       <div className="container max-w-3xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4 bg-gradient-hero bg-clip-text text-transparent">
-            AI Repair Diagnosis
+            Diagnosi Riparazione AI
           </h1>
           <p className="text-xl text-muted-foreground">
-            Upload a photo of your repair problem for instant AI analysis
+            Carica una foto del tuo problema di riparazione per un'analisi AI istantanea
           </p>
         </div>
 
         <Card className="shadow-medium">
           <CardHeader>
-            <CardTitle>Upload Repair Image</CardTitle>
+            <CardTitle>Carica Immagine Riparazione</CardTitle>
             <CardDescription>
-              Take a clear photo showing the problem area
+              Scatta una foto chiara che mostri l'area del problema
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -133,9 +133,9 @@ const Diagnose = () => {
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <Camera className="w-12 h-12 text-muted-foreground mb-4" />
                   <p className="mb-2 text-sm text-muted-foreground">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
+                    <span className="font-semibold">Clicca per caricare</span> o trascina e rilascia
                   </p>
-                  <p className="text-xs text-muted-foreground">PNG, JPG or JPEG (MAX. 10MB)</p>
+                  <p className="text-xs text-muted-foreground">PNG, JPG o JPEG (MAX. 10MB)</p>
                 </div>
                 <input
                   type="file"
@@ -149,7 +149,7 @@ const Diagnose = () => {
                 <div className="relative">
                   <img
                     src={imagePreview}
-                    alt="Preview"
+                    alt="Anteprima"
                     className="w-full h-64 object-cover rounded-lg"
                   />
                   <Button
@@ -161,7 +161,7 @@ const Diagnose = () => {
                       setImagePreview("");
                     }}
                   >
-                    Remove
+                    Rimuovi
                   </Button>
                 </div>
                 
@@ -173,7 +173,7 @@ const Diagnose = () => {
                 >
                   {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {analyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {uploading ? "Uploading..." : analyzing ? "Analyzing with AI..." : "Analyze Image"}
+                  {uploading ? "Caricamento..." : analyzing ? "Analisi con AI..." : "Analizza Immagine"}
                 </Button>
               </div>
             )}

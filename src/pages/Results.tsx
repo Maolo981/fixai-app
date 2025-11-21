@@ -55,8 +55,8 @@ const Results = () => {
       setDiagnosis(data);
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to load diagnosis",
+        title: "Errore",
+        description: "Impossibile caricare la diagnosi",
         variant: "destructive",
       });
       navigate("/dashboard");
@@ -93,6 +93,19 @@ const Results = () => {
     }
   };
 
+  const getUrgencyLabel = (urgency: string) => {
+    switch (urgency.toLowerCase()) {
+      case 'high':
+        return 'ALTA';
+      case 'medium':
+        return 'MEDIA';
+      case 'low':
+        return 'BASSA';
+      default:
+        return urgency.toUpperCase();
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-muted/30 py-12 px-4">
@@ -113,14 +126,14 @@ const Results = () => {
         <Link to="/dashboard">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            Torna alla Dashboard
           </Button>
         </Link>
 
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-2">{diagnosis.problem_type}</h1>
           <Badge className={`${getUrgencyColor(diagnosis.urgency_level)} text-white`}>
-            {diagnosis.urgency_level.toUpperCase()} URGENCY
+            URGENZA {getUrgencyLabel(diagnosis.urgency_level)}
           </Badge>
         </div>
 
@@ -128,7 +141,7 @@ const Results = () => {
         <Card className="overflow-hidden shadow-medium">
           <img 
             src={diagnosis.image_url} 
-            alt="Repair issue" 
+            alt="Problema di riparazione" 
             className="w-full h-64 object-cover"
           />
         </Card>
@@ -139,12 +152,12 @@ const Results = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center">
                 <DollarSign className="mr-2 h-4 w-4 text-primary" />
-                Estimated Cost
+                Costo Stimato
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">
-                ${diagnosis.estimated_cost_min} - ${diagnosis.estimated_cost_max}
+                €{diagnosis.estimated_cost_min} - €{diagnosis.estimated_cost_max}
               </p>
             </CardContent>
           </Card>
@@ -153,12 +166,12 @@ const Results = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center">
                 <Clock className="mr-2 h-4 w-4 text-primary" />
-                Estimated Time
+                Tempo Stimato
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">
-                {diagnosis.estimated_time_hours} {diagnosis.estimated_time_hours === 1 ? 'hour' : 'hours'}
+                {diagnosis.estimated_time_hours} {diagnosis.estimated_time_hours === 1 ? 'ora' : 'ore'}
               </p>
             </CardContent>
           </Card>
@@ -167,7 +180,7 @@ const Results = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center">
                 <Wrench className="mr-2 h-4 w-4 text-primary" />
-                Specialty Needed
+                Specializzazione
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -181,16 +194,16 @@ const Results = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <AlertCircle className="mr-2 h-5 w-5 text-primary" />
-              AI Analysis
+              Analisi AI
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <h3 className="font-semibold mb-2">Possible Cause:</h3>
+              <h3 className="font-semibold mb-2">Possibile Causa:</h3>
               <p className="text-muted-foreground">{diagnosis.possible_cause}</p>
             </div>
             <div>
-              <h3 className="font-semibold mb-2">Detailed Analysis:</h3>
+              <h3 className="font-semibold mb-2">Analisi Dettagliata:</h3>
               <p className="text-muted-foreground whitespace-pre-line">{diagnosis.ai_analysis}</p>
             </div>
           </CardContent>
@@ -201,10 +214,10 @@ const Results = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Users className="mr-2 h-5 w-5 text-secondary" />
-              Recommended Technicians
+              Tecnici Raccomandati
             </CardTitle>
             <CardDescription>
-              Top-rated technicians available in your area
+              Tecnici più votati disponibili nella tua zona
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -224,9 +237,9 @@ const Results = () => {
                 <CardContent>
                   <div className="flex justify-between items-center">
                     <div className="text-sm text-muted-foreground">
-                      {tech.total_jobs} jobs completed • ${tech.hourly_rate}/hr
+                      {tech.total_jobs} lavori completati • €{tech.hourly_rate}/ora
                     </div>
-                    <Button>Book Now</Button>
+                    <Button>Prenota Ora</Button>
                   </div>
                 </CardContent>
               </Card>

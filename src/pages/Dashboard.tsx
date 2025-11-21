@@ -58,16 +58,29 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     toast({
-      title: "Signed Out",
-      description: "You have been signed out successfully",
+      title: "Disconnesso",
+      description: "Sei stato disconnesso con successo",
     });
     navigate("/");
+  };
+
+  const getUrgencyLabel = (urgency: string) => {
+    switch (urgency.toLowerCase()) {
+      case 'high':
+        return 'alta';
+      case 'medium':
+        return 'media';
+      case 'low':
+        return 'bassa';
+      default:
+        return urgency;
+    }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
+        <p>Caricamento...</p>
       </div>
     );
   }
@@ -89,7 +102,7 @@ const Dashboard = () => {
             </div>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
+              Esci
             </Button>
           </div>
         </div>
@@ -100,30 +113,30 @@ const Dashboard = () => {
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Welcome Section */}
           <div className="text-center">
-            <h2 className="text-4xl font-bold mb-4">Welcome Back!</h2>
+            <h2 className="text-4xl font-bold mb-4">Bentornato!</h2>
             <p className="text-xl text-muted-foreground mb-6">
-              Ready to diagnose a new repair problem?
+              Pronto a diagnosticare un nuovo problema di riparazione?
             </p>
             <Link to="/diagnose">
               <Button size="lg" className="shadow-medium">
                 <Camera className="mr-2 h-5 w-5" />
-                Start New Diagnosis
+                Inizia Nuova Diagnosi
               </Button>
             </Link>
           </div>
 
           {/* Recent Diagnoses */}
           <div>
-            <h3 className="text-2xl font-bold mb-6">Your Recent Diagnoses</h3>
+            <h3 className="text-2xl font-bold mb-6">Le Tue Diagnosi Recenti</h3>
             {diagnoses.length === 0 ? (
               <Card className="text-center py-12 shadow-soft">
                 <CardContent>
                   <Camera className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-muted-foreground mb-4">
-                    No diagnoses yet. Start by uploading your first repair image!
+                    Nessuna diagnosi ancora. Inizia caricando la tua prima immagine di riparazione!
                   </p>
                   <Link to="/diagnose">
-                    <Button>Create First Diagnosis</Button>
+                    <Button>Crea Prima Diagnosi</Button>
                   </Link>
                 </CardContent>
               </Card>
@@ -144,17 +157,17 @@ const Dashboard = () => {
                                 : 'secondary'
                             }
                           >
-                            {diagnosis.urgency_level}
+                            {getUrgencyLabel(diagnosis.urgency_level)}
                           </Badge>
                         </div>
                         <CardDescription className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {new Date(diagnosis.created_at).toLocaleDateString()}
+                          {new Date(diagnosis.created_at).toLocaleDateString('it-IT')}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <p className="text-sm text-muted-foreground">
-                          Est. Cost: ${diagnosis.estimated_cost_min} - ${diagnosis.estimated_cost_max}
+                          Costo stimato: €{diagnosis.estimated_cost_min} - €{diagnosis.estimated_cost_max}
                         </p>
                       </CardContent>
                     </Card>
