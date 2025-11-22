@@ -86,74 +86,83 @@ export const OnboardingTour = () => {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] pointer-events-none">
-        {/* Overlay scuro */}
+      <div className="fixed inset-0 z-[100]">
+        {/* Overlay molto più scuro */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-background/80 backdrop-blur-sm pointer-events-auto"
+          className="absolute inset-0 bg-black/70 backdrop-blur-md"
           onClick={skipTour}
         />
 
-        {/* Card del tour */}
+        {/* Card del tour con più contrasto */}
         <motion.div
           key={currentStep}
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md mx-4 pointer-events-auto"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md mx-4 z-10"
         >
-          <Card className="shadow-strong border-2 border-primary/20">
-            <CardContent className="p-6 space-y-4">
-              {/* Close button */}
+          <Card className="shadow-strong border-2 border-primary/30 bg-card">
+            <CardContent className="p-6 sm:p-8 space-y-5">
+              {/* Close button con più contrasto */}
               <button
                 onClick={skipTour}
-                className="absolute top-4 right-4 p-1 rounded-full hover:bg-muted transition-colors"
+                className="absolute top-4 right-4 p-2 rounded-full bg-muted/80 hover:bg-muted transition-colors"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
 
-              {/* Icon */}
-              <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-gradient-hero">
-                <Icon className="h-8 w-8 text-white" />
+              {/* Icon più grande e visibile */}
+              <div className="flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full bg-gradient-hero shadow-glow">
+                <Icon className="h-10 w-10 sm:h-12 sm:w-12 text-white drop-shadow-lg" />
               </div>
 
-              {/* Content */}
-              <div className="text-center space-y-2">
-                <h3 className="text-xl font-bold">{step.title}</h3>
-                <p className="text-muted-foreground">{step.description}</p>
+              {/* Content con font più grandi */}
+              <div className="text-center space-y-3">
+                <h3 className="text-2xl sm:text-3xl font-bold text-foreground">{step.title}</h3>
+                <p className="text-base sm:text-lg text-muted-foreground leading-relaxed px-2">
+                  {step.description}
+                </p>
               </div>
 
-              {/* Progress bar */}
-              <div className="space-y-2">
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
+              {/* Progress bar più visibile */}
+              <div className="space-y-3">
+                <div className="h-3 bg-muted rounded-full overflow-hidden shadow-inner">
                   <motion.div
-                    className="h-full bg-gradient-hero"
+                    className="h-full bg-gradient-hero shadow-md"
                     initial={{ width: 0 }}
                     animate={{ width: `${progress}%` }}
                     transition={{ duration: 0.3 }}
                   />
                 </div>
-                <p className="text-xs text-center text-muted-foreground">
-                  {currentStep + 1} di {tourSteps.length}
+                <p className="text-sm font-semibold text-center text-foreground">
+                  Passo {currentStep + 1} di {tourSteps.length}
                 </p>
               </div>
 
-              {/* Buttons */}
-              <div className="flex gap-2 pt-2">
+              {/* Buttons più grandi */}
+              <div className="flex gap-3 pt-2">
                 {currentStep > 0 && (
-                  <Button variant="outline" onClick={handlePrev} className="flex-1">
-                    <ChevronLeft className="h-4 w-4 mr-2" />
+                  <Button 
+                    variant="outline" 
+                    onClick={handlePrev} 
+                    className="flex-1 h-12 text-base font-semibold"
+                  >
+                    <ChevronLeft className="h-5 w-5 mr-2" />
                     Indietro
                   </Button>
                 )}
-                <Button onClick={handleNext} className="flex-1">
+                <Button 
+                  onClick={handleNext} 
+                  className="flex-1 h-12 text-base font-semibold shadow-medium hover:shadow-strong transition-all"
+                >
                   {currentStep < tourSteps.length - 1 ? (
                     <>
                       Avanti
-                      <ChevronRight className="h-4 w-4 ml-2" />
+                      <ChevronRight className="h-5 w-5 ml-2" />
                     </>
                   ) : (
                     "Iniziamo! 🚀"
@@ -161,10 +170,10 @@ export const OnboardingTour = () => {
                 </Button>
               </div>
 
-              {/* Skip button */}
+              {/* Skip button più visibile */}
               <button
                 onClick={skipTour}
-                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="w-full pt-2 text-base font-medium text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
               >
                 Salta tour
               </button>
