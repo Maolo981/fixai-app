@@ -152,7 +152,7 @@ export const SupportChatBot = () => {
       <Button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-strong z-50 transition-all",
+          "fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-strong z-50 transition-all",
           isOpen && "scale-0"
         )}
         size="icon"
@@ -163,7 +163,7 @@ export const SupportChatBot = () => {
       {/* Chat Window */}
       <Card
         className={cn(
-          "fixed bottom-6 right-6 w-[400px] h-[600px] shadow-strong z-50 transition-all flex flex-col",
+          "fixed bottom-4 right-4 w-[90vw] sm:w-[400px] h-[85vh] sm:h-[600px] max-h-[90vh] shadow-strong z-50 transition-all flex flex-col",
           isOpen ? "scale-100 opacity-100" : "scale-0 opacity-0"
         )}
       >
