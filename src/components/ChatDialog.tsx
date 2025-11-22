@@ -60,8 +60,8 @@ export function ChatDialog({
   const [newMessage, setNewMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [isSending, setIsSending] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
   const [jobData, setJobData] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -217,29 +217,57 @@ export function ChatDialog({
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    if (file.size > 5 * 1024 * 1024) {
+    // Verifica la dimensione di ogni file
+    const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
       toast({
         title: "Errore",
-        description: "L'immagine deve essere inferiore a 5MB",
+        description: "Ogni immagine deve essere inferiore a 5MB",
         variant: "destructive",
       });
       return;
     }
 
-    setSelectedImage(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    // Limita a massimo 5 immagini
+    if (files.length > 5) {
+      toast({
+        title: "Attenzione",
+        description: "Puoi inviare massimo 5 immagini alla volta",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedImages(files);
+    
+    // Crea anteprime per tutte le immagini
+    const previews: string[] = [];
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        previews.push(reader.result as string);
+        if (previews.length === files.length) {
+          setImagePreviews(previews);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
-  const removeImage = () => {
-    setSelectedImage(null);
-    setImagePreview(null);
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    if (fileInputRef.current && selectedImages.length === 1) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removeAllImages = () => {
+    setSelectedImages([]);
+    setImagePreviews([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -272,18 +300,24 @@ export function ChatDialog({
 
     const textToSend = messageText || newMessage;
 
-    if ((!textToSend.trim() && !selectedImage) || isSending) return;
+    if ((!textToSend.trim() && selectedImages.length === 0) || isSending) return;
 
     setIsSending(true);
 
-    let imageUrl: string | null = null;
+    // Upload tutte le immagini se presenti
+    const imageUrls: string[] = [];
+    if (selectedImages.length > 0) {
+      for (const image of selectedImages) {
+        const url = await uploadImage(image);
+        if (url) {
+          imageUrls.push(url);
+        }
+      }
 
-    if (selectedImage) {
-      imageUrl = await uploadImage(selectedImage);
-      if (!imageUrl) {
+      if (imageUrls.length === 0) {
         toast({
           title: "Errore",
-          description: "Impossibile caricare l'immagine",
+          description: "Impossibile caricare le immagini",
           variant: "destructive",
         });
         setIsSending(false);
@@ -291,26 +325,47 @@ export function ChatDialog({
       }
     }
 
-    const { error } = await supabase.from("chat_messages").insert({
-      job_id: jobId,
-      sender_id: currentUserId,
-      message: textToSend.trim() || "📷 Immagine",
-      image_url: imageUrl,
-    });
+    // Se ci sono più immagini, inviale in messaggi separati
+    if (imageUrls.length > 0) {
+      for (let i = 0; i < imageUrls.length; i++) {
+        const isLastImage = i === imageUrls.length - 1;
+        const messageContent = isLastImage && textToSend.trim() 
+          ? textToSend.trim() 
+          : `📷 Immagine ${i + 1}/${imageUrls.length}`;
 
-    setIsSending(false);
+        const { error } = await supabase.from("chat_messages").insert({
+          job_id: jobId,
+          sender_id: currentUserId,
+          message: messageContent,
+          image_url: imageUrls[i],
+        });
 
-    if (error) {
-      toast({
-        title: "Errore",
-        description: "Impossibile inviare il messaggio",
-        variant: "destructive",
+        if (error) {
+          console.error("Error sending image:", error);
+        }
+      }
+    } else if (textToSend.trim()) {
+      // Solo testo senza immagini
+      const { error } = await supabase.from("chat_messages").insert({
+        job_id: jobId,
+        sender_id: currentUserId,
+        message: textToSend.trim(),
       });
-      return;
+
+      if (error) {
+        toast({
+          title: "Errore",
+          description: "Impossibile inviare il messaggio",
+          variant: "destructive",
+        });
+        setIsSending(false);
+        return;
+      }
     }
 
+    setIsSending(false);
     setNewMessage("");
-    removeImage();
+    removeAllImages();
   };
 
 
@@ -503,22 +558,26 @@ export function ChatDialog({
         </ScrollArea>
 
         <div className="p-4 border-t">
-          {imagePreview && (
-            <div className="mb-3 relative inline-block">
-              <img
-                src={imagePreview}
-                alt="Anteprima"
-                className="max-h-32 rounded-lg"
-              />
-              <Button
-                type="button"
-                size="icon"
-                variant="destructive"
-                className="absolute -top-2 -right-2 h-6 w-6"
-                onClick={removeImage}
-              >
-                <X className="h-3 w-3" />
-              </Button>
+          {imagePreviews.length > 0 && (
+            <div className="mb-3 flex gap-2 flex-wrap">
+              {imagePreviews.map((preview, index) => (
+                <div key={index} className="relative inline-block">
+                  <img
+                    src={preview}
+                    alt={`Anteprima ${index + 1}`}
+                    className="max-h-24 rounded-lg"
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="destructive"
+                    className="absolute -top-2 -right-2 h-5 w-5"
+                    onClick={() => removeImage(index)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
             </div>
           )}
           
@@ -527,6 +586,7 @@ export function ChatDialog({
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              multiple
               onChange={handleImageSelect}
               className="hidden"
               disabled={isSending}
@@ -550,7 +610,7 @@ export function ChatDialog({
             <Button
               type="submit"
               size="icon"
-              disabled={(!newMessage.trim() && !selectedImage) || isSending}
+              disabled={(!newMessage.trim() && selectedImages.length === 0) || isSending}
             >
               {isSending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
