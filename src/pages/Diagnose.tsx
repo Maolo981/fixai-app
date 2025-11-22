@@ -442,8 +442,8 @@ const Diagnose = () => {
             
             {/* Quick Replies */}
             {showQuickReplies && messages.length === 1 && !isLoading && (
-              <div className="space-y-4 animate-fade-in">
-                <p className="text-base text-muted-foreground text-center font-medium">
+              <div className="space-y-4">
+                <p className="text-base text-muted-foreground text-center font-medium animate-fade-in">
                   Oppure seleziona un tipo di problema:
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -452,9 +452,13 @@ const Diagnose = () => {
                       key={idx}
                       variant="outline"
                       className={cn(
-                        "h-auto py-4 px-5 justify-start gap-3 text-left border-2 hover:scale-105 transition-all",
+                        "h-auto py-4 px-5 justify-start gap-3 text-left border-2 hover:scale-105 transition-all animate-slide-up-fade opacity-0",
                         reply.color
                       )}
+                      style={{
+                        animationDelay: `${idx * 100}ms`,
+                        animationFillMode: 'forwards'
+                      }}
                       onClick={() => handleQuickReply(reply.text)}
                     >
                       <span className="text-2xl">{reply.icon}</span>
