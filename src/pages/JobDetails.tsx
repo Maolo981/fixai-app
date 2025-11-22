@@ -121,7 +121,7 @@ const JobDetails = () => {
             rating,
             total_jobs
           ),
-          quotes (
+          quotes!quotes_job_id_fkey (
             id,
             description,
             estimated_hours,
