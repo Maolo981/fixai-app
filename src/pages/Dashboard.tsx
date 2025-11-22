@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, LogOut, User, Clock, Briefcase, Calendar, Star, MessageCircle, Trash2 } from "lucide-react";
+import { Camera, LogOut, User, Clock, Briefcase, Calendar, Star, MessageCircle, Trash2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MobileLayout } from "@/components/MobileLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -64,6 +64,8 @@ const Dashboard = () => {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [diagnosisToDelete, setDiagnosisToDelete] = useState<string | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [jobToCancel, setJobToCancel] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -157,6 +159,35 @@ const Dashboard = () => {
     } finally {
       setDeleteDialogOpen(false);
       setDiagnosisToDelete(null);
+    }
+  };
+
+  const handleCancelJob = async () => {
+    if (!jobToCancel) return;
+
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .update({ status: 'cancelled' })
+        .eq('id', jobToCancel);
+
+      if (error) throw error;
+
+      toast({
+        title: "Prenotazione annullata",
+        description: "La prenotazione è stata annullata con successo",
+      });
+
+      loadJobs();
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: "Impossibile annullare la prenotazione",
+        variant: "destructive",
+      });
+    } finally {
+      setCancelDialogOpen(false);
+      setJobToCancel(null);
     }
   };
 
@@ -424,6 +455,23 @@ const Dashboard = () => {
                           </Button>
                         )}
 
+                        {(job.status === 'requested' || job.status === 'confirmed' || job.status === 'scheduled') && (
+                          <Button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setJobToCancel(job.id);
+                              setCancelDialogOpen(true);
+                            }}
+                            size="sm"
+                            variant="destructive"
+                            className="w-full touch-manipulation"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Annulla Prenotazione
+                          </Button>
+                        )}
+
                         {job.status === 'completed' && !job.user_rating && (
                           <Button
                             onClick={() => {
@@ -488,6 +536,23 @@ const Dashboard = () => {
             <AlertDialogCancel>Annulla</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteDiagnosis} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Annulla prenotazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler annullare questa prenotazione? Il tecnico verrà notificato dell'annullamento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Indietro</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelJob} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Annulla Prenotazione
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
