@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { MessageCircle, Send, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { MessageCircle, Send, X, Image as ImageIcon, Loader2, FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { VoiceChatControls } from "./VoiceChatControls";
+import { QuoteInChatCard } from "./QuoteInChatCard";
+import { CreateQuoteDialog } from "./CreateQuoteDialog";
 
 interface Message {
   id: string;
@@ -20,6 +23,18 @@ interface Message {
   image_url?: string | null;
   created_at: string;
   read: boolean;
+  quote_id?: string | null;
+}
+
+interface Quote {
+  id: string;
+  description: string;
+  estimated_hours: number;
+  hourly_rate: number;
+  total_cost: number;
+  parts_cost: number | null;
+  notes: string | null;
+  status: string;
 }
 
 interface ChatDialogProps {
@@ -27,6 +42,9 @@ interface ChatDialogProps {
   onOpenChange: (open: boolean) => void;
   jobId: string;
   technicianName: string;
+  isTechnician?: boolean;
+  technicianId?: string | null;
+  userId?: string;
 }
 
 export function ChatDialog({
@@ -34,13 +52,19 @@ export function ChatDialog({
   onOpenChange,
   jobId,
   technicianName,
+  isTechnician = false,
+  technicianId,
+  userId,
 }: ChatDialogProps) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [newMessage, setNewMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [isSending, setIsSending] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
+  const [jobData, setJobData] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -48,14 +72,30 @@ export function ChatDialog({
   useEffect(() => {
     if (open) {
       loadMessages();
+      loadQuotes();
+      loadJobData();
       getCurrentUser();
       subscribeToMessages();
+      subscribeToQuotes();
     }
 
     return () => {
       supabase.channel(`chat-${jobId}`).unsubscribe();
+      supabase.channel(`quotes-${jobId}`).unsubscribe();
     };
   }, [open, jobId]);
+
+  const loadJobData = async () => {
+    const { data, error } = await supabase
+      .from("jobs")
+      .select("id, user_id, diagnoses(problem_type)")
+      .eq("id", jobId)
+      .single();
+
+    if (!error && data) {
+      setJobData(data);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -82,6 +122,24 @@ export function ChatDialog({
 
     setMessages(data || []);
     markMessagesAsRead(data || []);
+  };
+
+  const loadQuotes = async () => {
+    const { data, error } = await supabase
+      .from("quotes")
+      .select("*")
+      .eq("job_id", jobId);
+
+    if (error) {
+      console.error("Error loading quotes:", error);
+      return;
+    }
+
+    const quotesMap: Record<string, Quote> = {};
+    data?.forEach(quote => {
+      quotesMap[quote.id] = quote;
+    });
+    setQuotes(quotesMap);
   };
 
   const markMessagesAsRead = async (messagesToMark: Message[]) => {
@@ -118,6 +176,31 @@ export function ChatDialog({
           
           if (newMsg.sender_id !== currentUserId) {
             markMessagesAsRead([newMsg]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const subscribeToQuotes = () => {
+    const channel = supabase
+      .channel(`quotes-${jobId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "quotes",
+          filter: `job_id=eq.${jobId}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+            const quote = payload.new as Quote;
+            setQuotes((prev) => ({ ...prev, [quote.id]: quote }));
           }
         }
       )
@@ -185,10 +268,12 @@ export function ChatDialog({
     }
   };
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSend = async (e?: React.FormEvent, messageText?: string) => {
+    e?.preventDefault();
 
-    if ((!newMessage.trim() && !selectedImage) || isSending) return;
+    const textToSend = messageText || newMessage;
+
+    if ((!textToSend.trim() && !selectedImage) || isSending) return;
 
     setIsSending(true);
 
@@ -210,7 +295,7 @@ export function ChatDialog({
     const { error } = await supabase.from("chat_messages").insert({
       job_id: jobId,
       sender_id: currentUserId,
-      message: newMessage.trim() || "📷 Immagine",
+      message: textToSend.trim() || "📷 Immagine",
       image_url: imageUrl,
     });
 
@@ -227,6 +312,87 @@ export function ChatDialog({
 
     setNewMessage("");
     removeImage();
+  };
+
+  const handleVoiceTranscript = (transcript: string) => {
+    handleSend(undefined, transcript);
+  };
+
+  const handleAcceptQuote = async (quoteId: string) => {
+    const { error: quoteError } = await supabase
+      .from("quotes")
+      .update({ status: "accepted" })
+      .eq("id", quoteId);
+
+    if (quoteError) {
+      toast({
+        title: "Errore",
+        description: "Impossibile accettare il preventivo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error: jobError } = await supabase
+      .from("jobs")
+      .update({ 
+        status: "confermato",
+        quote_id: quoteId 
+      })
+      .eq("id", jobId);
+
+    if (jobError) {
+      console.error("Error updating job:", jobError);
+    }
+
+    toast({
+      title: "Preventivo accettato!",
+      description: "Il tecnico verrà a casa tua come concordato",
+    });
+
+    await supabase.from("chat_messages").insert({
+      job_id: jobId,
+      sender_id: currentUserId,
+      message: "✅ Ho accettato il preventivo",
+      quote_id: quoteId,
+    });
+  };
+
+  const handleRejectQuote = async (quoteId: string) => {
+    const { error } = await supabase
+      .from("quotes")
+      .update({ status: "rejected" })
+      .eq("id", quoteId);
+
+    if (error) {
+      toast({
+        title: "Errore",
+        description: "Impossibile rifiutare il preventivo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Preventivo rifiutato",
+      description: "Puoi richiedere un nuovo preventivo",
+    });
+
+    await supabase.from("chat_messages").insert({
+      job_id: jobId,
+      sender_id: currentUserId,
+      message: "❌ Ho rifiutato il preventivo",
+      quote_id: quoteId,
+    });
+  };
+
+  const handleQuoteCreated = async () => {
+    setQuoteDialogOpen(false);
+    loadQuotes();
+    toast({
+      title: "Preventivo inviato!",
+      description: "Il cliente riceverà il tuo preventivo nella chat",
+    });
   };
 
   const formatTime = (timestamp: string) => {
@@ -247,17 +413,29 @@ export function ChatDialog({
               <div>
                 <DialogTitle>Chat con {technicianName}</DialogTitle>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Messaggi in tempo reale
+                  💬 Messaggi in tempo reale • 🎤 Usa il microfono per parlare
                 </p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {isTechnician && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setQuoteDialogOpen(true)}
+                >
+                  <FileText className="h-4 w-4 mr-1" />
+                  Crea Preventivo
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -272,39 +450,55 @@ export function ChatDialog({
             ) : (
               messages.map((msg) => {
                 const isOwnMessage = msg.sender_id === currentUserId;
+                const messageQuote = msg.quote_id ? quotes[msg.quote_id] : null;
+                
                 return (
-                  <div
-                    key={msg.id}
-                    className={`flex ${
-                      isOwnMessage ? "justify-end" : "justify-start"
-                    }`}
-                  >
+                  <div key={msg.id} className="space-y-2">
                     <div
-                      className={`max-w-[70%] rounded-lg px-4 py-2 ${
-                        isOwnMessage
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
+                      className={`flex ${
+                        isOwnMessage ? "justify-end" : "justify-start"
                       }`}
                     >
-                      {msg.image_url && (
-                        <img
-                          src={msg.image_url}
-                          alt="Allegato"
-                          className="rounded-lg mb-2 max-w-full cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => window.open(msg.image_url!, "_blank")}
-                        />
-                      )}
-                      <p className="text-sm break-words">{msg.message}</p>
-                      <p
-                        className={`text-xs mt-1 ${
+                      <div
+                        className={`max-w-[70%] rounded-lg px-4 py-2 ${
                           isOwnMessage
-                            ? "text-primary-foreground/70"
-                            : "text-muted-foreground"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted"
                         }`}
                       >
-                        {formatTime(msg.created_at)}
-                      </p>
+                        {msg.image_url && (
+                          <img
+                            src={msg.image_url}
+                            alt="Allegato"
+                            className="rounded-lg mb-2 max-w-full cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => window.open(msg.image_url!, "_blank")}
+                          />
+                        )}
+                        <p className="text-sm break-words">{msg.message}</p>
+                        <p
+                          className={`text-xs mt-1 ${
+                            isOwnMessage
+                              ? "text-primary-foreground/70"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {formatTime(msg.created_at)}
+                        </p>
+                      </div>
                     </div>
+                    
+                    {messageQuote && (
+                      <div className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}>
+                        <div className="max-w-[85%]">
+                          <QuoteInChatCard
+                            quote={messageQuote}
+                            isOwnQuote={isOwnMessage}
+                            onAccept={handleAcceptQuote}
+                            onReject={handleRejectQuote}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -341,6 +535,10 @@ export function ChatDialog({
               className="hidden"
               disabled={isSending}
             />
+            <VoiceChatControls
+              onTranscriptComplete={handleVoiceTranscript}
+              disabled={isSending}
+            />
             <Button
               type="button"
               size="icon"
@@ -351,7 +549,7 @@ export function ChatDialog({
               <ImageIcon className="h-4 w-4" />
             </Button>
             <Input
-              placeholder="Scrivi un messaggio..."
+              placeholder="Scrivi o parla..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               disabled={isSending}
@@ -371,6 +569,14 @@ export function ChatDialog({
           </form>
         </div>
       </DialogContent>
+
+      <CreateQuoteDialog
+        open={quoteDialogOpen}
+        onOpenChange={setQuoteDialogOpen}
+        job={jobData}
+        technicianId={technicianId || null}
+        onQuoteCreated={handleQuoteCreated}
+      />
     </Dialog>
   );
 }
