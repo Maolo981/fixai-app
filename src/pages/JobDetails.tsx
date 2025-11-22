@@ -137,7 +137,10 @@ const JobDetails = () => {
         .eq('id', id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Errore nel caricamento del job:", error);
+        throw error;
+      }
       
       if (!data) {
         toast({
@@ -149,11 +152,13 @@ const JobDetails = () => {
         return;
       }
       
+      console.log("Job caricato con successo:", data);
       setJob(data as unknown as Job);
     } catch (error: any) {
+      console.error("Errore completo:", error);
       toast({
         title: "Errore",
-        description: "Impossibile caricare i dettagli della prenotazione",
+        description: error.message || "Impossibile caricare i dettagli della prenotazione",
         variant: "destructive",
       });
       navigate("/dashboard");
