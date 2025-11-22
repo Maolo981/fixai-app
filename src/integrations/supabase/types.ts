@@ -99,6 +99,7 @@ export type Database = {
       }
       jobs: {
         Row: {
+          cancellation_reason: string | null
           completion_date: string | null
           created_at: string | null
           diagnosis_id: string | null
@@ -115,6 +116,7 @@ export type Database = {
           user_review: string | null
         }
         Insert: {
+          cancellation_reason?: string | null
           completion_date?: string | null
           created_at?: string | null
           diagnosis_id?: string | null
@@ -131,6 +133,7 @@ export type Database = {
           user_review?: string | null
         }
         Update: {
+          cancellation_reason?: string | null
           completion_date?: string | null
           created_at?: string | null
           diagnosis_id?: string | null
