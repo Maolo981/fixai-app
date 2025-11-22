@@ -12,7 +12,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { VoiceChatControls } from "./VoiceChatControls";
 import { QuoteInChatCard } from "./QuoteInChatCard";
 import { CreateQuoteDialog } from "./CreateQuoteDialog";
 
@@ -314,9 +313,6 @@ export function ChatDialog({
     removeImage();
   };
 
-  const handleVoiceTranscript = (transcript: string) => {
-    handleSend(undefined, transcript);
-  };
 
   const handleAcceptQuote = async (quoteId: string) => {
     const { error: quoteError } = await supabase
@@ -413,7 +409,7 @@ export function ChatDialog({
               <div>
                 <DialogTitle>Chat con {technicianName}</DialogTitle>
                 <p className="text-xs text-muted-foreground mt-1">
-                  💬 Messaggi in tempo reale • 🎤 Usa il microfono per parlare
+                  💬 Messaggi in tempo reale
                 </p>
               </div>
             </div>
@@ -535,10 +531,6 @@ export function ChatDialog({
               className="hidden"
               disabled={isSending}
             />
-            <VoiceChatControls
-              onTranscriptComplete={handleVoiceTranscript}
-              disabled={isSending}
-            />
             <Button
               type="button"
               size="icon"
@@ -549,7 +541,7 @@ export function ChatDialog({
               <ImageIcon className="h-4 w-4" />
             </Button>
             <Input
-              placeholder="Scrivi o parla..."
+              placeholder="Scrivi un messaggio..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               disabled={isSending}
