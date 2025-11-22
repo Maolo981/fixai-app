@@ -19,7 +19,10 @@ import {
   Star,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  CreditCard,
+  FileText,
+  DollarSign
 } from "lucide-react";
 import {
   AlertDialog,
@@ -34,6 +37,9 @@ import {
 import { ChatDialog } from "@/components/ChatDialog";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { QuoteRequestCard } from "@/components/QuoteRequestCard";
+import { PaymentDialog } from "@/components/PaymentDialog";
+import { RefundStatusCard } from "@/components/RefundStatusCard";
+import { usePayments } from "@/hooks/usePayments";
 
 interface Quote {
   id: string;
@@ -94,6 +100,18 @@ const JobDetails = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentType, setPaymentType] = useState<"deposit" | "balance" | "full">("deposit");
+  const [paymentAmount, setPaymentAmount] = useState(0);
+
+  const {
+    payments,
+    settings,
+    isDepositPaid,
+    isBalancePaid,
+    calculateAmounts,
+    refresh: refreshPayments,
+  } = usePayments(id);
 
   useEffect(() => {
     loadJobDetails();
@@ -204,7 +222,6 @@ const JobDetails = () => {
   };
 
   const handleCancelJob = async () => {
-    // Validazione del motivo
     if (!cancellationReason.trim()) {
       toast({
         title: "Motivo richiesto",
@@ -223,42 +240,70 @@ const JobDetails = () => {
       return;
     }
 
-    if (cancellationReason.length > 500) {
-      toast({
-        title: "Motivo troppo lungo",
-        description: "Il motivo non può superare 500 caratteri",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
-      const { error } = await supabase
-        .from('jobs')
-        .update({ 
-          status: 'cancelled',
-          cancellation_reason: cancellationReason.trim()
-        })
-        .eq('id', id);
+      // Chiama edge function per gestire rimborso se necessario
+      if (isDepositPaid()) {
+        const { error: refundError } = await supabase.functions.invoke("process-refund", {
+          body: { jobId: id, reason: cancellationReason.trim() },
+        });
 
-      if (error) throw error;
+        if (refundError) {
+          toast({
+            title: "Errore rimborso",
+            description: refundError.message,
+            variant: "destructive",
+          });
+          return;
+        }
 
-      toast({
-        title: "Prenotazione annullata",
-        description: "La prenotazione è stata annullata con successo",
-      });
+        toast({
+          title: "Rimborso richiesto",
+          description: "Il rimborso è stato elaborato secondo la policy",
+        });
+      } else {
+        // Se non c'è pagamento, semplicemente annulla
+        const { error } = await supabase
+          .from("jobs")
+          .update({
+            status: "cancelled",
+            cancellation_reason: cancellationReason.trim(),
+          })
+          .eq("id", id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Prenotazione annullata",
+          description: "La prenotazione è stata annullata con successo",
+        });
+      }
 
       setCancelDialogOpen(false);
       setCancellationReason("");
       loadJobDetails();
     } catch (error: any) {
-      console.error('Error cancelling job:', error);
+      console.error("Error cancelling job:", error);
       toast({
         title: "Errore",
         description: "Impossibile annullare la prenotazione",
         variant: "destructive",
       });
     }
+  };
+
+  const openPaymentDialog = (type: "deposit" | "balance" | "full", amount: number) => {
+    setPaymentType(type);
+    setPaymentAmount(amount);
+    setPaymentDialogOpen(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    loadJobDetails();
+    refreshPayments();
+    toast({
+      title: "Pagamento completato!",
+      description: "Il pagamento è stato elaborato con successo",
+    });
   };
 
   if (loading) {
@@ -486,27 +531,152 @@ const JobDetails = () => {
             </Card>
           )}
 
-          {/* Payment */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Pagamento</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Stato pagamento</span>
-                <Badge variant={job.payment_status === 'paid' ? 'default' : 'secondary'}>
-                  {job.payment_status === 'pending' ? 'Da pagare' : 
-                   job.payment_status === 'paid' ? 'Pagato' : job.payment_status}
-                </Badge>
-              </div>
-              {job.final_cost && (
+          {/* Refund Status (if applicable) */}
+          {job.payment_status === "refunded" || job.payment_status === "partially_refunded" ? (
+            <RefundStatusCard jobId={job.id} />
+          ) : null}
+
+          {/* Payment Section - Enhanced */}
+          {job.quotes && job.quotes.length > 0 && job.quotes[0].status === "accepted" && (
+            <Card>
+              <CardHeader>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Costo finale</span>
-                  <span className="text-2xl font-bold">€{job.final_cost}</span>
+                  <CardTitle>Pagamento</CardTitle>
+                  <Badge variant={job.payment_status === "paid" ? "default" : "secondary"}>
+                    {job.payment_status === "pending" ? "Da pagare" :
+                     job.payment_status === "deposit_pending" ? "Anticipo richiesto" :
+                     job.payment_status === "deposit_paid" ? "Anticipo pagato" :
+                     job.payment_status === "balance_pending" ? "Saldo richiesto" :
+                     job.payment_status === "paid" ? "Pagato" :
+                     job.payment_status === "refunded" ? "Rimborsato" :
+                     job.payment_status === "partially_refunded" ? "Rimborsato parzialmente" :
+                     job.payment_status}
+                  </Badge>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <CardDescription>
+                  Split payment: anticipo 30% + saldo 70%
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {settings && job.quotes[0] && (() => {
+                  const totalCost = parseFloat(job.quotes[0].total_cost.toString());
+                  const { deposit, balance } = calculateAmounts(totalCost);
+
+                  return (
+                    <>
+                      {/* Anticipo */}
+                      <div className="p-4 border rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-5 w-5 text-muted-foreground" />
+                            <span className="font-medium">Anticipo (30%)</span>
+                          </div>
+                          <span className="text-xl font-bold">€{deposit.toFixed(2)}</span>
+                        </div>
+                        {isDepositPaid() ? (
+                          <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle className="h-5 w-5" />
+                            <span className="text-sm">Pagato</span>
+                          </div>
+                        ) : (
+                          <Button
+                            onClick={() => openPaymentDialog("deposit", deposit)}
+                            className="w-full"
+                            disabled={job.status === "cancelled"}
+                          >
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Paga Anticipo
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Saldo */}
+                      <div className="p-4 border rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-5 w-5 text-muted-foreground" />
+                            <span className="font-medium">Saldo (70%)</span>
+                          </div>
+                          <span className="text-xl font-bold">€{balance.toFixed(2)}</span>
+                        </div>
+                        {isBalancePaid() ? (
+                          <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle className="h-5 w-5" />
+                            <span className="text-sm">Pagato</span>
+                          </div>
+                        ) : job.status === "completed" && isDepositPaid() ? (
+                          <Button
+                            onClick={() => openPaymentDialog("balance", balance)}
+                            className="w-full"
+                          >
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Paga Saldo
+                          </Button>
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-2">
+                            Disponibile dopo il completamento del lavoro
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Totale */}
+                      <div className="pt-3 border-t">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold">Totale</span>
+                          <span className="text-2xl font-bold">€{totalCost.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Invoice Section */}
+          {job.status === "completed" && job.payment_status === "paid" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Fattura Elettronica</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={async () => {
+                    try {
+                      const { data, error } = await supabase.functions.invoke("generate-invoice", {
+                        body: { jobId: job.id },
+                      });
+
+                      if (error) throw error;
+
+                      const blob = new Blob([data.html], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `fattura-${data.invoice.invoice_number}.html`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+
+                      toast({
+                        title: "Fattura scaricata",
+                        description: "La fattura è stata scaricata con successo",
+                      });
+                    } catch (error: any) {
+                      toast({
+                        title: "Errore",
+                        description: error.message || "Impossibile scaricare la fattura",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="w-full"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Scarica Fattura
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Actions */}
           <div className="space-y-3 pb-6">
@@ -587,6 +757,15 @@ const JobDetails = () => {
           jobId={job.id}
           technicianName={job.technicians?.full_name || ''}
           onReviewSubmitted={loadJobDetails}
+        />
+
+        <PaymentDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          jobId={job.id}
+          paymentType={paymentType}
+          amount={paymentAmount}
+          onSuccess={handlePaymentSuccess}
         />
 
         <AlertDialog open={cancelDialogOpen} onOpenChange={(open) => {
