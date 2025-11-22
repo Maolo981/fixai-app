@@ -2,86 +2,94 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Design System - Tema Moderno e Dinamico */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 215 25% 15%;
+    --background: 240 10% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 213 94% 41%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 178 94% 47%;
+    --secondary: 270 95% 65%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-
-    --accent: 178 94% 47%;
+    --accent: 142 71% 45%;
     --accent-foreground: 0 0% 100%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 213 94% 41%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 60%;
 
-    --radius: 1rem;
+    --radius: 1.25rem;
 
     --urgency-low: 142 71% 45%;
     --urgency-medium: 38 92% 50%;
     --urgency-high: 0 84% 60%;
 
-    --gradient-hero: linear-gradient(135deg, hsl(213 94% 41%), hsl(178 94% 47%));
-    --gradient-card: linear-gradient(135deg, hsl(213 94% 95%), hsl(178 94% 95%));
+    /* Gradients Dinamici */
+    --gradient-hero: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(270 95% 65%) 50%, hsl(340 82% 52%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(217 91% 97%) 0%, hsl(270 95% 97%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(142 71% 45%) 0%, hsl(178 94% 47%) 100%);
+    --gradient-shine: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
     
-    --shadow-soft: 0 1px 3px 0 hsl(213 94% 41% / 0.1), 0 1px 2px -1px hsl(213 94% 41% / 0.1);
-    --shadow-medium: 0 4px 6px -1px hsl(213 94% 41% / 0.1), 0 2px 4px -2px hsl(213 94% 41% / 0.1);
-    --shadow-strong: 0 10px 15px -3px hsl(213 94% 41% / 0.15), 0 4px 6px -4px hsl(213 94% 41% / 0.1);
+    /* Shadows Premium */
+    --shadow-soft: 0 2px 8px rgba(102, 126, 234, 0.08);
+    --shadow-medium: 0 8px 24px rgba(102, 126, 234, 0.12), 0 4px 8px rgba(102, 126, 234, 0.06);
+    --shadow-strong: 0 16px 48px rgba(102, 126, 234, 0.15), 0 8px 16px rgba(102, 126, 234, 0.08);
+    --shadow-glow: 0 0 32px rgba(102, 126, 234, 0.4);
+    
+    /* Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.3);
   }
 
   .dark {
-    --background: 215 28% 10%;
-    --foreground: 0 0% 98%;
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
 
-    --card: 215 28% 12%;
-    --card-foreground: 0 0% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 215 28% 12%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 213 94% 55%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 217 91% 70%;
+    --primary-foreground: 222 47% 11%;
 
-    --secondary: 178 94% 55%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 270 95% 75%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 215 28% 17%;
+    --accent: 142 71% 55%;
+    --accent-foreground: 222 47% 11%;
+
+    --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 178 94% 55%;
-    --accent-foreground: 0 0% 100%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 217 91% 70%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 215 28% 20%;
-    --input: 215 28% 20%;
-    --ring: 213 94% 55%;
-
-    --shadow-soft: 0 2px 8px -2px hsl(213 94% 55% / 0.2);
-    --shadow-medium: 0 8px 24px -4px hsl(213 94% 55% / 0.25);
-    --shadow-strong: 0 16px 40px -8px hsl(213 94% 55% / 0.3);
+    --shadow-soft: 0 2px 16px rgba(102, 126, 234, 0.2);
+    --shadow-medium: 0 8px 32px rgba(102, 126, 234, 0.25), 0 4px 16px rgba(102, 126, 234, 0.15);
+    --shadow-strong: 0 20px 64px rgba(102, 126, 234, 0.3), 0 8px 24px rgba(102, 126, 234, 0.2);
+    --shadow-glow: 0 0 48px rgba(102, 126, 234, 0.6);
+    
+    --glass-bg: rgba(0, 0, 0, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -92,47 +100,40 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    
+    /* Background Dinamico e Moderno */
     background-image: 
-      radial-gradient(circle at 20% 50%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, hsl(var(--secondary) / 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 40% 20%, hsl(var(--accent) / 0.02) 0%, transparent 50%),
-      repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        hsl(var(--primary) / 0.015) 2px,
-        hsl(var(--primary) / 0.015) 4px
-      ),
-      repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 2px,
-        hsl(var(--secondary) / 0.015) 2px,
-        hsl(var(--secondary) / 0.015) 4px
-      );
+      radial-gradient(circle at 20% 20%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, hsl(var(--secondary) / 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, hsl(var(--accent) / 0.05) 0%, transparent 60%),
+      linear-gradient(180deg, transparent 0%, hsl(var(--primary) / 0.02) 100%);
+    background-attachment: fixed;
     background-size: 
-      600px 600px,
       800px 800px,
-      500px 500px,
-      60px 60px,
-      60px 60px;
+      800px 800px,
+      1000px 1000px,
+      100% 100%;
     background-position: 
       0 0,
       100% 100%,
-      50% 0,
-      0 0,
+      50% 50%,
       0 0;
-    background-attachment: fixed;
   }
 
-  /* Mobile optimizations */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* Mobile Optimizations */
   html {
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     -webkit-text-size-adjust: 100%;
   }
 
-  /* Safe area support for notch/home indicator */
   @supports (padding-top: env(safe-area-inset-top)) {
     body {
       padding-top: env(safe-area-inset-top);
@@ -142,8 +143,91 @@ All colors MUST be HSL.
     }
   }
 
-  /* Mobile scrolling */
   * {
     -webkit-overflow-scrolling: touch;
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism Effects */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+  }
+  
+  .glass-strong {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+  }
+
+  /* Gradient Text */
+  .text-gradient {
+    background: var(--gradient-hero);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Hover Effects */
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+  
+  .hover-lift:hover {
+    @apply -translate-y-1 shadow-strong;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300;
+  }
+  
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Animations */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
   }
 }
