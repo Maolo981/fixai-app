@@ -6,13 +6,17 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users, MapPin, Navigation, Calendar, Map } from "lucide-react";
+import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users, MapPin, Navigation, Calendar, Map, Filter, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MobileLayout } from "@/components/MobileLayout";
 import { TechnicianMap } from "@/components/TechnicianMap";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDialog } from "@/components/BookingDialog";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface Diagnosis {
   id: string;
@@ -50,6 +54,12 @@ const Results = () => {
   const [loading, setLoading] = useState(true);
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Filtri
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
+  const [minRating, setMinRating] = useState<string>("0");
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
 
   useEffect(() => {
     loadDiagnosis();
@@ -261,6 +271,33 @@ const Results = () => {
 
   const bestOfferId = getBestOffer();
 
+  // Filtra tecnici in base ai filtri selezionati
+  const filteredTechnicians = technicians.filter(tech => {
+    // Filtro prezzo
+    if (tech.hourly_rate < priceRange[0] || tech.hourly_rate > priceRange[1]) {
+      return false;
+    }
+    
+    // Filtro rating
+    if (tech.rating < parseFloat(minRating)) {
+      return false;
+    }
+    
+    // Filtro disponibilità (se attivo, mostra solo disponibili)
+    // Nota: availability_status non è nel tipo Technician, quindi lo consideriamo sempre disponibile per ora
+    // Se il backend ha questo campo, aggiungerlo al tipo Technician
+    
+    return true;
+  });
+
+  const hasActiveFilters = priceRange[0] !== 0 || priceRange[1] !== 200 || minRating !== "0" || onlyAvailable;
+
+  const resetFilters = () => {
+    setPriceRange([0, 200]);
+    setMinRating("0");
+    setOnlyAvailable(false);
+  };
+
   const handleBookingClick = async (technician: Technician) => {
     if (!diagnosis) return;
     
@@ -469,22 +506,119 @@ const Results = () => {
         {/* Matched Technicians */}
         <Card className="shadow-medium">
           <CardHeader>
-            <CardTitle className="flex items-center text-base sm:text-lg">
-              <Users className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
-              {coordinates ? 'Tecnici Nelle Vicinanze' : 'Tecnici Raccomandati'}
-              {technicians.length > 0 && technicians[0]?.distance_km && (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
-                  (fino a {Math.round(technicians[technicians.length - 1].distance_km)} km)
-                </span>
-              )}
-            </CardTitle>
+            <div className="flex items-center justify-between mb-2">
+              <CardTitle className="flex items-center text-base sm:text-lg">
+                <Users className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
+                {coordinates ? 'Tecnici Nelle Vicinanze' : 'Tecnici Raccomandati'}
+                {technicians.length > 0 && technicians[0]?.distance_km && (
+                  <span className="text-sm font-normal text-muted-foreground ml-2">
+                    (fino a {Math.round(technicians[technicians.length - 1].distance_km)} km)
+                  </span>
+                )}
+              </CardTitle>
+              <Button
+                variant={showFilters ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="gap-2 h-9 touch-manipulation"
+              >
+                <Filter className="h-4 w-4" />
+                <span className="hidden sm:inline">Filtri</span>
+                {hasActiveFilters && (
+                  <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+                    !
+                  </Badge>
+                )}
+              </Button>
+            </div>
             <CardDescription className="text-xs sm:text-sm">
               {coordinates 
                 ? 'Ordinati per distanza dalla tua posizione'
                 : 'Tecnici più votati disponibili'
               }
+              {filteredTechnicians.length !== technicians.length && (
+                <span className="block mt-1 text-primary">
+                  Mostrando {filteredTechnicians.length} di {technicians.length} tecnici
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
+
+          {/* Pannello Filtri */}
+          {showFilters && (
+            <CardContent className="border-t bg-muted/30 space-y-4 sm:space-y-6">
+              {/* Filtro Prezzo */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm sm:text-base font-semibold">Tariffa Oraria</Label>
+                  <span className="text-sm text-muted-foreground">
+                    €{priceRange[0]} - €{priceRange[1]}/ora
+                  </span>
+                </div>
+                <Slider
+                  min={0}
+                  max={200}
+                  step={5}
+                  value={priceRange}
+                  onValueChange={(value) => setPriceRange(value as [number, number])}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Filtro Rating */}
+              <div className="space-y-3">
+                <Label className="text-sm sm:text-base font-semibold">Rating Minimo</Label>
+                <Select value={minRating} onValueChange={setMinRating}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleziona rating" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Tutti</SelectItem>
+                    <SelectItem value="3">⭐ 3.0+</SelectItem>
+                    <SelectItem value="3.5">⭐ 3.5+</SelectItem>
+                    <SelectItem value="4">⭐ 4.0+</SelectItem>
+                    <SelectItem value="4.5">⭐ 4.5+</SelectItem>
+                    <SelectItem value="5">⭐ 5.0</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtro Disponibilità */}
+              <div className="flex items-center justify-between">
+                <Label htmlFor="available-only" className="text-sm sm:text-base font-semibold cursor-pointer">
+                  Solo Disponibili Ora
+                </Label>
+                <Switch
+                  id="available-only"
+                  checked={onlyAvailable}
+                  onCheckedChange={setOnlyAvailable}
+                />
+              </div>
+
+              {/* Pulsanti Azioni */}
+              <div className="flex gap-2 pt-2">
+                {hasActiveFilters && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetFilters}
+                    className="flex-1 gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Reset
+                  </Button>
+                )}
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setShowFilters(false)}
+                  className="flex-1"
+                >
+                  Applica Filtri
+                </Button>
+              </div>
+            </CardContent>
+          )}
           
           {coordinates && technicians.length > 0 && technicians.some(t => t.latitude && t.longitude) ? (
             <Tabs defaultValue="list" className="w-full">
@@ -503,7 +637,7 @@ const Results = () => {
 
               <TabsContent value="list" className="mt-0">
                 <CardContent className="space-y-3 sm:space-y-4">
-                  {technicians.map((tech) => (
+                  {filteredTechnicians.map((tech) => (
                     <Card key={tech.id} className={`bg-gradient-card border-border touch-manipulation active:scale-[0.98] transition-transform ${tech.id === bestOfferId ? 'ring-2 ring-primary' : ''}`}>
                       <CardHeader className="pb-3">
                         <div className="flex items-start gap-3">
@@ -570,7 +704,7 @@ const Results = () => {
                       latitude: coordinates.latitude,
                       longitude: coordinates.longitude,
                     }}
-                    technicians={technicians.filter((t): t is Technician & { latitude: number; longitude: number } => 
+                    technicians={filteredTechnicians.filter((t): t is Technician & { latitude: number; longitude: number } => 
                       t.latitude !== undefined && t.longitude !== undefined
                     )}
                     onTechnicianSelect={(tech) => handleBookingClick(tech as Technician)}
@@ -580,17 +714,25 @@ const Results = () => {
             </Tabs>
           ) : (
             <CardContent className="space-y-3 sm:space-y-4">
-              {technicians.length === 0 ? (
+              {filteredTechnicians.length === 0 ? (
                 <Alert>
                   <AlertDescription className="text-xs sm:text-sm">
-                    {coordinates 
-                      ? 'Nessun tecnico trovato vicino alla tua posizione'
-                      : 'Nessun tecnico disponibile al momento nella tua zona'
-                    }
+                    {technicians.length === 0 ? (
+                      coordinates 
+                        ? 'Nessun tecnico trovato vicino alla tua posizione'
+                        : 'Nessun tecnico disponibile al momento nella tua zona'
+                    ) : (
+                      <div className="space-y-2">
+                        <p>Nessun tecnico corrisponde ai filtri selezionati.</p>
+                        <Button variant="outline" size="sm" onClick={resetFilters}>
+                          Reset Filtri
+                        </Button>
+                      </div>
+                    )}
                   </AlertDescription>
                 </Alert>
               ) : (
-                technicians.map((tech) => (
+                filteredTechnicians.map((tech) => (
                   <Card key={tech.id} className="bg-gradient-card border-border touch-manipulation active:scale-[0.98] transition-transform">
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start gap-2">
