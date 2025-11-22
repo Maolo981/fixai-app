@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MobileLayout } from "@/components/MobileLayout";
@@ -90,6 +92,7 @@ const JobDetails = () => {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState("");
 
   useEffect(() => {
     loadJobDetails();
@@ -200,10 +203,41 @@ const JobDetails = () => {
   };
 
   const handleCancelJob = async () => {
+    // Validazione del motivo
+    if (!cancellationReason.trim()) {
+      toast({
+        title: "Motivo richiesto",
+        description: "Inserisci il motivo dell'annullamento",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (cancellationReason.trim().length < 10) {
+      toast({
+        title: "Motivo troppo breve",
+        description: "Il motivo deve essere di almeno 10 caratteri",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (cancellationReason.length > 500) {
+      toast({
+        title: "Motivo troppo lungo",
+        description: "Il motivo non può superare 500 caratteri",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('jobs')
-        .update({ status: 'cancelled' })
+        .update({ 
+          status: 'cancelled',
+          cancellation_reason: cancellationReason.trim()
+        })
         .eq('id', id);
 
       if (error) throw error;
@@ -214,6 +248,7 @@ const JobDetails = () => {
       });
 
       setCancelDialogOpen(false);
+      setCancellationReason("");
       loadJobDetails();
     } catch (error: any) {
       console.error('Error cancelling job:', error);
@@ -551,18 +586,44 @@ const JobDetails = () => {
           onReviewSubmitted={loadJobDetails}
         />
 
-        <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-          <AlertDialogContent>
+        <AlertDialog open={cancelDialogOpen} onOpenChange={(open) => {
+          setCancelDialogOpen(open);
+          if (!open) setCancellationReason("");
+        }}>
+          <AlertDialogContent className="max-w-md">
             <AlertDialogHeader>
               <AlertDialogTitle>Annulla prenotazione</AlertDialogTitle>
               <AlertDialogDescription>
-                Sei sicuro di voler annullare questa prenotazione? Il tecnico verrà notificato dell'annullamento.
+                Per favore, spiega il motivo dell'annullamento. Il tecnico riceverà questa informazione.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            
+            <div className="space-y-2 py-4">
+              <Label htmlFor="cancellation-reason">
+                Motivo dell'annullamento <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="cancellation-reason"
+                placeholder="Es: Ho trovato un'altra soluzione, cambio di programma, ecc..."
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                maxLength={500}
+                rows={4}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                {cancellationReason.length}/500 caratteri (minimo 10)
+              </p>
+            </div>
+
             <AlertDialogFooter>
               <AlertDialogCancel>Indietro</AlertDialogCancel>
-              <AlertDialogAction onClick={handleCancelJob} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Annulla Prenotazione
+              <AlertDialogAction 
+                onClick={handleCancelJob} 
+                disabled={cancellationReason.trim().length < 10}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Conferma Annullamento
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
