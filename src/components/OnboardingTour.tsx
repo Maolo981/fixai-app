@@ -96,17 +96,18 @@ export const OnboardingTour = () => {
           onClick={skipTour}
         />
 
-        {/* Card del tour con più contrasto */}
-        <motion.div
-          key={currentStep}
-          initial={{ opacity: 0, y: 20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -20, scale: 0.95 }}
-          transition={{ type: "spring", damping: 20, stiffness: 300 }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md mx-4 z-10"
-        >
-          <Card className="shadow-strong border-2 border-primary/30 bg-card">
-            <CardContent className="p-6 sm:p-8 space-y-5">
+        {/* Card del tour - perfettamente centrata */}
+        <div className="absolute inset-0 flex items-center justify-center p-4 z-10">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            className="w-full max-w-lg"
+          >
+            <Card className="shadow-strong border-2 border-primary/30 bg-card">
+              <CardContent className="p-6 sm:p-8 space-y-5">
               {/* Close button con più contrasto */}
               <button
                 onClick={skipTour}
@@ -177,9 +178,10 @@ export const OnboardingTour = () => {
               >
                 Salta tour
               </button>
-            </CardContent>
-          </Card>
-        </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </div>
     </AnimatePresence>
   );
