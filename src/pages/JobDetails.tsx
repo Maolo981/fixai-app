@@ -19,6 +19,16 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ChatDialog } from "@/components/ChatDialog";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { QuoteRequestCard } from "@/components/QuoteRequestCard";
@@ -79,6 +89,7 @@ const JobDetails = () => {
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
   useEffect(() => {
     loadJobDetails();
@@ -175,14 +186,42 @@ const JobDetails = () => {
         return { label: 'In Attesa', icon: Clock, color: 'text-yellow-600' };
       case 'confirmed':
         return { label: 'Confermato', icon: CheckCircle, color: 'text-green-600' };
+      case 'scheduled':
+        return { label: 'Programmato', icon: Calendar, color: 'text-blue-600' };
       case 'in_progress':
-        return { label: 'In Corso', icon: AlertCircle, color: 'text-blue-600' };
+        return { label: 'In Corso', icon: AlertCircle, color: 'text-orange-600' };
       case 'completed':
         return { label: 'Completato', icon: CheckCircle, color: 'text-green-600' };
       case 'cancelled':
         return { label: 'Annullato', icon: XCircle, color: 'text-red-600' };
       default:
         return { label: status, icon: Clock, color: 'text-gray-600' };
+    }
+  };
+
+  const handleCancelJob = async () => {
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .update({ status: 'cancelled' })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Prenotazione annullata",
+        description: "La prenotazione è stata annullata con successo",
+      });
+
+      setCancelDialogOpen(false);
+      loadJobDetails();
+    } catch (error: any) {
+      console.error('Error cancelling job:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile annullare la prenotazione",
+        variant: "destructive",
+      });
     }
   };
 
@@ -435,6 +474,18 @@ const JobDetails = () => {
 
           {/* Actions */}
           <div className="space-y-3 pb-6">
+            {(job.status === 'requested' || job.status === 'confirmed' || job.status === 'scheduled') && (
+              <Button
+                onClick={() => setCancelDialogOpen(true)}
+                size="lg"
+                variant="destructive"
+                className="w-full"
+              >
+                <XCircle className="h-5 w-5 mr-2" />
+                Annulla Prenotazione
+              </Button>
+            )}
+
             {(job.status === 'requested' || job.status === 'pending' || job.status === 'confirmed' || job.status === 'in_progress') && job.technician_id && (
               <Button
                 onClick={() => setChatDialogOpen(true)}
@@ -499,6 +550,23 @@ const JobDetails = () => {
           technicianName={job.technicians?.full_name || ''}
           onReviewSubmitted={loadJobDetails}
         />
+
+        <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Annulla prenotazione</AlertDialogTitle>
+              <AlertDialogDescription>
+                Sei sicuro di voler annullare questa prenotazione? Il tecnico verrà notificato dell'annullamento.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Indietro</AlertDialogCancel>
+              <AlertDialogAction onClick={handleCancelJob} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Annulla Prenotazione
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MobileLayout>
   );
