@@ -350,7 +350,12 @@ const Results = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Errore nella creazione del job:", error);
+        throw error;
+      }
+
+      console.log("Job creato con successo:", newJob);
 
       toast({
         title: "Richiesta Inviata!",
