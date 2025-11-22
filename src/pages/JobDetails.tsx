@@ -53,6 +53,7 @@ interface Quote {
 
 interface Job {
   id: string;
+  user_id: string;
   created_at: string;
   scheduled_date: string | null;
   status: string;
@@ -576,6 +577,8 @@ const JobDetails = () => {
           onOpenChange={setChatDialogOpen}
           jobId={job.id}
           technicianName={job.technicians?.full_name || ''}
+          technicianId={job.technician_id}
+          userId={job.user_id}
         />
 
         <ReviewDialog
