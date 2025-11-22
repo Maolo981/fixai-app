@@ -14,6 +14,11 @@ import { ReviewDialog } from "@/components/ReviewDialog";
 import { ChatDialog } from "@/components/ChatDialog";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { useNotifications } from "@/hooks/useNotifications";
+import { OnboardingTour } from "@/components/OnboardingTour";
+import { EmptyState } from "@/components/EmptyState";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { SwipeableCard } from "@/components/SwipeableCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -125,6 +130,10 @@ const Dashboard = () => {
     } catch (error: any) {
       console.error('Error loading jobs:', error);
     }
+  };
+
+  const handleRefresh = async () => {
+    await Promise.all([loadDiagnoses(), loadJobs()]);
   };
 
   const handleSignOut = async () => {
@@ -274,14 +283,41 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Caricamento...</p>
-      </div>
+      <MobileLayout>
+        <div className="min-h-screen bg-muted/30 px-4 py-6">
+          <div className="container mx-auto max-w-6xl space-y-6">
+            <div className="flex justify-between items-center mb-6">
+              <Skeleton className="h-8 w-32" />
+              <Skeleton className="h-10 w-24" />
+            </div>
+            <div className="text-center space-y-4 mb-8">
+              <Skeleton className="h-10 w-48 mx-auto" />
+              <Skeleton className="h-6 w-96 mx-auto" />
+              <Skeleton className="h-14 w-full max-w-md mx-auto" />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="shadow-soft">
+                  <CardHeader className="pb-3">
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-4 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </MobileLayout>
     );
   }
 
   return (
     <MobileLayout>
+      <OnboardingTour />
+      <PullToRefresh onRefresh={handleRefresh}>
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
       <header className="bg-card border-b border-border shadow-soft sticky top-0 z-40">
@@ -341,85 +377,74 @@ const Dashboard = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="diagnoses">
+            <TabsContent value="diagnoses" id="diagnose-tab">
               <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 px-4 sm:px-0">Le Tue Diagnosi Recenti</h3>
               {diagnoses.length === 0 ? (
-                <Card className="text-center py-8 sm:py-12 shadow-soft mx-4 sm:mx-0">
-                  <CardContent>
-                    <Camera className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-sm sm:text-base text-muted-foreground mb-4 px-4">
-                      Nessuna diagnosi ancora. Inizia caricando la tua prima immagine!
-                    </p>
-                    <Link to="/diagnose" className="inline-block w-full max-w-xs px-4">
-                      <Button className="w-full h-12 sm:h-14 touch-manipulation">Crea Prima Diagnosi</Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+                <EmptyState
+                  icon={Camera}
+                  title="Nessuna diagnosi ancora"
+                  description="Inizia caricando la tua prima immagine e scopri cosa l'AI può fare per te! 🚀"
+                  actionLabel="Crea Prima Diagnosi"
+                  onAction={() => navigate("/diagnose")}
+                  illustration="📸"
+                />
               ) : (
                 <div className="grid gap-4 sm:gap-6 px-4 sm:px-0 sm:grid-cols-2 lg:grid-cols-3">
                   {diagnoses.map((diagnosis) => (
-                    <Card key={diagnosis.id} className="shadow-soft hover:shadow-medium transition-all h-full relative group">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 z-10 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setDiagnosisToDelete(diagnosis.id);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <Link to={`/results/${diagnosis.id}`} className="block">
-                        <CardHeader className="pb-3">
-                          <div className="flex justify-between items-start gap-2">
-                            <CardTitle className="text-base sm:text-lg line-clamp-2">{diagnosis.problem_type}</CardTitle>
-                            <Badge 
-                              variant={
-                                diagnosis.urgency_level === 'high' 
-                                  ? 'destructive' 
-                                  : diagnosis.urgency_level === 'medium'
-                                  ? 'default'
-                                  : 'secondary'
-                              }
-                              className="shrink-0"
-                            >
-                              {getUrgencyLabel(diagnosis.urgency_level)}
-                            </Badge>
-                          </div>
-                          <CardDescription className="flex items-center gap-1 text-xs sm:text-sm">
-                            <Clock className="h-3 w-3" />
-                            {new Date(diagnosis.created_at).toLocaleDateString('it-IT')}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <p className="text-xs sm:text-sm text-muted-foreground">
-                            Costo stimato: €{diagnosis.estimated_cost_min} - €{diagnosis.estimated_cost_max}
-                          </p>
-                        </CardContent>
-                      </Link>
-                    </Card>
+                    <SwipeableCard
+                      key={diagnosis.id}
+                      onDelete={() => {
+                        setDiagnosisToDelete(diagnosis.id);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Card className="shadow-soft hover:shadow-medium transition-all h-full">
+                        <Link to={`/results/${diagnosis.id}`} className="block">
+                          <CardHeader className="pb-3">
+                            <div className="flex justify-between items-start gap-2">
+                              <CardTitle className="text-base sm:text-lg line-clamp-2">{diagnosis.problem_type}</CardTitle>
+                              <Badge 
+                                variant={
+                                  diagnosis.urgency_level === 'high' 
+                                    ? 'destructive' 
+                                    : diagnosis.urgency_level === 'medium'
+                                    ? 'default'
+                                    : 'secondary'
+                                }
+                                className="shrink-0"
+                              >
+                                {getUrgencyLabel(diagnosis.urgency_level)}
+                              </Badge>
+                            </div>
+                            <CardDescription className="flex items-center gap-1 text-xs sm:text-sm">
+                              <Clock className="h-3 w-3" />
+                              {new Date(diagnosis.created_at).toLocaleDateString('it-IT')}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              Costo stimato: €{diagnosis.estimated_cost_min} - €{diagnosis.estimated_cost_max}
+                            </p>
+                          </CardContent>
+                        </Link>
+                      </Card>
+                    </SwipeableCard>
                   ))}
                 </div>
               )}
             </TabsContent>
 
-            <TabsContent value="bookings">
+            <TabsContent value="bookings" id="bookings-tab">
               <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 px-4 sm:px-0">Le Tue Prenotazioni</h3>
               {jobs.length === 0 ? (
-                <Card className="text-center py-8 sm:py-12 shadow-soft mx-4 sm:mx-0">
-                  <CardContent>
-                    <Briefcase className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-sm sm:text-base text-muted-foreground mb-4 px-4">
-                      Nessuna prenotazione attiva. Trova un tecnico per iniziare!
-                    </p>
-                    <Link to="/diagnose" className="inline-block w-full max-w-xs px-4">
-                      <Button className="w-full h-12 sm:h-14 touch-manipulation">Inizia Nuova Diagnosi</Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+                <EmptyState
+                  icon={Briefcase}
+                  title="Nessuna prenotazione attiva"
+                  description="Trova un tecnico qualificato e prenota il tuo primo intervento! 🔧"
+                  actionLabel="Inizia Nuova Diagnosi"
+                  onAction={() => navigate("/diagnose")}
+                  illustration="📋"
+                />
               ) : (
                 <div className="grid gap-4 sm:gap-6 px-4 sm:px-0 sm:grid-cols-2 lg:grid-cols-3">
                   {jobs.map((job) => (
@@ -637,6 +662,7 @@ const Dashboard = () => {
         </>
       )}
     </div>
+      </PullToRefresh>
     </MobileLayout>
   );
 };

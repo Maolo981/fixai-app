@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useConfetti } from "@/hooks/useConfetti";
 import { MobileLayout } from "@/components/MobileLayout";
 import { 
   ArrowLeft, 
@@ -93,6 +94,7 @@ const JobDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { fireMultipleConfetti } = useConfetti();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
@@ -121,6 +123,8 @@ const JobDetails = () => {
     if (urlParams.get('new') === 'true') {
       setShowConfirmation(true);
       setChatDialogOpen(true);
+      // Lancia i confetti per celebrare la prenotazione!
+      setTimeout(() => fireMultipleConfetti(), 500);
       // Rimuovi il parametro dall'URL
       window.history.replaceState({}, '', `/jobs/${id}`);
     }

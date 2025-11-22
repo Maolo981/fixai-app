@@ -13,6 +13,7 @@ import { MobileLayout } from "@/components/MobileLayout";
 import { TechnicianMap } from "@/components/TechnicianMap";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDialog } from "@/components/BookingDialog";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -388,15 +389,43 @@ const Results = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    await loadDiagnosis();
+    if (diagnosis) {
+      if (coordinates) {
+        await loadNearbyTechnicians();
+      } else {
+        await loadAllTechnicians();
+      }
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-muted/30 py-12 px-4">
-        <div className="container max-w-4xl mx-auto space-y-6">
-          <Skeleton className="h-12 w-3/4" />
-          <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-32 w-full" />
+      <MobileLayout>
+        <div className="min-h-screen bg-muted/30 py-6 px-4">
+          <div className="container max-w-4xl mx-auto space-y-6">
+            <Skeleton className="h-10 w-32" />
+            <div className="text-center space-y-4">
+              <Skeleton className="h-10 w-3/4 mx-auto" />
+              <Skeleton className="h-6 w-24 mx-auto" />
+            </div>
+            <Skeleton className="h-64 w-full rounded-lg" />
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="shadow-soft">
+                  <CardHeader className="pb-3">
+                    <Skeleton className="h-4 w-24 mb-2" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-8 w-32" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      </MobileLayout>
     );
   }
 
@@ -404,6 +433,7 @@ const Results = () => {
 
   return (
     <MobileLayout>
+      <PullToRefresh onRefresh={handleRefresh}>
     <div className="min-h-screen bg-muted/30 py-6 sm:py-12 px-4">
       <div className="container max-w-4xl mx-auto space-y-4 sm:space-y-6">
         <Link to="/dashboard">
@@ -816,6 +846,7 @@ const Results = () => {
         onConfirm={handleBookingConfirm}
       />
     )}
+      </PullToRefresh>
     </MobileLayout>
   );
 };
