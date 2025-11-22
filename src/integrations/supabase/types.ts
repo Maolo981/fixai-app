@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_info: {
+        Row: {
+          address: string
+          city: string
+          company_name: string | null
+          country: string | null
+          created_at: string | null
+          id: string
+          pec_email: string | null
+          postal_code: string
+          sdi_code: string | null
+          tax_code: string
+          updated_at: string | null
+          user_id: string
+          vat_number: string | null
+        }
+        Insert: {
+          address: string
+          city: string
+          company_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          pec_email?: string | null
+          postal_code: string
+          sdi_code?: string | null
+          tax_code: string
+          updated_at?: string | null
+          user_id: string
+          vat_number?: string | null
+        }
+        Update: {
+          address?: string
+          city?: string
+          company_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          pec_email?: string | null
+          postal_code?: string
+          sdi_code?: string | null
+          tax_code?: string
+          updated_at?: string | null
+          user_id?: string
+          vat_number?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string
@@ -96,6 +144,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      invoices: {
+        Row: {
+          created_at: string | null
+          id: string
+          invoice_date: string
+          invoice_number: string
+          job_id: string
+          pdf_url: string | null
+          sent_at: string | null
+          status: string | null
+          total_amount: number
+          user_id: string
+          vat_amount: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invoice_date: string
+          invoice_number: string
+          job_id: string
+          pdf_url?: string | null
+          sent_at?: string | null
+          status?: string | null
+          total_amount: number
+          user_id: string
+          vat_amount: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          job_id?: string
+          pdf_url?: string | null
+          sent_at?: string | null
+          status?: string | null
+          total_amount?: number
+          user_id?: string
+          vat_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       jobs: {
         Row: {
@@ -199,6 +297,132 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      payment_methods: {
+        Row: {
+          card_brand: string
+          card_last4: string
+          created_at: string | null
+          exp_month: number
+          exp_year: number
+          id: string
+          is_default: boolean | null
+          stripe_payment_method_id: string
+          user_id: string
+        }
+        Insert: {
+          card_brand: string
+          card_last4: string
+          created_at?: string | null
+          exp_month: number
+          exp_year: number
+          id?: string
+          is_default?: boolean | null
+          stripe_payment_method_id: string
+          user_id: string
+        }
+        Update: {
+          card_brand?: string
+          card_last4?: string
+          created_at?: string | null
+          exp_month?: number
+          exp_year?: number
+          id?: string
+          is_default?: boolean | null
+          stripe_payment_method_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payment_settings: {
+        Row: {
+          deposit_percentage: number | null
+          id: string
+          invoice_prefix: string | null
+          refund_24h_percentage: number | null
+          refund_48h_percentage: number | null
+          refund_72h_percentage: number | null
+          updated_at: string | null
+          vat_rate: number | null
+        }
+        Insert: {
+          deposit_percentage?: number | null
+          id?: string
+          invoice_prefix?: string | null
+          refund_24h_percentage?: number | null
+          refund_48h_percentage?: number | null
+          refund_72h_percentage?: number | null
+          updated_at?: string | null
+          vat_rate?: number | null
+        }
+        Update: {
+          deposit_percentage?: number | null
+          id?: string
+          invoice_prefix?: string | null
+          refund_24h_percentage?: number | null
+          refund_48h_percentage?: number | null
+          refund_72h_percentage?: number | null
+          updated_at?: string | null
+          vat_rate?: number | null
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          job_id: string
+          metadata: Json | null
+          payment_method_id: string | null
+          payment_type: string
+          status: string | null
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          job_id: string
+          metadata?: Json | null
+          payment_method_id?: string | null
+          payment_type: string
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          job_id?: string
+          metadata?: Json | null
+          payment_method_id?: string | null
+          payment_type?: string
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -304,6 +528,60 @@ export type Database = {
             columns: ["technician_id"]
             isOneToOne: false
             referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      refunds: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          job_id: string
+          payment_id: string
+          reason: string
+          refund_type: string
+          status: string | null
+          stripe_refund_id: string | null
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          job_id: string
+          payment_id: string
+          reason: string
+          refund_type: string
+          status?: string | null
+          stripe_refund_id?: string | null
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          job_id?: string
+          payment_id?: string
+          reason?: string
+          refund_type?: string
+          status?: string | null
+          stripe_refund_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refunds_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
         ]
@@ -505,6 +783,7 @@ export type Database = {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number }
         Returns: number
       }
+      generate_invoice_number: { Args: never; Returns: string }
       get_nearby_technicians: {
         Args: {
           limit_count?: number
