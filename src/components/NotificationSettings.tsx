@@ -44,11 +44,27 @@ export function NotificationSettings({ userId }: NotificationSettingsProps) {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary" />
+            <span>Nuovi preventivi ricevuti</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary" />
             <span>Nuovi messaggi in chat</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary" />
-            <span>Promemoria appuntamenti</span>
+            <span>Tecnico in arrivo (GPS tracking)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary" />
+            <span>Promemoria appuntamenti (24h e 2h prima)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary" />
+            <span>Richieste recensione post-lavoro</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary" />
+            <span>Offerte speciali personalizzate</span>
           </div>
         </div>
 

@@ -173,6 +173,33 @@ export type Database = {
           },
         ]
       }
+      notification_logs: {
+        Row: {
+          id: string
+          notification_type: string
+          read_at: string | null
+          reference_id: string | null
+          sent_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notification_type: string
+          read_at?: string | null
+          reference_id?: string | null
+          sent_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notification_type?: string
+          read_at?: string | null
+          reference_id?: string | null
+          sent_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -281,6 +308,96 @@ export type Database = {
           },
         ]
       }
+      special_offers: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          description: string
+          discount_amount: number | null
+          discount_percentage: number | null
+          id: string
+          target_inactive_days: number | null
+          title: string
+          valid_from: string | null
+          valid_until: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          description: string
+          discount_amount?: number | null
+          discount_percentage?: number | null
+          id?: string
+          target_inactive_days?: number | null
+          title: string
+          valid_from?: string | null
+          valid_until: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string
+          discount_amount?: number | null
+          discount_percentage?: number | null
+          id?: string
+          target_inactive_days?: number | null
+          title?: string
+          valid_from?: string | null
+          valid_until?: string
+        }
+        Relationships: []
+      }
+      technician_locations: {
+        Row: {
+          accuracy: number | null
+          heading: number | null
+          id: string
+          job_id: string | null
+          latitude: number
+          longitude: number
+          speed: number | null
+          technician_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          accuracy?: number | null
+          heading?: number | null
+          id?: string
+          job_id?: string | null
+          latitude: number
+          longitude: number
+          speed?: number | null
+          technician_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          accuracy?: number | null
+          heading?: number | null
+          id?: string
+          job_id?: string | null
+          latitude?: number
+          longitude?: number
+          speed?: number | null
+          technician_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_locations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technician_locations_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       technicians: {
         Row: {
           availability_status: string | null
@@ -340,12 +457,51 @@ export type Database = {
           },
         ]
       }
+      user_offers: {
+        Row: {
+          clicked: boolean | null
+          id: string
+          offer_id: string
+          sent_at: string | null
+          used: boolean | null
+          user_id: string
+        }
+        Insert: {
+          clicked?: boolean | null
+          id?: string
+          offer_id: string
+          sent_at?: string | null
+          used?: boolean | null
+          user_id: string
+        }
+        Update: {
+          clicked?: boolean | null
+          id?: string
+          offer_id?: string
+          sent_at?: string | null
+          used?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_offers_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "special_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       calculate_distance: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
+      }
+      calculate_distance_meters: {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number }
         Returns: number
       }
