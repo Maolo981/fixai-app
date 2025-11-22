@@ -57,15 +57,15 @@ export function BookingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Prenota con {technicianName}</DialogTitle>
           <DialogDescription>
             Seleziona data e ora per l'appuntamento
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 overflow-y-auto flex-1">
           {/* Calendario */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
@@ -123,7 +123,7 @@ export function BookingDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annulla
           </Button>
