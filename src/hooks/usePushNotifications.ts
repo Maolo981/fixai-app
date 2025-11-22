@@ -129,10 +129,12 @@ export const usePushNotifications = (userId: string | undefined) => {
         },
         (payload) => {
           const quote = payload.new as any;
-          sendNotification("Nuovo Preventivo Ricevuto", {
+          sendNotification("🎉 Nuovo Preventivo Ricevuto", {
             body: `Hai ricevuto un preventivo di €${quote.total_cost.toFixed(2)}`,
             tag: `quote-${quote.id}`,
             data: { url: `/jobs/${quote.job_id}` },
+            badge: "/icon-512x512.png",
+            requireInteraction: true,
           });
         }
       )
@@ -160,7 +162,7 @@ export const usePushNotifications = (userId: string | undefined) => {
             .single();
 
           if (job) {
-            sendNotification("Nuovo Messaggio", {
+            sendNotification("💬 Nuovo Messaggio", {
               body: message.message.substring(0, 100),
               tag: `message-${message.id}`,
               data: { url: `/jobs/${job.id}` },
@@ -170,10 +172,111 @@ export const usePushNotifications = (userId: string | undefined) => {
       )
       .subscribe();
 
+    // Sottoscrivi tracking GPS tecnico
+    const locationChannel = supabase
+      .channel("push-technician-location")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "technician_locations",
+        },
+        async (payload) => {
+          const location = payload.new as any;
+          
+          // Verifica se è un job dell'utente
+          const { data: job } = await supabase
+            .from("jobs")
+            .select("id, user_id, scheduled_date, status")
+            .eq("id", location.job_id)
+            .eq("user_id", userId)
+            .single();
+
+          if (!job || job.status !== "confirmed") return;
+
+          // Ottieni location utente dal profilo
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("latitude, longitude")
+            .eq("id", userId)
+            .single();
+
+          if (!profile?.latitude || !profile?.longitude) return;
+
+          // Calcola distanza (approssimativa)
+          const toRad = (deg: number) => (deg * Math.PI) / 180;
+          const R = 6371; // km
+          const dLat = toRad(location.latitude - profile.latitude);
+          const dLon = toRad(location.longitude - profile.longitude);
+          const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRad(profile.latitude)) *
+              Math.cos(toRad(location.latitude)) *
+              Math.sin(dLon / 2) *
+              Math.sin(dLon / 2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          const distance = R * c * 1000; // metri
+
+          // Notifica se tecnico entro 1km
+          if (distance <= 1000) {
+            const distanceText =
+              distance < 100
+                ? "è arrivato!"
+                : `è a ${Math.round(distance)}m di distanza`;
+
+            sendNotification("🚗 Il Tecnico Sta Arrivando!", {
+              body: `Il tuo tecnico ${distanceText}`,
+              tag: `technician-arrival-${job.id}`,
+              data: { url: `/jobs/${job.id}` },
+              requireInteraction: true,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    // Sottoscrivi richiesta recensione post-lavoro
+    const reviewChannel = supabase
+      .channel("push-review-request")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "jobs",
+          filter: `user_id=eq.${userId}`,
+        },
+        async (payload) => {
+          const job = payload.new as any;
+          const oldJob = payload.old as any;
+
+          // Se cambiato a completed e non ha recensione
+          if (
+            job.status === "completed" &&
+            oldJob.status !== "completed" &&
+            !job.user_rating
+          ) {
+            // Aspetta 1 ora prima di chiedere recensione
+            setTimeout(() => {
+              sendNotification("⭐ Come è andato il lavoro?", {
+                body: "Lascia una recensione e aiuta altri utenti!",
+                tag: `review-request-${job.id}`,
+                data: { url: `/jobs/${job.id}` },
+                requireInteraction: true,
+              });
+            }, 60 * 60 * 1000); // 1 ora
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(jobsChannel);
       supabase.removeChannel(quotesChannel);
       supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(locationChannel);
+      supabase.removeChannel(reviewChannel);
     };
   }, [userId, permission]);
 
