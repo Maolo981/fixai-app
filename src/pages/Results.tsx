@@ -60,6 +60,7 @@ const Results = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
   const [minRating, setMinRating] = useState<string>("0");
   const [onlyAvailable, setOnlyAvailable] = useState(false);
+  const [maxDistance, setMaxDistance] = useState<number>(300);
 
   useEffect(() => {
     loadDiagnosis();
@@ -283,6 +284,11 @@ const Results = () => {
       return false;
     }
     
+    // Filtro distanza (solo se disponibile)
+    if (tech.distance_km !== undefined && tech.distance_km > maxDistance) {
+      return false;
+    }
+    
     // Filtro disponibilità (se attivo, mostra solo disponibili)
     // Nota: availability_status non è nel tipo Technician, quindi lo consideriamo sempre disponibile per ora
     // Se il backend ha questo campo, aggiungerlo al tipo Technician
@@ -290,12 +296,13 @@ const Results = () => {
     return true;
   });
 
-  const hasActiveFilters = priceRange[0] !== 0 || priceRange[1] !== 200 || minRating !== "0" || onlyAvailable;
+  const hasActiveFilters = priceRange[0] !== 0 || priceRange[1] !== 200 || minRating !== "0" || onlyAvailable || maxDistance !== 300;
 
   const resetFilters = () => {
     setPriceRange([0, 200]);
     setMinRating("0");
     setOnlyAvailable(false);
+    setMaxDistance(300);
   };
 
   const handleBookingClick = async (technician: Technician) => {
@@ -564,6 +571,26 @@ const Results = () => {
                   className="w-full"
                 />
               </div>
+
+              {/* Filtro Distanza */}
+              {coordinates && technicians.some(t => t.distance_km !== undefined) && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm sm:text-base font-semibold">Distanza Massima</Label>
+                    <span className="text-sm text-muted-foreground">
+                      {maxDistance} km
+                    </span>
+                  </div>
+                  <Slider
+                    min={10}
+                    max={300}
+                    step={10}
+                    value={[maxDistance]}
+                    onValueChange={(value) => setMaxDistance(value[0])}
+                    className="w-full"
+                  />
+                </div>
+              )}
 
               {/* Filtro Rating */}
               <div className="space-y-3">
