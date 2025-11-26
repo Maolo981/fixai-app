@@ -792,6 +792,7 @@ export type Database = {
           user_lon: number
         }
         Returns: {
+          availability_status: string
           avatar_url: string
           distance_km: number
           full_name: string
