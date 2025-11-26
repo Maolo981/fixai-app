@@ -43,6 +43,7 @@ interface Technician {
   latitude?: number;
   longitude?: number;
   avatar_url?: string;
+  availability_status?: string;
 }
 
 const Results = () => {
@@ -727,7 +728,7 @@ const Results = () => {
                                   🏆 Offerta Migliore
                                 </Badge>
                               )}
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Badge variant="secondary" className="shrink-0 text-sm">⭐ {tech.rating}</Badge>
                                 {tech.distance_km && (
                                   <Badge variant="outline" className="flex items-center gap-1 w-fit">
@@ -735,13 +736,30 @@ const Results = () => {
                                     <span className="text-xs">{formatDistance(tech.distance_km)}</span>
                                   </Badge>
                                 )}
+                                {tech.availability_status === 'available' ? (
+                                  <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 flex items-center gap-1">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                    <span className="text-xs">Disponibile</span>
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30 flex items-center gap-1">
+                                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                                    <span className="text-xs">Non disponibile</span>
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                             <CardDescription className="text-xs sm:text-sm line-clamp-1 mb-2">
                               {tech.specialties.join(', ')}
                             </CardDescription>
-                            <div className="text-xs sm:text-sm text-muted-foreground">
-                              {tech.total_jobs} lavori completati • €{tech.hourly_rate}/ora
+                            <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
+                              <div>{tech.total_jobs} lavori completati • €{tech.hourly_rate}/ora</div>
+                              {tech.availability_status === 'available' && (
+                                <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                                  <Clock className="h-3 w-3" />
+                                  <span className="text-xs font-medium">Orari: 09:00-13:00, 14:00-18:00</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -801,12 +819,25 @@ const Results = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
                             <CardTitle className="text-base sm:text-lg truncate">{tech.full_name}</CardTitle>
-                            {tech.distance_km && (
-                              <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                                <MapPin className="h-3 w-3" />
-                                <span className="text-xs">{formatDistance(tech.distance_km)}</span>
-                              </Badge>
-                            )}
+                            <div className="flex flex-wrap items-center gap-2">
+                              {tech.distance_km && (
+                                <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                                  <MapPin className="h-3 w-3" />
+                                  <span className="text-xs">{formatDistance(tech.distance_km)}</span>
+                                </Badge>
+                              )}
+                              {tech.availability_status === 'available' ? (
+                                <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 flex items-center gap-1">
+                                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                  <span className="text-xs">Disponibile</span>
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30 flex items-center gap-1">
+                                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                                  <span className="text-xs">Non disponibile</span>
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                           <CardDescription className="text-xs sm:text-sm line-clamp-1">
                             {tech.specialties.join(', ')}
@@ -817,8 +848,14 @@ const Results = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                        <div className="text-xs sm:text-sm text-muted-foreground">
-                          {tech.total_jobs} lavori • €{tech.hourly_rate}/ora
+                        <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
+                          <div>{tech.total_jobs} lavori • €{tech.hourly_rate}/ora</div>
+                          {tech.availability_status === 'available' && (
+                            <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                              <Clock className="h-3 w-3" />
+                              <span className="text-xs font-medium">Orari: 09:00-13:00, 14:00-18:00</span>
+                            </div>
+                          )}
                         </div>
                         <Button 
                           className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation active:scale-95 transition-transform"
