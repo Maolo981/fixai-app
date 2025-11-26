@@ -291,9 +291,10 @@ const Results = () => {
       return false;
     }
     
-    // Filtro disponibilità (se attivo, mostra solo disponibili)
-    // Nota: availability_status non è nel tipo Technician, quindi lo consideriamo sempre disponibile per ora
-    // Se il backend ha questo campo, aggiungerlo al tipo Technician
+    // Filtro disponibilità
+    if (onlyAvailable && tech.availability_status !== 'available') {
+      return false;
+    }
     
     return true;
   });
