@@ -6,10 +6,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, User, Wrench, ArrowLeft } from "lucide-react";
 import { MobileLayout } from "@/components/MobileLayout";
 
+type UserType = "user" | "technician" | null;
+
 const Auth = () => {
+  const [userType, setUserType] = useState<UserType>(null);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,13 +22,27 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/dashboard");
+        // Check if user is a technician
+        checkUserType(session.user.id);
       }
     });
   }, [navigate]);
+
+  const checkUserType = async (userId: string) => {
+    const { data: technician } = await supabase
+      .from("technicians")
+      .select("id")
+      .eq("profile_id", userId)
+      .single();
+
+    if (technician) {
+      navigate("/technician-dashboard");
+    } else {
+      navigate("/dashboard");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +60,7 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -54,12 +71,34 @@ const Auth = () => {
             description: error.message,
             variant: "destructive",
           });
-        } else {
+        } else if (data.user) {
+          // Check if user is trying to login as technician
+          if (userType === "technician") {
+            const { data: technician } = await supabase
+              .from("technicians")
+              .select("id")
+              .eq("profile_id", data.user.id)
+              .single();
+
+            if (!technician) {
+              toast({
+                title: "Accesso Negato",
+                description: "Non sei registrato come tecnico. Registrati prima come tecnico.",
+                variant: "destructive",
+              });
+              await supabase.auth.signOut();
+              setLoading(false);
+              return;
+            }
+            navigate("/technician-dashboard");
+          } else {
+            navigate("/dashboard");
+          }
+          
           toast({
             title: "Successo",
             description: "Accesso effettuato con successo",
           });
-          navigate("/dashboard");
         }
       } else {
         if (!fullName) {
@@ -94,7 +133,12 @@ const Auth = () => {
             title: "Successo",
             description: "Account creato! Ora puoi accedere.",
           });
-          navigate("/dashboard");
+          
+          if (userType === "technician") {
+            navigate("/tech-signup");
+          } else {
+            navigate("/dashboard");
+          }
         }
       }
     } catch (error: any) {
@@ -108,85 +152,149 @@ const Auth = () => {
     }
   };
 
+  // User type selection screen
+  if (!userType) {
+    return (
+      <MobileLayout showBottomNav={false}>
+        <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-6">
+          <Card className="w-full max-w-md shadow-medium">
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl sm:text-2xl">Benvenuto</CardTitle>
+              <CardDescription className="text-sm sm:text-base">
+                Come vuoi accedere?
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                variant="outline"
+                className="w-full h-24 flex flex-col items-center justify-center gap-2 hover:bg-primary/5 hover:border-primary transition-all"
+                onClick={() => setUserType("user")}
+              >
+                <User className="h-8 w-8 text-primary" />
+                <div className="text-center">
+                  <p className="font-semibold">Utente</p>
+                  <p className="text-xs text-muted-foreground">Cerca un tecnico per le tue riparazioni</p>
+                </div>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="w-full h-24 flex flex-col items-center justify-center gap-2 hover:bg-secondary/50 hover:border-secondary transition-all"
+                onClick={() => setUserType("technician")}
+              >
+                <Wrench className="h-8 w-8 text-secondary-foreground" />
+                <div className="text-center">
+                  <p className="font-semibold">Tecnico</p>
+                  <p className="text-xs text-muted-foreground">Gestisci le tue richieste di lavoro</p>
+                </div>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </MobileLayout>
+    );
+  }
+
   return (
     <MobileLayout showBottomNav={false}>
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-6">
-      <Card className="w-full max-w-md shadow-medium">
-        <CardHeader>
-          <CardTitle className="text-xl sm:text-2xl">
-            {isLogin ? "Bentornato" : "Crea Account"}
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            {isLogin
-              ? "Accedi per accedere alla tua dashboard"
-              : "Registrati per iniziare a diagnosticare"}
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {!isLogin && (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-6">
+        <Card className="w-full max-w-md shadow-medium">
+          <CardHeader>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-fit -ml-2 mb-2"
+              onClick={() => setUserType(null)}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Indietro
+            </Button>
+            <div className="flex items-center gap-2 mb-2">
+              {userType === "user" ? (
+                <User className="h-5 w-5 text-primary" />
+              ) : (
+                <Wrench className="h-5 w-5 text-secondary-foreground" />
+              )}
+              <span className="text-sm font-medium text-muted-foreground">
+                {userType === "user" ? "Area Utente" : "Area Tecnico"}
+              </span>
+            </div>
+            <CardTitle className="text-xl sm:text-2xl">
+              {isLogin ? "Bentornato" : "Crea Account"}
+            </CardTitle>
+            <CardDescription className="text-sm sm:text-base">
+              {isLogin
+                ? "Accedi per accedere alla tua dashboard"
+                : userType === "technician" 
+                  ? "Registrati per diventare un tecnico"
+                  : "Registrati per iniziare a diagnosticare"}
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="fullName" className="text-sm sm:text-base">Nome Completo</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Mario Rossi"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required={!isLogin}
+                    className="h-11 sm:h-12 text-base"
+                  />
+                </div>
+              )}
               <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-sm sm:text-base">Nome Completo</Label>
+                <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
                 <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="Mario Rossi"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required={!isLogin}
+                  id="email"
+                  type="email"
+                  placeholder="tua@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                   className="h-11 sm:h-12 text-base"
                 />
               </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="tua@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11 sm:h-12 text-base"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="h-11 sm:h-12 text-base"
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-3 sm:space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full h-12 sm:h-14 text-base sm:text-lg touch-manipulation active:scale-95 transition-transform" 
-              disabled={loading}
-            >
-              {loading && <Loader2 className="mr-2 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />}
-              {isLogin ? "Accedi" : "Crea Account"}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full h-11 sm:h-12 text-sm sm:text-base touch-manipulation"
-              onClick={() => setIsLogin(!isLogin)}
-            >
-              {isLogin
-                ? "Non hai un account? Registrati"
-                : "Hai già un account? Accedi"}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="h-11 sm:h-12 text-base"
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-3 sm:space-y-4">
+              <Button 
+                type="submit" 
+                className="w-full h-12 sm:h-14 text-base sm:text-lg touch-manipulation active:scale-95 transition-transform" 
+                disabled={loading}
+              >
+                {loading && <Loader2 className="mr-2 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />}
+                {isLogin ? "Accedi" : "Crea Account"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full h-11 sm:h-12 text-sm sm:text-base touch-manipulation"
+                onClick={() => setIsLogin(!isLogin)}
+              >
+                {isLogin
+                  ? "Non hai un account? Registrati"
+                  : "Hai già un account? Accedi"}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
     </MobileLayout>
   );
 };
