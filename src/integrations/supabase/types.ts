@@ -724,6 +724,51 @@ export type Database = {
           },
         ]
       }
+      technician_schedules: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          job_id: string | null
+          start_time: string
+          status: string
+          technician_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          job_id?: string | null
+          start_time: string
+          status?: string
+          technician_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          job_id?: string | null
+          start_time?: string
+          status?: string
+          technician_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technician_schedules_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       technicians: {
         Row: {
           availability_status: string | null
