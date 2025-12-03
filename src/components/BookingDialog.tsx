@@ -29,6 +29,8 @@ interface BookingDialogProps {
   onOpenChange: (open: boolean) => void;
   technicianName: string;
   technicianId: string;
+  technicianHourlyRate?: number;
+  estimatedHours?: number;
   onConfirm: (date: Date, time: string) => void;
 }
 
@@ -37,6 +39,8 @@ export function BookingDialog({
   onOpenChange,
   technicianName,
   technicianId,
+  technicianHourlyRate,
+  estimatedHours = 2,
   onConfirm,
 }: BookingDialogProps) {
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -49,6 +53,11 @@ export function BookingDialog({
     const hour = i + 8;
     return `${hour.toString().padStart(2, '0')}:00`;
   });
+
+  // Calcola il costo stimato
+  const estimatedCost = technicianHourlyRate 
+    ? (technicianHourlyRate * estimatedHours).toFixed(2) 
+    : null;
 
   // Carica gli slot già prenotati per il tecnico nella data selezionata
   useEffect(() => {
@@ -64,26 +73,55 @@ export function BookingDialog({
         const endOfDay = new Date(selectedDate);
         endOfDay.setHours(23, 59, 59, 999);
 
-        const { data: jobs, error } = await supabase
-          .from('jobs')
-          .select('scheduled_date')
-          .eq('technician_id', technicianId)
-          .gte('scheduled_date', startOfDay.toISOString())
-          .lte('scheduled_date', endOfDay.toISOString())
-          .not('status', 'in', '("cancelled","completed")');
+        // Carica sia i job esistenti che gli schedule confermati
+        const [jobsResult, schedulesResult] = await Promise.all([
+          supabase
+            .from('jobs')
+            .select('scheduled_date')
+            .eq('technician_id', technicianId)
+            .gte('scheduled_date', startOfDay.toISOString())
+            .lte('scheduled_date', endOfDay.toISOString())
+            .not('status', 'in', '("cancelled","completed")'),
+          supabase
+            .from('technician_schedules')
+            .select('start_time, end_time')
+            .eq('technician_id', technicianId)
+            .eq('status', 'booked')
+            .gte('start_time', startOfDay.toISOString())
+            .lte('start_time', endOfDay.toISOString())
+        ]);
 
-        if (error) {
-          console.error('Errore nel caricamento slot:', error);
-          return;
+        if (jobsResult.error) {
+          console.error('Errore nel caricamento slot jobs:', jobsResult.error);
+        }
+        
+        if (schedulesResult.error) {
+          console.error('Errore nel caricamento slot schedules:', schedulesResult.error);
         }
 
-        // Estrai gli orari già prenotati
-        const booked = jobs?.map(job => {
+        // Estrai gli orari già prenotati dai job
+        const bookedFromJobs = jobsResult.data?.map(job => {
           const date = new Date(job.scheduled_date!);
           return `${date.getHours().toString().padStart(2, '0')}:00`;
         }) || [];
 
-        setBookedSlots(booked);
+        // Estrai gli orari occupati dagli schedule (considera la durata)
+        const bookedFromSchedules: string[] = [];
+        schedulesResult.data?.forEach(schedule => {
+          const start = new Date(schedule.start_time);
+          const end = new Date(schedule.end_time);
+          
+          // Aggiungi ogni ora tra start e end
+          let current = new Date(start);
+          while (current < end) {
+            bookedFromSchedules.push(`${current.getHours().toString().padStart(2, '0')}:00`);
+            current.setHours(current.getHours() + 1);
+          }
+        });
+
+        // Combina e rimuovi duplicati
+        const allBooked = [...new Set([...bookedFromJobs, ...bookedFromSchedules])];
+        setBookedSlots(allBooked);
       } catch (err) {
         console.error('Errore:', err);
       } finally {
@@ -196,6 +234,24 @@ export function BookingDialog({
             </div>
           )}
 
+          {/* Costo Stimato */}
+          {estimatedCost && (
+            <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg space-y-2">
+              <p className="text-sm font-medium flex items-center gap-2">
+                💰 Costo Stimato Chiamata
+              </p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-primary">€{estimatedCost}</span>
+                <span className="text-xs text-muted-foreground">
+                  ({technicianHourlyRate}€/ora × {estimatedHours}h stimate)
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Il costo finale potrebbe variare in base alla complessità del lavoro.
+              </p>
+            </div>
+          )}
+
           {/* Riepilogo */}
           {selectedDate && selectedTime && (
             <div className="bg-muted/50 p-4 rounded-lg space-y-1">
@@ -206,6 +262,11 @@ export function BookingDialog({
               <p className="text-sm text-muted-foreground">
                 🕐 {selectedTime}
               </p>
+              {estimatedCost && (
+                <p className="text-sm font-medium text-primary mt-2">
+                  💰 €{estimatedCost} (stima)
+                </p>
+              )}
             </div>
           )}
         </div>

@@ -203,6 +203,9 @@ export default function TechnicianDashboard() {
   };
 
   const updateJobStatus = async (jobId: string, newStatus: string) => {
+    // Trova il job per ottenere i dettagli
+    const job = jobs.find(j => j.id === jobId);
+    
     const { error } = await supabase
       .from("jobs")
       .update({ status: newStatus })
@@ -214,13 +217,42 @@ export default function TechnicianDashboard() {
         description: "Impossibile aggiornare lo stato",
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Successo",
-        description: "Stato aggiornato",
-      });
-      loadJobs();
+      return;
     }
+
+    // Se il tecnico accetta (confirmed), crea uno slot occupato
+    if (newStatus === "confirmed" && job?.scheduled_date && technicianId) {
+      const startTime = new Date(job.scheduled_date);
+      // Stima durata di 2 ore per default
+      const endTime = new Date(startTime);
+      endTime.setHours(endTime.getHours() + 2);
+
+      await supabase
+        .from("technician_schedules")
+        .insert({
+          technician_id: technicianId,
+          job_id: jobId,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          status: "booked"
+        });
+    }
+
+    // Se il lavoro è completato o annullato, aggiorna lo schedule
+    if ((newStatus === "completed" || newStatus === "cancelled") && technicianId) {
+      await supabase
+        .from("technician_schedules")
+        .update({ status: newStatus })
+        .eq("job_id", jobId);
+    }
+
+    toast({
+      title: "Successo",
+      description: newStatus === "confirmed" 
+        ? "Lavoro accettato! Lo slot è stato bloccato nel calendario." 
+        : "Stato aggiornato",
+    });
+    loadJobs();
   };
 
   const markNotificationAsRead = async (notificationId: string) => {

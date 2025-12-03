@@ -892,6 +892,8 @@ const Results = () => {
         onOpenChange={setBookingDialogOpen}
         technicianName={selectedTechnician.full_name}
         technicianId={selectedTechnician.id}
+        technicianHourlyRate={selectedTechnician.hourly_rate}
+        estimatedHours={diagnosis?.estimated_time_hours || 2}
         onConfirm={handleBookingConfirm}
       />
     )}
