@@ -339,6 +339,13 @@ const Results = () => {
         return;
       }
 
+      // Get user profile for notification
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
       // Crea il job con la data selezionata e status 'requested'
       const { data: newJob, error } = await supabase
         .from('jobs')
@@ -360,24 +367,27 @@ const Results = () => {
 
       console.log("Job creato con successo:", newJob);
 
-      toast({
-        title: "Richiesta Inviata!",
-        description: `Richiesta inviata a ${selectedTechnician.full_name} per il ${appointmentDate.toLocaleDateString('it-IT')} alle ${time}`,
+      // Invia notifica al tecnico
+      const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
       });
 
-      // Simula l'accettazione del tecnico dopo 5 secondi
-      setTimeout(async () => {
-        const { error: updateError } = await supabase
-          .from('jobs')
-          .update({
-            status: 'confirmed',
-          })
-          .eq('id', newJob.id);
+      await supabase
+        .from('technician_notifications')
+        .insert({
+          technician_id: selectedTechnician.id,
+          job_id: newJob.id,
+          type: 'booking_request',
+          title: 'Nuova Richiesta di Prenotazione',
+          message: `${userProfile?.full_name || 'Un cliente'} ha richiesto un appuntamento per "${diagnosis.problem_type}" il ${formattedDate} alle ${time}. Avvia la chat per discutere i dettagli.`
+        });
 
-        if (updateError) {
-          console.error("Errore nell'aggiornamento del job:", updateError);
-        }
-      }, 5000);
+      toast({
+        title: "Richiesta Inviata!",
+        description: `Richiesta inviata a ${selectedTechnician.full_name}. Il tecnico ti contatterà in chat.`,
+      });
 
       // Naviga alla pagina JobDetails
       navigate(`/jobs/${newJob.id}?new=true`);
