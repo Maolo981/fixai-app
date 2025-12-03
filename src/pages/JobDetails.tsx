@@ -122,10 +122,15 @@ const JobDetails = () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('new') === 'true') {
       setShowConfirmation(true);
-      setChatDialogOpen(true);
-      // Lancia i confetti per celebrare la prenotazione!
+      // NON aprire la chat automaticamente - il tecnico la avvierà
+      // Lancia i confetti per celebrare l'invio della richiesta
       setTimeout(() => fireMultipleConfetti(), 500);
       // Rimuovi il parametro dall'URL
+      window.history.replaceState({}, '', `/jobs/${id}`);
+    }
+    // Se il tecnico ha avviato la chat
+    if (urlParams.get('startChat') === 'true') {
+      setChatDialogOpen(true);
       window.history.replaceState({}, '', `/jobs/${id}`);
     }
   }, [id]);
@@ -354,7 +359,26 @@ const JobDetails = () => {
 
         <div className="container mx-auto px-4 py-6 space-y-6 max-w-3xl">
           {/* Confirmation Banner */}
-          {showConfirmation && (
+          {showConfirmation && job.status === 'requested' && (
+            <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <Clock className="h-8 w-8 text-blue-600" />
+                  <div>
+                    <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+                      Richiesta Inviata!
+                    </h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      Il tecnico ha ricevuto la tua richiesta e ti contatterà presto in chat.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Confirmed Banner */}
+          {job.status === 'confirmed' && (
             <Card className="bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
@@ -364,7 +388,7 @@ const JobDetails = () => {
                       Prenotazione Confermata!
                     </h3>
                     <p className="text-sm text-green-700 dark:text-green-300">
-                      Ora puoi chattare con il tecnico nella chat qui sotto.
+                      Il tecnico ha accettato la tua richiesta.
                     </p>
                   </div>
                 </div>
