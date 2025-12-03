@@ -7,9 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Wrench, Clock, CheckCircle, Calendar, DollarSign } from "lucide-react";
+import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X } from "lucide-react";
 import { CreateQuoteDialog } from "@/components/CreateQuoteDialog";
 import { QuoteCard } from "@/components/QuoteCard";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
 
 interface Job {
   id: string;
@@ -42,9 +44,21 @@ interface Quote {
   created_at: string;
 }
 
+interface Notification {
+  id: string;
+  technician_id: string;
+  job_id: string | null;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
 export default function TechnicianDashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [technicianId, setTechnicianId] = useState<string | null>(null);
   const [selectedJobForQuote, setSelectedJobForQuote] = useState<Job | null>(null);
@@ -59,6 +73,7 @@ export default function TechnicianDashboard() {
     if (technicianId) {
       loadJobs();
       loadQuotes();
+      loadNotifications();
       subscribeToUpdates();
     }
   }, [technicianId]);
@@ -137,6 +152,16 @@ export default function TechnicianDashboard() {
     setQuotes(data || []);
   };
 
+  const loadNotifications = async () => {
+    const { data } = await supabase
+      .from("technician_notifications")
+      .select("*")
+      .eq("technician_id", technicianId)
+      .order("created_at", { ascending: false });
+
+    setNotifications(data || []);
+  };
+
   const subscribeToUpdates = () => {
     const channel = supabase
       .channel("technician-updates")
@@ -159,6 +184,16 @@ export default function TechnicianDashboard() {
           filter: `technician_id=eq.${technicianId}`,
         },
         () => loadQuotes()
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "technician_notifications",
+          filter: `technician_id=eq.${technicianId}`,
+        },
+        () => loadNotifications()
       )
       .subscribe();
 
@@ -188,6 +223,25 @@ export default function TechnicianDashboard() {
     }
   };
 
+  const markNotificationAsRead = async (notificationId: string) => {
+    await supabase
+      .from("technician_notifications")
+      .update({ read: true })
+      .eq("id", notificationId);
+    
+    loadNotifications();
+  };
+
+  const handleStartChat = async (notification: Notification) => {
+    if (!notification.job_id) return;
+
+    // Marca come letta
+    await markNotificationAsRead(notification.id);
+
+    // Naviga alla pagina del job per avviare la chat
+    navigate(`/jobs/${notification.job_id}?startChat=true`);
+  };
+
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
       requested: { label: "Richiesto", variant: "secondary" },
@@ -202,6 +256,8 @@ export default function TechnicianDashboard() {
   const filterJobsByStatus = (status: string) => {
     return jobs.filter((job) => job.status === status);
   };
+
+  const unreadNotifications = notifications.filter(n => !n.read);
 
   if (loading) {
     return (
@@ -222,6 +278,56 @@ export default function TechnicianDashboard() {
             Profilo
           </Button>
         </div>
+
+        {/* Notifiche Non Lette */}
+        {unreadNotifications.length > 0 && (
+          <Card className="border-primary/50 bg-primary/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Bell className="h-5 w-5 text-primary" />
+                Nuove Notifiche ({unreadNotifications.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {unreadNotifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className="bg-background rounded-lg p-3 border space-y-2"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{notification.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {format(new Date(notification.created_at), "d MMM yyyy, HH:mm", { locale: it })}
+                      </p>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={() => markNotificationAsRead(notification.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {notification.job_id && notification.type === 'booking_request' && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleStartChat(notification)}
+                      className="w-full"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Avvia Chat con il Cliente
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-4">
@@ -279,20 +385,29 @@ export default function TechnicianDashboard() {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/jobs/${job.id}?startChat=true`)}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Chat
+                    </Button>
+                    <Button
+                      size="sm"
                       onClick={() => updateJobStatus(job.id, "confirmed")}
                       className="flex-1"
                     >
                       Accetta
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelectedJobForQuote(job)}
-                      className="flex-1"
-                    >
-                      Invia Preventivo
-                    </Button>
                   </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setSelectedJobForQuote(job)}
+                    className="w-full"
+                  >
+                    Invia Preventivo
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -328,14 +443,25 @@ export default function TechnicianDashboard() {
                       })}
                     </div>
                   )}
-                  <Button
-                    size="sm"
-                    onClick={() => updateJobStatus(job.id, "in_progress")}
-                    className="w-full"
-                  >
-                    <Wrench className="h-4 w-4 mr-2" />
-                    Inizia Lavoro
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/jobs/${job.id}?startChat=true`)}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Chat
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => updateJobStatus(job.id, "in_progress")}
+                      className="flex-1"
+                    >
+                      <Wrench className="h-4 w-4 mr-2" />
+                      Inizia
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -358,15 +484,26 @@ export default function TechnicianDashboard() {
                     <Badge {...getStatusBadge(job.status)}>{getStatusBadge(job.status).label}</Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <Button
-                    size="sm"
-                    onClick={() => updateJobStatus(job.id, "completed")}
-                    className="w-full"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Completa Lavoro
-                  </Button>
+                <CardContent className="space-y-3">
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/jobs/${job.id}?startChat=true`)}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Chat
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => updateJobStatus(job.id, "completed")}
+                      className="flex-1"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Completa
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}

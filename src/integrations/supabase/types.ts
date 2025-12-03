@@ -676,6 +676,54 @@ export type Database = {
           },
         ]
       }
+      technician_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string | null
+          message: string
+          read: boolean
+          technician_id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          message: string
+          read?: boolean
+          technician_id: string
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          message?: string
+          read?: boolean
+          technician_id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_notifications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technician_notifications_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       technicians: {
         Row: {
           availability_status: string | null
