@@ -881,6 +881,7 @@ const Results = () => {
         open={bookingDialogOpen}
         onOpenChange={setBookingDialogOpen}
         technicianName={selectedTechnician.full_name}
+        technicianId={selectedTechnician.id}
         onConfirm={handleBookingConfirm}
       />
     )}

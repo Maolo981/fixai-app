@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,9 +9,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { it } from "date-fns/locale";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import {
@@ -21,11 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 interface BookingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   technicianName: string;
+  technicianId: string;
   onConfirm: (date: Date, time: string) => void;
 }
 
@@ -33,10 +36,80 @@ export function BookingDialog({
   open,
   onOpenChange,
   technicianName,
+  technicianId,
   onConfirm,
 }: BookingDialogProps) {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  // Genera fasce orarie dalle 8:00 alle 18:00
+  const allTimeSlots = Array.from({ length: 11 }, (_, i) => {
+    const hour = i + 8;
+    return `${hour.toString().padStart(2, '0')}:00`;
+  });
+
+  // Carica gli slot già prenotati per il tecnico nella data selezionata
+  useEffect(() => {
+    const loadBookedSlots = async () => {
+      if (!selectedDate || !technicianId) return;
+
+      setLoadingSlots(true);
+      try {
+        // Ottieni l'inizio e la fine della giornata selezionata
+        const startOfDay = new Date(selectedDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const { data: jobs, error } = await supabase
+          .from('jobs')
+          .select('scheduled_date')
+          .eq('technician_id', technicianId)
+          .gte('scheduled_date', startOfDay.toISOString())
+          .lte('scheduled_date', endOfDay.toISOString())
+          .not('status', 'in', '("cancelled","completed")');
+
+        if (error) {
+          console.error('Errore nel caricamento slot:', error);
+          return;
+        }
+
+        // Estrai gli orari già prenotati
+        const booked = jobs?.map(job => {
+          const date = new Date(job.scheduled_date!);
+          return `${date.getHours().toString().padStart(2, '0')}:00`;
+        }) || [];
+
+        setBookedSlots(booked);
+      } catch (err) {
+        console.error('Errore:', err);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+
+    loadBookedSlots();
+    setSelectedTime(undefined); // Reset time quando cambia la data
+  }, [selectedDate, technicianId]);
+
+  // Filtra gli slot disponibili
+  const availableTimeSlots = allTimeSlots.filter(slot => !bookedSlots.includes(slot));
+
+  // Per oggi, filtra anche gli slot già passati
+  const filteredTimeSlots = availableTimeSlots.filter(slot => {
+    if (!selectedDate) return true;
+    
+    const today = new Date();
+    if (isSameDay(selectedDate, today)) {
+      const [hours] = slot.split(':');
+      const slotHour = parseInt(hours);
+      return slotHour > today.getHours();
+    }
+    return true;
+  });
 
   const handleConfirm = () => {
     if (!selectedDate || !selectedTime) return;
@@ -48,12 +121,6 @@ export function BookingDialog({
     onConfirm(appointmentDate, selectedTime);
     onOpenChange(false);
   };
-
-  // Genera fasce orarie dalle 8:00 alle 18:00
-  const timeSlots = Array.from({ length: 11 }, (_, i) => {
-    const hour = i + 8;
-    return `${hour.toString().padStart(2, '0')}:00`;
-  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -93,19 +160,39 @@ export function BookingDialog({
               <Label className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 Seleziona l'Orario
+                {loadingSlots && <Loader2 className="h-3 w-3 animate-spin" />}
               </Label>
-              <Select value={selectedTime} onValueChange={setSelectedTime}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Scegli un orario" />
-                </SelectTrigger>
-                <SelectContent>
-                  {timeSlots.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
+              
+              {filteredTimeSlots.length > 0 ? (
+                <Select value={selectedTime} onValueChange={setSelectedTime}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Scegli un orario disponibile" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredTimeSlots.map((time) => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  <p className="text-sm">Nessuno slot disponibile per questa data.</p>
+                  <p className="text-xs mt-1">Prova a selezionare un altro giorno.</p>
+                </div>
+              )}
+
+              {bookedSlots.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  <span className="text-xs text-muted-foreground">Occupati:</span>
+                  {bookedSlots.map((slot) => (
+                    <Badge key={slot} variant="secondary" className="text-xs opacity-50">
+                      {slot}
+                    </Badge>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              )}
             </div>
           )}
 
