@@ -7,9 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X } from "lucide-react";
+import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays } from "lucide-react";
 import { CreateQuoteDialog } from "@/components/CreateQuoteDialog";
 import { QuoteCard } from "@/components/QuoteCard";
+import { TechnicianCalendar } from "@/components/TechnicianCalendar";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -378,13 +379,21 @@ export default function TechnicianDashboard() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="requested" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="calendar" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="calendar" className="gap-1">
+              <CalendarDays className="h-4 w-4 hidden sm:block" />
+              Calendario
+            </TabsTrigger>
             <TabsTrigger value="requested">Richieste</TabsTrigger>
             <TabsTrigger value="confirmed">Confermati</TabsTrigger>
             <TabsTrigger value="in_progress">In Corso</TabsTrigger>
             <TabsTrigger value="quotes">Preventivi</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="calendar" className="mt-4">
+            {technicianId && <TechnicianCalendar technicianId={technicianId} />}
+          </TabsContent>
 
           <TabsContent value="requested" className="space-y-4">
             {filterJobsByStatus("requested").map((job) => (
