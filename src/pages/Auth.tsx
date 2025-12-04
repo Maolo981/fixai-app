@@ -332,7 +332,10 @@ const Auth = () => {
               <Button
                 variant="outline"
                 className="w-full h-24 flex flex-col items-center justify-center gap-2 hover:bg-blue-500/10 hover:border-blue-500 transition-all"
-                onClick={() => setUserType("technician")}
+                onClick={() => {
+                  setUserType("technician");
+                  setIsLogin(true); // Tecnici usano solo login qui, registrazione va su /tech-signup
+                }}
               >
                 <Wrench className="h-8 w-8 text-blue-500" />
                 <div className="text-center">
@@ -527,16 +530,27 @@ const Auth = () => {
                 {(loading || uploadingDoc) && <Loader2 className="mr-2 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />}
                 {uploadingDoc ? "Caricamento documento..." : isLogin ? "Accedi" : "Crea Account"}
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full h-11 sm:h-12 text-sm sm:text-base touch-manipulation"
-                onClick={() => setIsLogin(!isLogin)}
-              >
-                {isLogin
-                  ? "Non hai un account? Registrati"
-                  : "Hai già un account? Accedi"}
-              </Button>
+              {userType === "technician" ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full h-11 sm:h-12 text-sm sm:text-base touch-manipulation"
+                  onClick={() => navigate("/tech-signup")}
+                >
+                  Non hai un account? Registrati come Tecnico
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full h-11 sm:h-12 text-sm sm:text-base touch-manipulation"
+                  onClick={() => setIsLogin(!isLogin)}
+                >
+                  {isLogin
+                    ? "Non hai un account? Registrati"
+                    : "Hai già un account? Accedi"}
+                </Button>
+              )}
             </CardFooter>
           </form>
         </Card>
