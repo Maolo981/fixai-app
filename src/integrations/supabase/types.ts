@@ -284,12 +284,14 @@ export type Database = {
           diagnosis_id: string | null
           final_cost: number | null
           id: string
+          is_urgent: boolean | null
           payment_status: string | null
           quote_id: string | null
           scheduled_date: string | null
           status: string | null
           technician_id: string | null
           updated_at: string | null
+          urgency_surcharge: number | null
           user_id: string
           user_rating: number | null
           user_review: string | null
@@ -301,12 +303,14 @@ export type Database = {
           diagnosis_id?: string | null
           final_cost?: number | null
           id?: string
+          is_urgent?: boolean | null
           payment_status?: string | null
           quote_id?: string | null
           scheduled_date?: string | null
           status?: string | null
           technician_id?: string | null
           updated_at?: string | null
+          urgency_surcharge?: number | null
           user_id: string
           user_rating?: number | null
           user_review?: string | null
@@ -318,12 +322,14 @@ export type Database = {
           diagnosis_id?: string | null
           final_cost?: number | null
           id?: string
+          is_urgent?: boolean | null
           payment_status?: string | null
           quote_id?: string | null
           scheduled_date?: string | null
           status?: string | null
           technician_id?: string | null
           updated_at?: string | null
+          urgency_surcharge?: number | null
           user_id?: string
           user_rating?: number | null
           user_review?: string | null
@@ -424,6 +430,7 @@ export type Database = {
           refund_48h_percentage: number | null
           refund_72h_percentage: number | null
           updated_at: string | null
+          urgency_fee: number | null
           vat_rate: number | null
         }
         Insert: {
@@ -434,6 +441,7 @@ export type Database = {
           refund_48h_percentage?: number | null
           refund_72h_percentage?: number | null
           updated_at?: string | null
+          urgency_fee?: number | null
           vat_rate?: number | null
         }
         Update: {
@@ -444,6 +452,7 @@ export type Database = {
           refund_48h_percentage?: number | null
           refund_72h_percentage?: number | null
           updated_at?: string | null
+          urgency_fee?: number | null
           vat_rate?: number | null
         }
         Relationships: []

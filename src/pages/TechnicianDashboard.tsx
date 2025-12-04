@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays, TrendingUp, User, Car } from "lucide-react";
+import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays, TrendingUp, User, Car, Zap } from "lucide-react";
 import { CreateQuoteDialog } from "@/components/CreateQuoteDialog";
 import { QuoteCard } from "@/components/QuoteCard";
 import { TechnicianCalendar } from "@/components/TechnicianCalendar";
@@ -25,6 +25,8 @@ interface Job {
   scheduled_date: string | null;
   final_cost: number | null;
   created_at: string;
+  is_urgent?: boolean;
+  urgency_surcharge?: number;
   diagnoses: {
     problem_type: string;
     ai_analysis: string;
@@ -125,6 +127,7 @@ export default function TechnicianDashboard() {
         diagnoses (problem_type, ai_analysis)
       `)
       .eq("technician_id", technicianId)
+      .order("is_urgent", { ascending: false })
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -432,11 +435,19 @@ export default function TechnicianDashboard() {
 
           <TabsContent value="requested" className="space-y-4">
             {filterJobsByStatus("requested").map((job) => (
-              <Card key={job.id}>
+              <Card key={job.id} className={job.is_urgent ? 'border-red-500 border-2 bg-red-500/5' : ''}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="text-lg">{job.diagnoses?.problem_type}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg">{job.diagnoses?.problem_type}</CardTitle>
+                        {job.is_urgent && (
+                          <Badge variant="destructive" className="bg-red-500 text-white animate-pulse">
+                            <Zap className="h-3 w-3 mr-1" />
+                            URGENTE
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         Cliente: {job.profiles?.full_name}
                       </p>
@@ -445,6 +456,14 @@ export default function TechnicianDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {job.is_urgent && job.urgency_surcharge && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2">
+                      <p className="text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
+                        <Zap className="h-3 w-3" />
+                        Intervento urgente - Supplemento €{job.urgency_surcharge}
+                      </p>
+                    </div>
+                  )}
                   <p className="text-sm">{job.diagnoses?.ai_analysis}</p>
                   {job.scheduled_date && (
                     <div className="flex items-center gap-2 text-sm">
@@ -471,7 +490,7 @@ export default function TechnicianDashboard() {
                     <Button
                       size="sm"
                       onClick={() => updateJobStatus(job.id, "confirmed")}
-                      className="flex-1"
+                      className={`flex-1 ${job.is_urgent ? 'bg-red-500 hover:bg-red-600' : ''}`}
                     >
                       Accetta
                     </Button>

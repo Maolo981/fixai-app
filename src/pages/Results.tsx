@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users, MapPin, Navigation, Calendar, Map, Filter, X, Star } from "lucide-react";
+import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users, MapPin, Navigation, Calendar, Map, Filter, X, Star, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MobileLayout } from "@/components/MobileLayout";
@@ -60,6 +60,8 @@ const Results = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [reviewsDialogOpen, setReviewsDialogOpen] = useState(false);
   const [reviewsTechnician, setReviewsTechnician] = useState<Technician | null>(null);
+  const [isUrgent, setIsUrgent] = useState(false);
+  const [urgencyFee, setUrgencyFee] = useState(30);
   
   // Filtri
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
@@ -69,7 +71,20 @@ const Results = () => {
 
   useEffect(() => {
     loadDiagnosis();
+    loadUrgencyFee();
   }, [id]);
+
+  const loadUrgencyFee = async () => {
+    const { data } = await supabase
+      .from('payment_settings')
+      .select('urgency_fee')
+      .limit(1)
+      .maybeSingle();
+    
+    if (data?.urgency_fee) {
+      setUrgencyFee(data.urgency_fee);
+    }
+  };
 
   useEffect(() => {
     // Carica tecnici filtrati per specialità se la diagnosi è disponibile
@@ -363,7 +378,9 @@ const Results = () => {
           technician_id: selectedTechnician.id,
           status: 'requested',
           scheduled_date: appointmentDate.toISOString(),
-          payment_status: 'pending'
+          payment_status: 'pending',
+          is_urgent: isUrgent,
+          urgency_surcharge: isUrgent ? urgencyFee : 0
         })
         .select()
         .single();
@@ -382,18 +399,19 @@ const Results = () => {
         year: 'numeric'
       });
 
+      const urgentPrefix = isUrgent ? '🚨 URGENTE: ' : '';
       await supabase
         .from('technician_notifications')
         .insert({
           technician_id: selectedTechnician.id,
           job_id: newJob.id,
-          type: 'booking_request',
-          title: 'Nuova Richiesta di Prenotazione',
-          message: `${userProfile?.full_name || 'Un cliente'} ha richiesto un appuntamento per "${diagnosis.problem_type}" il ${formattedDate} alle ${time}. Avvia la chat per discutere i dettagli.`
+          type: isUrgent ? 'urgent_booking' : 'booking_request',
+          title: isUrgent ? '🚨 Richiesta URGENTE!' : 'Nuova Richiesta di Prenotazione',
+          message: `${urgentPrefix}${userProfile?.full_name || 'Un cliente'} ha richiesto un appuntamento per "${diagnosis.problem_type}" il ${formattedDate} alle ${time}. Avvia la chat per discutere i dettagli.`
         });
 
       toast({
-        title: "Richiesta Inviata!",
+        title: isUrgent ? "Richiesta Urgente Inviata!" : "Richiesta Inviata!",
         description: `Richiesta inviata a ${selectedTechnician.full_name}. Il tecnico ti contatterà in chat.`,
       });
 
@@ -469,6 +487,37 @@ const Results = () => {
             URGENZA {getUrgencyLabel(diagnosis.urgency_level)}
           </Badge>
         </div>
+
+        {/* SOS Urgency Button */}
+        <Card className={`border-2 transition-all ${isUrgent ? 'border-red-500 bg-red-500/10' : 'border-dashed border-muted-foreground/30 hover:border-red-500/50'}`}>
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${isUrgent ? 'bg-red-500 text-white' : 'bg-red-500/10 text-red-500'}`}>
+                  <Zap className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm sm:text-base">Intervento Urgente</p>
+                  <p className="text-xs text-muted-foreground">
+                    Priorità nella coda (+€{urgencyFee} supplemento)
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={isUrgent}
+                onCheckedChange={setIsUrgent}
+                className="data-[state=checked]:bg-red-500"
+              />
+            </div>
+            {isUrgent && (
+              <div className="mt-3 p-2 bg-red-500/10 rounded-lg">
+                <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                  🚨 Hai attivato l'intervento urgente. Il tuo lavoro sarà evidenziato ai tecnici con priorità massima.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Location Alert */}
         {locationError && (
@@ -914,6 +963,8 @@ const Results = () => {
         technicianId={selectedTechnician.id}
         technicianHourlyRate={selectedTechnician.hourly_rate}
         estimatedHours={diagnosis?.estimated_time_hours || 2}
+        isUrgent={isUrgent}
+        urgencyFee={urgencyFee}
         onConfirm={handleBookingConfirm}
       />
     )}
