@@ -100,6 +100,87 @@ export type Database = {
           },
         ]
       }
+      companies: {
+        Row: {
+          address: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          owner_id: string
+          phone: string | null
+          updated_at: string
+          vat_number: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          owner_id: string
+          phone?: string | null
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          owner_id?: string
+          phone?: string | null
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Relationships: []
+      }
+      company_members: {
+        Row: {
+          company_id: string
+          id: string
+          joined_at: string
+          role: string
+          technician_id: string
+        }
+        Insert: {
+          company_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          technician_id: string
+        }
+        Update: {
+          company_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          technician_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_members_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       diagnoses: {
         Row: {
           ai_analysis: string
@@ -778,6 +859,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           certifications: Json | null
+          company_id: string | null
           created_at: string | null
           full_name: string
           hourly_rate: number | null
@@ -798,6 +880,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           certifications?: Json | null
+          company_id?: string | null
           created_at?: string | null
           full_name: string
           hourly_rate?: number | null
@@ -818,6 +901,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           certifications?: Json | null
+          company_id?: string | null
           created_at?: string | null
           full_name?: string
           hourly_rate?: number | null
@@ -834,6 +918,13 @@ export type Database = {
           verified?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "technicians_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "technicians_profile_id_fkey"
             columns: ["profile_id"]
