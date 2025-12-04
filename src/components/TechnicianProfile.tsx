@@ -268,7 +268,7 @@ export const TechnicianProfile = ({ technicianId }: TechnicianProfileProps) => {
   }
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6">
       {/* Header con Avatar e Stats */}
       <Card className="overflow-hidden">
         <div className="h-24 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
@@ -545,26 +545,24 @@ export const TechnicianProfile = ({ technicianId }: TechnicianProfileProps) => {
       </Card>
 
       {/* Save Button */}
-      <div className="fixed bottom-20 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t">
-        <Button 
-          onClick={handleSave} 
-          className="w-full" 
-          size="lg"
-          disabled={saving}
-        >
-          {saving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Salvataggio...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              Salva Profilo
-            </>
-          )}
-        </Button>
-      </div>
+      <Button 
+        onClick={handleSave} 
+        className="w-full" 
+        size="lg"
+        disabled={saving}
+      >
+        {saving ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Salvataggio...
+          </>
+        ) : (
+          <>
+            <Save className="w-4 h-4 mr-2" />
+            Salva Profilo
+          </>
+        )}
+      </Button>
     </div>
   );
 };
