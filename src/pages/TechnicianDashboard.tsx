@@ -7,11 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays, TrendingUp } from "lucide-react";
+import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays, TrendingUp, User } from "lucide-react";
 import { CreateQuoteDialog } from "@/components/CreateQuoteDialog";
 import { QuoteCard } from "@/components/QuoteCard";
 import { TechnicianCalendar } from "@/components/TechnicianCalendar";
 import { TechnicianEarnings } from "@/components/TechnicianEarnings";
+import { TechnicianProfile } from "@/components/TechnicianProfile";
 import { NavigationButton } from "@/components/NavigationButton";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -382,7 +383,12 @@ export default function TechnicianDashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue="earnings" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="profile" className="gap-1">
+              <User className="h-4 w-4 hidden sm:block" />
+              <span className="hidden sm:inline">Profilo</span>
+              <span className="sm:hidden">👤</span>
+            </TabsTrigger>
             <TabsTrigger value="earnings" className="gap-1">
               <TrendingUp className="h-4 w-4 hidden sm:block" />
               <span className="hidden sm:inline">Guadagni</span>
@@ -398,6 +404,10 @@ export default function TechnicianDashboard() {
             <TabsTrigger value="in_progress">In Corso</TabsTrigger>
             <TabsTrigger value="quotes">Preventivi</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="profile" className="mt-4">
+            {technicianId && <TechnicianProfile technicianId={technicianId} />}
+          </TabsContent>
 
           <TabsContent value="earnings" className="mt-4">
             {technicianId && <TechnicianEarnings technicianId={technicianId} />}
