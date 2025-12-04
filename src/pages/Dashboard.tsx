@@ -94,6 +94,19 @@ const Dashboard = () => {
       return;
     }
     
+    // Check if user is a technician
+    const { data: technician } = await supabase
+      .from("technicians")
+      .select("id")
+      .eq("profile_id", session.user.id)
+      .single();
+
+    if (technician) {
+      // Redirect technicians to their dashboard
+      navigate("/technician-dashboard");
+      return;
+    }
+    
     setUser(session.user);
     setLoading(false);
   };
