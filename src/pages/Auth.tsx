@@ -323,10 +323,10 @@ const Auth = () => {
               
               <Button
                 variant="outline"
-                className="w-full h-24 flex flex-col items-center justify-center gap-2 hover:bg-secondary/50 hover:border-secondary transition-all"
+                className="w-full h-24 flex flex-col items-center justify-center gap-2 hover:bg-blue-500/10 hover:border-blue-500 transition-all"
                 onClick={() => setUserType("technician")}
               >
-                <Wrench className="h-8 w-8 text-secondary-foreground" />
+                <Wrench className="h-8 w-8 text-blue-500" />
                 <div className="text-center">
                   <p className="font-semibold">Tecnico / Libero Professionista</p>
                   <p className="text-xs text-muted-foreground">Gestisci le tue richieste di lavoro</p>
