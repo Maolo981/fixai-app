@@ -31,6 +31,8 @@ interface BookingDialogProps {
   technicianId: string;
   technicianHourlyRate?: number;
   estimatedHours?: number;
+  isUrgent?: boolean;
+  urgencyFee?: number;
   onConfirm: (date: Date, time: string) => void;
 }
 
@@ -41,6 +43,8 @@ export function BookingDialog({
   technicianId,
   technicianHourlyRate,
   estimatedHours = 2,
+  isUrgent = false,
+  urgencyFee = 0,
   onConfirm,
 }: BookingDialogProps) {
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -55,9 +59,11 @@ export function BookingDialog({
   });
 
   // Calcola il costo stimato
-  const estimatedCost = technicianHourlyRate 
-    ? (technicianHourlyRate * estimatedHours).toFixed(2) 
-    : null;
+  const baseCost = technicianHourlyRate 
+    ? (technicianHourlyRate * estimatedHours)
+    : 0;
+  const totalCost = baseCost + (isUrgent ? urgencyFee : 0);
+  const estimatedCost = totalCost > 0 ? totalCost.toFixed(2) : null;
 
   // Carica gli slot già prenotati per il tecnico nella data selezionata
   useEffect(() => {
@@ -236,16 +242,21 @@ export function BookingDialog({
 
           {/* Costo Stimato */}
           {estimatedCost && (
-            <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg space-y-2">
+            <div className={`border p-4 rounded-lg space-y-2 ${isUrgent ? 'bg-red-500/10 border-red-500/30' : 'bg-primary/10 border-primary/20'}`}>
               <p className="text-sm font-medium flex items-center gap-2">
-                💰 Costo Stimato Chiamata
+                {isUrgent ? '🚨 Costo Intervento Urgente' : '💰 Costo Stimato Chiamata'}
               </p>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-primary">€{estimatedCost}</span>
+                <span className={`text-2xl font-bold ${isUrgent ? 'text-red-500' : 'text-primary'}`}>€{estimatedCost}</span>
                 <span className="text-xs text-muted-foreground">
-                  ({technicianHourlyRate}€/ora × {estimatedHours}h stimate)
+                  ({technicianHourlyRate}€/ora × {estimatedHours}h{isUrgent && ` + €${urgencyFee} urgenza`})
                 </span>
               </div>
+              {isUrgent && (
+                <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                  Include supplemento urgenza di €{urgencyFee}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 Il costo finale potrebbe variare in base alla complessità del lavoro.
               </p>
