@@ -776,14 +776,18 @@ export type Database = {
         Row: {
           availability_status: string | null
           avatar_url: string | null
+          bio: string | null
+          certifications: Json | null
           created_at: string | null
           full_name: string
           hourly_rate: number | null
           id: string
           latitude: number | null
           longitude: number | null
+          portfolio_images: string[] | null
           profile_id: string | null
           rating: number | null
+          service_prices: Json | null
           service_radius_km: number | null
           specialties: string[]
           total_jobs: number | null
@@ -792,14 +796,18 @@ export type Database = {
         Insert: {
           availability_status?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          certifications?: Json | null
           created_at?: string | null
           full_name: string
           hourly_rate?: number | null
           id?: string
           latitude?: number | null
           longitude?: number | null
+          portfolio_images?: string[] | null
           profile_id?: string | null
           rating?: number | null
+          service_prices?: Json | null
           service_radius_km?: number | null
           specialties: string[]
           total_jobs?: number | null
@@ -808,14 +816,18 @@ export type Database = {
         Update: {
           availability_status?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          certifications?: Json | null
           created_at?: string | null
           full_name?: string
           hourly_rate?: number | null
           id?: string
           latitude?: number | null
           longitude?: number | null
+          portfolio_images?: string[] | null
           profile_id?: string | null
           rating?: number | null
+          service_prices?: Json | null
           service_radius_km?: number | null
           specialties?: string[]
           total_jobs?: number | null
