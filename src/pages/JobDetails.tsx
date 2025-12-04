@@ -41,6 +41,7 @@ import { QuoteRequestCard } from "@/components/QuoteRequestCard";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { RefundStatusCard } from "@/components/RefundStatusCard";
 import { NavigationButton } from "@/components/NavigationButton";
+import { TechnicianLiveTracker } from "@/components/TechnicianLiveTracker";
 import { usePayments } from "@/hooks/usePayments";
 
 interface Quote {
@@ -107,6 +108,7 @@ const JobDetails = () => {
   const [paymentType, setPaymentType] = useState<"deposit" | "balance" | "full">("deposit");
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [isTechnician, setIsTechnician] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const {
     payments,
@@ -154,6 +156,16 @@ const JobDetails = () => {
       
       setIsTechnician(!!technician);
 
+      // Load user profile for location
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("latitude, longitude")
+        .eq("id", session.user.id)
+        .single();
+      
+      if (profile?.latitude && profile?.longitude) {
+        setUserLocation({ latitude: profile.latitude, longitude: profile.longitude });
+      }
       const { data, error } = await supabase
         .from('jobs')
         .select(`
@@ -230,6 +242,8 @@ const JobDetails = () => {
         return { label: 'Confermato', icon: CheckCircle, color: 'text-green-600' };
       case 'scheduled':
         return { label: 'Programmato', icon: Calendar, color: 'text-blue-600' };
+      case 'en_route':
+        return { label: 'In Viaggio', icon: MapPin, color: 'text-orange-500' };
       case 'in_progress':
         return { label: 'In Corso', icon: AlertCircle, color: 'text-orange-600' };
       case 'completed':
@@ -405,6 +419,23 @@ const JobDetails = () => {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Live Tracking - Show when technician is en_route or confirmed and has location */}
+          {(job.status === 'en_route' || job.status === 'confirmed' || job.status === 'in_progress') && 
+           userLocation && !isTechnician && (
+            <TechnicianLiveTracker
+              jobId={job.id}
+              userLatitude={userLocation.latitude}
+              userLongitude={userLocation.longitude}
+              technicianName={job.technicians?.full_name}
+              onArrival={() => {
+                toast({
+                  title: "🏠 Il Tecnico è Arrivato!",
+                  description: "Apri la porta per farlo entrare",
+                });
+              }}
+            />
           )}
 
           {/* Status Card */}

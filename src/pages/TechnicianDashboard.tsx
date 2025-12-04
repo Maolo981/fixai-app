@@ -7,12 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays, TrendingUp, User } from "lucide-react";
+import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays, TrendingUp, User, Car } from "lucide-react";
 import { CreateQuoteDialog } from "@/components/CreateQuoteDialog";
 import { QuoteCard } from "@/components/QuoteCard";
 import { TechnicianCalendar } from "@/components/TechnicianCalendar";
 import { TechnicianEarnings } from "@/components/TechnicianEarnings";
 import { TechnicianProfile } from "@/components/TechnicianProfile";
+import { TechnicianLocationTracker } from "@/components/TechnicianLocationTracker";
 import { NavigationButton } from "@/components/NavigationButton";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -289,6 +290,7 @@ export default function TechnicianDashboard() {
     const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
       requested: { label: "Richiesto", variant: "secondary" },
       confirmed: { label: "Confermato", variant: "default" },
+      en_route: { label: "In Viaggio", variant: "default" },
       in_progress: { label: "In Corso", variant: "default" },
       completed: { label: "Completato", variant: "outline" },
       cancelled: { label: "Annullato", variant: "destructive" },
@@ -408,7 +410,7 @@ export default function TechnicianDashboard() {
                 Confermati
               </TabsTrigger>
               <TabsTrigger value="in_progress" className="px-3 whitespace-nowrap text-xs sm:text-sm">
-                In Corso
+                In Viaggio/Corso ({filterJobsByStatus("en_route").length + filterJobsByStatus("in_progress").length})
               </TabsTrigger>
               <TabsTrigger value="quotes" className="px-3 whitespace-nowrap text-xs sm:text-sm">
                 Preventivi
@@ -534,14 +536,25 @@ export default function TechnicianDashboard() {
                       className="flex-1"
                     />
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => updateJobStatus(job.id, "in_progress")}
-                    className="w-full"
-                  >
-                    <Wrench className="h-4 w-4 mr-2" />
-                    Inizia Lavoro
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateJobStatus(job.id, "en_route")}
+                      className="w-full"
+                    >
+                      <Car className="h-4 w-4 mr-2" />
+                      Sono in Viaggio
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => updateJobStatus(job.id, "in_progress")}
+                      className="w-full"
+                    >
+                      <Wrench className="h-4 w-4 mr-2" />
+                      Inizia Lavoro
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -551,6 +564,56 @@ export default function TechnicianDashboard() {
           </TabsContent>
 
           <TabsContent value="in_progress" className="space-y-4">
+            {/* En Route Jobs */}
+            {filterJobsByStatus("en_route").map((job) => (
+              <Card key={job.id} className="border-orange-500/30 bg-orange-500/5">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg">{job.diagnoses?.problem_type}</CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Cliente: {job.profiles?.full_name}
+                      </p>
+                    </div>
+                    <Badge className="bg-orange-500">In Viaggio</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <TechnicianLocationTracker
+                    jobId={job.id}
+                    technicianId={technicianId || ""}
+                    enabled={true}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/jobs/${job.id}?startChat=true`)}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Chat
+                    </Button>
+                    <NavigationButton
+                      userId={job.user_id}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => updateJobStatus(job.id, "in_progress")}
+                    className="w-full"
+                  >
+                    <Wrench className="h-4 w-4 mr-2" />
+                    Sono Arrivato - Inizia Lavoro
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {/* In Progress Jobs */}
             {filterJobsByStatus("in_progress").map((job) => (
               <Card key={job.id}>
                 <CardHeader>
@@ -593,8 +656,8 @@ export default function TechnicianDashboard() {
                 </CardContent>
               </Card>
             ))}
-            {filterJobsByStatus("in_progress").length === 0 && (
-              <p className="text-center text-muted-foreground py-8">Nessun lavoro in corso</p>
+            {filterJobsByStatus("in_progress").length === 0 && filterJobsByStatus("en_route").length === 0 && (
+              <p className="text-center text-muted-foreground py-8">Nessun lavoro in corso o in viaggio</p>
             )}
           </TabsContent>
 

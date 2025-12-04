@@ -98,18 +98,38 @@ export const usePushNotifications = (userId: string | undefined) => {
         },
         (payload) => {
           const job = payload.new as any;
-          const statusMessages: Record<string, string> = {
-            confirmed: "Il tuo lavoro è stato confermato dal tecnico!",
-            in_progress: "Il tecnico ha iniziato il lavoro",
-            completed: "Il lavoro è stato completato! Lascia una recensione",
-            cancelled: "Il lavoro è stato annullato",
+          const oldJob = payload.old as any;
+          
+          const statusConfig: Record<string, { title: string; body: string; icon?: string }> = {
+            confirmed: {
+              title: "✅ Prenotazione Confermata!",
+              body: "Il tecnico ha accettato la tua richiesta",
+            },
+            en_route: {
+              title: "🚗 Tecnico in Viaggio!",
+              body: "Il tecnico sta arrivando da te. Traccia la sua posizione in tempo reale!",
+            },
+            in_progress: {
+              title: "🔧 Lavoro Iniziato",
+              body: "Il tecnico ha iniziato il lavoro",
+            },
+            completed: {
+              title: "🎉 Lavoro Completato!",
+              body: "Il lavoro è stato completato. Lascia una recensione!",
+            },
+            cancelled: {
+              title: "❌ Lavoro Annullato",
+              body: "Il lavoro è stato annullato",
+            },
           };
 
-          if (statusMessages[job.status]) {
-            sendNotification("Aggiornamento Lavoro", {
-              body: statusMessages[job.status],
-              tag: `job-${job.id}`,
+          const config = statusConfig[job.status];
+          if (config && job.status !== oldJob?.status) {
+            sendNotification(config.title, {
+              body: config.body,
+              tag: `job-status-${job.id}-${job.status}`,
               data: { url: `/jobs/${job.id}` },
+              requireInteraction: job.status === "en_route" || job.status === "completed",
             });
           }
         }
@@ -218,18 +238,33 @@ export const usePushNotifications = (userId: string | undefined) => {
           const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
           const distance = R * c * 1000; // metri
 
-          // Notifica se tecnico entro 1km
-          if (distance <= 1000) {
-            const distanceText =
-              distance < 100
-                ? "è arrivato!"
-                : `è a ${Math.round(distance)}m di distanza`;
-
-            sendNotification("🚗 Il Tecnico Sta Arrivando!", {
-              body: `Il tuo tecnico ${distanceText}`,
-              tag: `technician-arrival-${job.id}`,
+          // Notifiche basate sulla distanza con soglie multiple
+          if (distance <= 50) {
+            // Tecnico arrivato
+            sendNotification("🏠 Il Tecnico è Arrivato!", {
+              body: "Il tecnico è alla tua porta. Apri per farlo entrare!",
+              tag: `technician-arrived-${job.id}`,
               data: { url: `/jobs/${job.id}` },
               requireInteraction: true,
+            });
+          } else if (distance <= 500) {
+            // Tecnico nelle vicinanze
+            sendNotification("📍 Tecnico Nelle Vicinanze!", {
+              body: `Il tecnico è a ${Math.round(distance)}m. Arriva tra pochi minuti!`,
+              tag: `technician-nearby-${job.id}`,
+              data: { url: `/jobs/${job.id}` },
+              requireInteraction: true,
+            });
+          } else if (distance <= 2000) {
+            // Tecnico in avvicinamento
+            const etaMinutes = location.speed && location.speed > 0 
+              ? Math.round((distance / location.speed) / 60) 
+              : Math.round(distance / 500); // ~30km/h avg
+            
+            sendNotification("🚗 Tecnico in Arrivo", {
+              body: `Distanza: ${(distance/1000).toFixed(1)}km - ETA: ~${etaMinutes} min`,
+              tag: `technician-approaching-${job.id}`,
+              data: { url: `/jobs/${job.id}` },
             });
           }
         }
