@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users, MapPin, Navigation, Calendar, Map, Filter, X } from "lucide-react";
+import { AlertCircle, Clock, DollarSign, Wrench, ArrowLeft, Users, MapPin, Navigation, Calendar, Map, Filter, X, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MobileLayout } from "@/components/MobileLayout";
@@ -18,6 +18,7 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { TechnicianReviewsDialog } from "@/components/TechnicianReviewsDialog";
 
 interface Diagnosis {
   id: string;
@@ -57,6 +58,8 @@ const Results = () => {
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [reviewsDialogOpen, setReviewsDialogOpen] = useState(false);
+  const [reviewsTechnician, setReviewsTechnician] = useState<Technician | null>(null);
   
   // Filtri
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
@@ -326,6 +329,11 @@ const Results = () => {
     // Apri il dialog per selezionare data e ora
     setSelectedTechnician(technician);
     setBookingDialogOpen(true);
+  };
+
+  const handleReviewsClick = (technician: Technician) => {
+    setReviewsTechnician(technician);
+    setReviewsDialogOpen(true);
   };
 
   const handleBookingConfirm = async (appointmentDate: Date, time: string) => {
@@ -740,7 +748,13 @@ const Results = () => {
                                 </Badge>
                               )}
                               <div className="flex flex-wrap items-center gap-2">
-                                <Badge variant="secondary" className="shrink-0 text-sm">⭐ {tech.rating}</Badge>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleReviewsClick(tech); }}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors"
+                                >
+                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                  {tech.rating}
+                                </button>
                                 {tech.distance_km && (
                                   <Badge variant="outline" className="flex items-center gap-1 w-fit">
                                     <MapPin className="h-3 w-3" />
@@ -854,7 +868,13 @@ const Results = () => {
                             {tech.specialties.join(', ')}
                           </CardDescription>
                         </div>
-                        <Badge variant="secondary" className="shrink-0 text-sm">⭐ {tech.rating}</Badge>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleReviewsClick(tech); }}
+                          className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors"
+                        >
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          {tech.rating}
+                        </button>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -895,6 +915,18 @@ const Results = () => {
         technicianHourlyRate={selectedTechnician.hourly_rate}
         estimatedHours={diagnosis?.estimated_time_hours || 2}
         onConfirm={handleBookingConfirm}
+      />
+    )}
+
+    {/* Reviews Dialog */}
+    {reviewsTechnician && (
+      <TechnicianReviewsDialog
+        open={reviewsDialogOpen}
+        onOpenChange={setReviewsDialogOpen}
+        technicianId={reviewsTechnician.id}
+        technicianName={reviewsTechnician.full_name}
+        technicianRating={reviewsTechnician.rating}
+        totalJobs={reviewsTechnician.total_jobs}
       />
     )}
       </PullToRefresh>

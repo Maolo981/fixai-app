@@ -899,6 +899,18 @@ export type Database = {
           total_jobs: number
         }[]
       }
+      get_technician_reviews: {
+        Args: { p_technician_id: string }
+        Returns: {
+          completion_date: string
+          created_at: string
+          id: string
+          problem_type: string
+          user_name: string
+          user_rating: number
+          user_review: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
