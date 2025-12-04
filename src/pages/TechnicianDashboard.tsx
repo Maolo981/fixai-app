@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays, TrendingUp, User, Car, Zap, Users } from "lucide-react";
+import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays, TrendingUp, User, Car, Zap, Users, LogOut } from "lucide-react";
 import { CreateQuoteDialog } from "@/components/CreateQuoteDialog";
 import { QuoteCard } from "@/components/QuoteCard";
 import { TechnicianCalendar } from "@/components/TechnicianCalendar";
@@ -331,6 +331,19 @@ export default function TechnicianDashboard() {
       <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
         <div className="flex items-center justify-between">
           <h1 className="text-xl sm:text-2xl font-bold">Dashboard Tecnico</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              localStorage.removeItem('is_technician');
+              navigate('/auth');
+            }}
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Esci
+          </Button>
         </div>
 
         {/* Notifiche Non Lette */}
