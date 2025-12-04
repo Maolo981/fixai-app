@@ -415,9 +415,22 @@ const Dashboard = () => {
                         setDeleteDialogOpen(true);
                       }}
                     >
-                      <Card className="shadow-soft hover:shadow-medium transition-all h-full">
+                      <Card className="shadow-soft hover:shadow-medium transition-all h-full relative group">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-destructive/10 hover:text-destructive"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDiagnosisToDelete(diagnosis.id);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                         <Link to={`/results/${diagnosis.id}`} className="block">
-                          <CardHeader className="pb-3">
+                          <CardHeader className="pb-3 pr-10">
                             <div className="flex justify-between items-start gap-2">
                               <CardTitle className="text-base sm:text-lg line-clamp-2">{diagnosis.problem_type}</CardTitle>
                               <Badge 
