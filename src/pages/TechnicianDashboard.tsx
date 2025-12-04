@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays, TrendingUp, User, Car, Zap } from "lucide-react";
+import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays, TrendingUp, User, Car, Zap, Users } from "lucide-react";
 import { CreateQuoteDialog } from "@/components/CreateQuoteDialog";
 import { QuoteCard } from "@/components/QuoteCard";
 import { TechnicianCalendar } from "@/components/TechnicianCalendar";
@@ -15,6 +15,8 @@ import { TechnicianEarnings } from "@/components/TechnicianEarnings";
 import { TechnicianProfile } from "@/components/TechnicianProfile";
 import { TechnicianLocationTracker } from "@/components/TechnicianLocationTracker";
 import { NavigationButton } from "@/components/NavigationButton";
+import { ClientRatingDialog } from "@/components/ClientRatingDialog";
+import { ClientRatingsTab } from "@/components/ClientRatingsTab";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -69,6 +71,7 @@ export default function TechnicianDashboard() {
   const [loading, setLoading] = useState(true);
   const [technicianId, setTechnicianId] = useState<string | null>(null);
   const [selectedJobForQuote, setSelectedJobForQuote] = useState<Job | null>(null);
+  const [selectedJobForRating, setSelectedJobForRating] = useState<Job | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -267,6 +270,12 @@ export default function TechnicianDashboard() {
         ? "Lavoro accettato! Lo slot è stato bloccato nel calendario." 
         : "Stato aggiornato",
     });
+    
+    // Se completato, mostra il dialog per valutare il cliente
+    if (newStatus === "completed" && job) {
+      setSelectedJobForRating(job);
+    }
+    
     loadJobs();
   };
 
@@ -393,7 +402,7 @@ export default function TechnicianDashboard() {
         {/* Tabs */}
         <Tabs defaultValue={defaultTab} className="w-full">
           <div className="overflow-x-auto -mx-4 px-4 pb-2">
-            <TabsList className="inline-flex w-max min-w-full sm:grid sm:grid-cols-7 sm:w-full gap-1">
+            <TabsList className="inline-flex w-max min-w-full sm:grid sm:grid-cols-8 sm:w-full gap-1">
               <TabsTrigger value="profile" className="gap-1 px-3 whitespace-nowrap">
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">Profilo</span>
@@ -405,6 +414,10 @@ export default function TechnicianDashboard() {
               <TabsTrigger value="calendar" className="gap-1 px-3 whitespace-nowrap">
                 <CalendarDays className="h-4 w-4" />
                 <span className="hidden sm:inline">Calendario</span>
+              </TabsTrigger>
+              <TabsTrigger value="clients" className="gap-1 px-3 whitespace-nowrap">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Clienti</span>
               </TabsTrigger>
               <TabsTrigger value="requested" className="px-3 whitespace-nowrap text-xs sm:text-sm">
                 Richieste
@@ -431,6 +444,10 @@ export default function TechnicianDashboard() {
 
           <TabsContent value="calendar" className="mt-4">
             {technicianId && <TechnicianCalendar technicianId={technicianId} />}
+          </TabsContent>
+
+          <TabsContent value="clients" className="mt-4">
+            {technicianId && <ClientRatingsTab technicianId={technicianId} />}
           </TabsContent>
 
           <TabsContent value="requested" className="space-y-4">
@@ -699,6 +716,17 @@ export default function TechnicianDashboard() {
         onQuoteCreated={() => {
           loadQuotes();
           setSelectedJobForQuote(null);
+        }}
+      />
+
+      <ClientRatingDialog
+        open={!!selectedJobForRating}
+        onOpenChange={(open) => !open && setSelectedJobForRating(null)}
+        jobId={selectedJobForRating?.id || ""}
+        clientName={selectedJobForRating?.profiles?.full_name || "Cliente"}
+        onRatingSubmitted={() => {
+          setSelectedJobForRating(null);
+          loadJobs();
         }}
       />
     </MobileLayout>
