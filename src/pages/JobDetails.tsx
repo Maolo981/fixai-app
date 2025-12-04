@@ -40,6 +40,7 @@ import { ReviewDialog } from "@/components/ReviewDialog";
 import { QuoteRequestCard } from "@/components/QuoteRequestCard";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { RefundStatusCard } from "@/components/RefundStatusCard";
+import { NavigationButton } from "@/components/NavigationButton";
 import { usePayments } from "@/hooks/usePayments";
 
 interface Quote {
@@ -105,6 +106,7 @@ const JobDetails = () => {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentType, setPaymentType] = useState<"deposit" | "balance" | "full">("deposit");
   const [paymentAmount, setPaymentAmount] = useState(0);
+  const [isTechnician, setIsTechnician] = useState(false);
 
   const {
     payments,
@@ -142,6 +144,15 @@ const JobDetails = () => {
         navigate("/auth");
         return;
       }
+
+      // Check if user is a technician
+      const { data: technician } = await supabase
+        .from("technicians")
+        .select("id")
+        .eq("profile_id", session.user.id)
+        .single();
+      
+      setIsTechnician(!!technician);
 
       const { data, error } = await supabase
         .from('jobs')
@@ -708,7 +719,16 @@ const JobDetails = () => {
 
           {/* Actions */}
           <div className="space-y-3 pb-6">
-            {(job.status === 'requested' || job.status === 'confirmed' || job.status === 'scheduled') && (
+            {/* Navigation Button for Technicians */}
+            {isTechnician && job.user_id && (job.status === 'confirmed' || job.status === 'in_progress') && (
+              <NavigationButton
+                userId={job.user_id}
+                className="w-full"
+                size="lg"
+              />
+            )}
+
+            {(job.status === 'requested' || job.status === 'confirmed' || job.status === 'scheduled') && !isTechnician && (
               <Button
                 onClick={() => setCancelDialogOpen(true)}
                 size="lg"
@@ -727,7 +747,7 @@ const JobDetails = () => {
                 className="w-full"
               >
                 <MessageCircle className="h-5 w-5 mr-2" />
-                Apri Chat con il Tecnico
+                {isTechnician ? "Apri Chat con il Cliente" : "Apri Chat con il Tecnico"}
               </Button>
             )}
 

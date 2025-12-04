@@ -12,6 +12,7 @@ import { CreateQuoteDialog } from "@/components/CreateQuoteDialog";
 import { QuoteCard } from "@/components/QuoteCard";
 import { TechnicianCalendar } from "@/components/TechnicianCalendar";
 import { TechnicianEarnings } from "@/components/TechnicianEarnings";
+import { NavigationButton } from "@/components/NavigationButton";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -505,15 +506,21 @@ export default function TechnicianDashboard() {
                       <MessageCircle className="h-4 w-4 mr-1" />
                       Chat
                     </Button>
-                    <Button
+                    <NavigationButton
+                      userId={job.user_id}
+                      variant="outline"
                       size="sm"
-                      onClick={() => updateJobStatus(job.id, "in_progress")}
                       className="flex-1"
-                    >
-                      <Wrench className="h-4 w-4 mr-2" />
-                      Inizia
-                    </Button>
+                    />
                   </div>
+                  <Button
+                    size="sm"
+                    onClick={() => updateJobStatus(job.id, "in_progress")}
+                    className="w-full"
+                  >
+                    <Wrench className="h-4 w-4 mr-2" />
+                    Inizia Lavoro
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -547,15 +554,21 @@ export default function TechnicianDashboard() {
                       <MessageCircle className="h-4 w-4 mr-1" />
                       Chat
                     </Button>
-                    <Button
+                    <NavigationButton
+                      userId={job.user_id}
+                      variant="outline"
                       size="sm"
-                      onClick={() => updateJobStatus(job.id, "completed")}
                       className="flex-1"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Completa
-                    </Button>
+                    />
                   </div>
+                  <Button
+                    size="sm"
+                    onClick={() => updateJobStatus(job.id, "completed")}
+                    className="w-full"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Completa Lavoro
+                  </Button>
                 </CardContent>
               </Card>
             ))}
