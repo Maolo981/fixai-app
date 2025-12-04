@@ -36,7 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ChatDialog } from "@/components/ChatDialog";
-import { ReviewDialog } from "@/components/ReviewDialog";
+import { QuickFeedbackDialog } from "@/components/QuickFeedbackDialog";
 import { QuoteRequestCard } from "@/components/QuoteRequestCard";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { RefundStatusCard } from "@/components/RefundStatusCard";
@@ -789,27 +789,26 @@ const JobDetails = () => {
                 className="w-full"
               >
                 <Star className="h-5 w-5 mr-2" />
-                Lascia una Recensione
+                Com'è andato?
               </Button>
             )}
 
             {job.user_rating && (
               <Card>
                 <CardHeader>
-                  <CardTitle>La Tua Recensione</CardTitle>
+                  <CardTitle>Il Tuo Feedback</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-1 mb-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-5 w-5 ${
-                          star <= (job.user_rating || 0)
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
+                  <div className="flex items-center gap-2 mb-2">
+                    {job.user_rating >= 3 ? (
+                      <span className="text-green-500 font-medium flex items-center gap-2 text-lg">
+                        👍 Soddisfatto
+                      </span>
+                    ) : (
+                      <span className="text-red-500 font-medium flex items-center gap-2 text-lg">
+                        👎 Non soddisfatto
+                      </span>
+                    )}
                   </div>
                   {job.user_review && (
                     <p className="text-sm text-muted-foreground">{job.user_review}</p>
@@ -830,12 +829,12 @@ const JobDetails = () => {
           userId={job.user_id}
         />
 
-        <ReviewDialog
+        <QuickFeedbackDialog
           open={reviewDialogOpen}
           onOpenChange={setReviewDialogOpen}
           jobId={job.id}
           technicianName={job.technicians?.full_name || ''}
-          onReviewSubmitted={loadJobDetails}
+          onFeedbackSubmitted={loadJobDetails}
         />
 
         <PaymentDialog
