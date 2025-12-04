@@ -29,6 +29,18 @@ const Profile = () => {
       navigate("/auth");
       return;
     }
+
+    // Check if user is a technician - redirect to technician dashboard
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('is_technician')
+      .eq('id', session.user.id)
+      .single();
+
+    if (profileData?.is_technician) {
+      navigate("/technician-dashboard?tab=profile");
+      return;
+    }
     
     setUser(session.user);
     setLoading(false);
