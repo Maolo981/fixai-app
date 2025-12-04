@@ -20,8 +20,10 @@ import {
   Image as ImageIcon,
   Briefcase,
   MapPin,
-  Star
+  Star,
+  LogOut
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Certification {
   name: string;
@@ -38,9 +40,11 @@ interface TechnicianProfileProps {
 }
 
 export const TechnicianProfile = ({ technicianId }: TechnicianProfileProps) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   
   // Profile data
   const [fullName, setFullName] = useState('');
@@ -560,6 +564,38 @@ export const TechnicianProfile = ({ technicianId }: TechnicianProfileProps) => {
           <>
             <Save className="w-4 h-4 mr-2" />
             Salva Profilo
+          </>
+        )}
+      </Button>
+
+      {/* Logout Button */}
+      <Button 
+        variant="outline"
+        onClick={async () => {
+          setLoggingOut(true);
+          try {
+            localStorage.removeItem('is_technician');
+            await supabase.auth.signOut();
+            navigate('/auth');
+          } catch (error) {
+            toast.error('Errore durante il logout');
+          } finally {
+            setLoggingOut(false);
+          }
+        }}
+        className="w-full" 
+        size="lg"
+        disabled={loggingOut}
+      >
+        {loggingOut ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Uscita...
+          </>
+        ) : (
+          <>
+            <LogOut className="w-4 h-4 mr-2" />
+            Esci dal Profilo
           </>
         )}
       </Button>
