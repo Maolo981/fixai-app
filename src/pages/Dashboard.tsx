@@ -122,6 +122,7 @@ const Dashboard = () => {
           diagnoses (problem_type, urgency_level, estimated_time_hours),
           technicians (full_name, hourly_rate)
         `)
+        .neq('status', 'cancelled')
         .order('created_at', { ascending: false })
         .limit(10);
 
