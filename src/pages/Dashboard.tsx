@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { MobileLayout } from "@/components/MobileLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ReviewDialog } from "@/components/ReviewDialog";
+import { QuickFeedbackDialog } from "@/components/QuickFeedbackDialog";
 import { ChatDialog } from "@/components/ChatDialog";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -559,23 +559,22 @@ const Dashboard = () => {
                             className="w-full touch-manipulation"
                           >
                             <Star className="h-4 w-4 mr-2" />
-                            Lascia una recensione
+                            Com'è andato?
                           </Button>
                         )}
 
                         {job.user_rating && (
                           <div className="pt-3 border-t space-y-2">
-                            <div className="flex items-center gap-1">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                  key={star}
-                                  className={`h-4 w-4 ${
-                                    star <= job.user_rating!
-                                      ? "fill-yellow-400 text-yellow-400"
-                                      : "text-muted-foreground"
-                                  }`}
-                                />
-                              ))}
+                            <div className="flex items-center gap-2">
+                              {job.user_rating >= 3 ? (
+                                <span className="text-green-500 font-medium flex items-center gap-1">
+                                  👍 Soddisfatto
+                                </span>
+                              ) : (
+                                <span className="text-red-500 font-medium flex items-center gap-1">
+                                  👎 Non soddisfatto
+                                </span>
+                              )}
                             </div>
                             {job.user_review && (
                               <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3">
@@ -663,12 +662,12 @@ const Dashboard = () => {
 
       {selectedJob && (
         <>
-          <ReviewDialog
+          <QuickFeedbackDialog
             open={reviewDialogOpen}
             onOpenChange={setReviewDialogOpen}
             jobId={selectedJob.id}
             technicianName={selectedJob.technicians?.full_name || "Tecnico"}
-            onReviewSubmitted={loadJobs}
+            onFeedbackSubmitted={loadJobs}
           />
           <ChatDialog
             open={chatDialogOpen}
