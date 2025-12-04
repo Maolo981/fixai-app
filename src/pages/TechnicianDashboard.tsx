@@ -92,6 +92,9 @@ export default function TechnicianDashboard() {
       return;
     }
 
+    // Set localStorage for technician status
+    localStorage.setItem('is_technician', 'true');
+
     const { data: technician } = await supabase
       .from("technicians")
       .select("id")
@@ -99,6 +102,7 @@ export default function TechnicianDashboard() {
       .single();
 
     if (!technician) {
+      localStorage.setItem('is_technician', 'false');
       toast({
         title: "Accesso negato",
         description: "Solo i tecnici possono accedere a questa pagina",

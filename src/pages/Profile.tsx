@@ -23,6 +23,13 @@ const Profile = () => {
   }, []);
 
   const checkUser = async () => {
+    // Check localStorage first for instant redirect
+    const cachedIsTechnician = localStorage.getItem('is_technician');
+    if (cachedIsTechnician === 'true') {
+      navigate("/technician-dashboard?tab=profile", { replace: true });
+      return;
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
@@ -37,8 +44,11 @@ const Profile = () => {
       .eq('id', session.user.id)
       .single();
 
-    if (profileData?.is_technician) {
-      navigate("/technician-dashboard?tab=profile");
+    const isTechnician = profileData?.is_technician || false;
+    localStorage.setItem('is_technician', String(isTechnician));
+
+    if (isTechnician) {
+      navigate("/technician-dashboard?tab=profile", { replace: true });
       return;
     }
     

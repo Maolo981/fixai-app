@@ -95,13 +95,16 @@ const Dashboard = () => {
     }
     
     // Check if user is a technician
-    const { data: technician } = await supabase
-      .from("technicians")
-      .select("id")
-      .eq("profile_id", session.user.id)
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_technician")
+      .eq("id", session.user.id)
       .single();
 
-    if (technician) {
+    const isTechnician = profile?.is_technician || false;
+    localStorage.setItem('is_technician', String(isTechnician));
+
+    if (isTechnician) {
       // Redirect technicians to their dashboard
       navigate("/technician-dashboard");
       return;

@@ -6,7 +6,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const BottomNav = () => {
   const location = useLocation();
-  const [isTechnician, setIsTechnician] = useState<boolean | null>(null);
+  
+  // Initialize from localStorage for instant navigation
+  const [isTechnician, setIsTechnician] = useState<boolean>(() => {
+    const cached = localStorage.getItem('is_technician');
+    return cached === 'true';
+  });
 
   useEffect(() => {
     checkTechnicianStatus();
@@ -21,7 +26,9 @@ export const BottomNav = () => {
         .eq('id', user.id)
         .single();
       
-      setIsTechnician(data?.is_technician || false);
+      const techStatus = data?.is_technician || false;
+      setIsTechnician(techStatus);
+      localStorage.setItem('is_technician', String(techStatus));
     }
   };
 
