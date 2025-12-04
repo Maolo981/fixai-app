@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { MobileLayout } from "@/components/MobileLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -66,8 +66,11 @@ export default function TechnicianDashboard() {
   const [loading, setLoading] = useState(true);
   const [technicianId, setTechnicianId] = useState<string | null>(null);
   const [selectedJobForQuote, setSelectedJobForQuote] = useState<Job | null>(null);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const defaultTab = searchParams.get('tab') || 'earnings';
 
   useEffect(() => {
     checkTechnicianAccess();
@@ -382,7 +385,7 @@ export default function TechnicianDashboard() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="earnings" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="profile" className="gap-1">
               <User className="h-4 w-4 hidden sm:block" />
