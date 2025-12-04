@@ -290,6 +290,8 @@ export type Database = {
           scheduled_date: string | null
           status: string | null
           technician_id: string | null
+          technician_rating: number | null
+          technician_review: string | null
           updated_at: string | null
           urgency_surcharge: number | null
           user_id: string
@@ -309,6 +311,8 @@ export type Database = {
           scheduled_date?: string | null
           status?: string | null
           technician_id?: string | null
+          technician_rating?: number | null
+          technician_review?: string | null
           updated_at?: string | null
           urgency_surcharge?: number | null
           user_id: string
@@ -328,6 +332,8 @@ export type Database = {
           scheduled_date?: string | null
           status?: string | null
           technician_id?: string | null
+          technician_rating?: number | null
+          technician_review?: string | null
           updated_at?: string | null
           urgency_surcharge?: number | null
           user_id?: string
@@ -1021,6 +1027,14 @@ export type Database = {
           user_name: string
           user_rating: number
           user_review: string
+        }[]
+      }
+      get_user_stats: {
+        Args: { p_user_id: string }
+        Returns: {
+          average_rating: number
+          completed_jobs: number
+          total_jobs: number
         }[]
       }
     }
