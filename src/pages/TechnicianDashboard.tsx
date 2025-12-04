@@ -314,12 +314,9 @@ export default function TechnicianDashboard() {
 
   return (
     <MobileLayout showBottomNav={false}>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Dashboard Tecnico</h1>
-          <Button variant="outline" onClick={() => navigate("/profile")}>
-            Profilo
-          </Button>
+          <h1 className="text-xl sm:text-2xl font-bold">Dashboard Tecnico</h1>
         </div>
 
         {/* Notifiche Non Lette */}
@@ -390,27 +387,34 @@ export default function TechnicianDashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="profile" className="gap-1">
-              <User className="h-4 w-4 hidden sm:block" />
-              <span className="hidden sm:inline">Profilo</span>
-              <span className="sm:hidden">👤</span>
-            </TabsTrigger>
-            <TabsTrigger value="earnings" className="gap-1">
-              <TrendingUp className="h-4 w-4 hidden sm:block" />
-              <span className="hidden sm:inline">Guadagni</span>
-              <span className="sm:hidden">€</span>
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="gap-1">
-              <CalendarDays className="h-4 w-4 hidden sm:block" />
-              <span className="hidden sm:inline">Calendario</span>
-              <span className="sm:hidden">Cal</span>
-            </TabsTrigger>
-            <TabsTrigger value="requested">Richieste</TabsTrigger>
-            <TabsTrigger value="confirmed">Confermati</TabsTrigger>
-            <TabsTrigger value="in_progress">In Corso</TabsTrigger>
-            <TabsTrigger value="quotes">Preventivi</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 pb-2">
+            <TabsList className="inline-flex w-max min-w-full sm:grid sm:grid-cols-7 sm:w-full gap-1">
+              <TabsTrigger value="profile" className="gap-1 px-3 whitespace-nowrap">
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline">Profilo</span>
+              </TabsTrigger>
+              <TabsTrigger value="earnings" className="gap-1 px-3 whitespace-nowrap">
+                <TrendingUp className="h-4 w-4" />
+                <span className="hidden sm:inline">Guadagni</span>
+              </TabsTrigger>
+              <TabsTrigger value="calendar" className="gap-1 px-3 whitespace-nowrap">
+                <CalendarDays className="h-4 w-4" />
+                <span className="hidden sm:inline">Calendario</span>
+              </TabsTrigger>
+              <TabsTrigger value="requested" className="px-3 whitespace-nowrap text-xs sm:text-sm">
+                Richieste
+              </TabsTrigger>
+              <TabsTrigger value="confirmed" className="px-3 whitespace-nowrap text-xs sm:text-sm">
+                Confermati
+              </TabsTrigger>
+              <TabsTrigger value="in_progress" className="px-3 whitespace-nowrap text-xs sm:text-sm">
+                In Corso
+              </TabsTrigger>
+              <TabsTrigger value="quotes" className="px-3 whitespace-nowrap text-xs sm:text-sm">
+                Preventivi
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="profile" className="mt-4">
             {technicianId && <TechnicianProfile technicianId={technicianId} />}

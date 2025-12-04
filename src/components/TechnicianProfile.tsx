@@ -268,7 +268,7 @@ export const TechnicianProfile = ({ technicianId }: TechnicianProfileProps) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 pb-6">
       {/* Header con Avatar e Stats */}
       <Card className="overflow-hidden">
         <div className="h-24 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
