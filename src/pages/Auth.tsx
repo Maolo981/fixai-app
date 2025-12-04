@@ -23,16 +23,21 @@ const Auth = () => {
   const [addressDocument, setAddressDocument] = useState<File | null>(null);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
+    // Only auto-redirect if NOT actively logging in
+    if (isLoggingIn) return;
+    
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      if (session && !userType) {
+        // Only auto-detect if no userType selected (returning user)
         checkUserType(session.user.id);
       }
     });
-  }, [navigate]);
+  }, [navigate, isLoggingIn, userType]);
 
   const checkUserType = async (userId: string) => {
     // Check if user owns a company
@@ -99,6 +104,7 @@ const Auth = () => {
     }
 
     setLoading(true);
+    setIsLoggingIn(true);
 
     try {
       if (isLogin) {
@@ -113,6 +119,7 @@ const Auth = () => {
             description: error.message,
             variant: "destructive",
           });
+          setIsLoggingIn(false);
         } else if (data.user) {
           if (userType === "technician") {
             const { data: technician } = await supabase
@@ -269,6 +276,7 @@ const Auth = () => {
     } finally {
       setLoading(false);
       setUploadingDoc(false);
+      setIsLoggingIn(false);
     }
   };
 
