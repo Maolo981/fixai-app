@@ -14,6 +14,7 @@ import Install from "./pages/Install";
 import JobDetails from "./pages/JobDetails";
 import TechnicianDashboard from "./pages/TechnicianDashboard";
 import TechnicianSignup from "./pages/TechnicianSignup";
+import CompanyDashboard from "./pages/CompanyDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/jobs/:id" element={<JobDetails />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/technician-dashboard" element={<TechnicianDashboard />} />
+          <Route path="/company-dashboard" element={<CompanyDashboard />} />
           <Route path="/tech-signup" element={<TechnicianSignup />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/install" element={<Install />} />

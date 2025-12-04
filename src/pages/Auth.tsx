@@ -6,10 +6,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Wrench, ArrowLeft, Upload, FileText, X } from "lucide-react";
+import { Loader2, User, Wrench, ArrowLeft, Upload, FileText, X, Building2 } from "lucide-react";
 import { MobileLayout } from "@/components/MobileLayout";
 
-type UserType = "user" | "technician" | null;
+type UserType = "user" | "technician" | "company" | null;
 
 const Auth = () => {
   const [userType, setUserType] = useState<UserType>(null);
@@ -18,6 +18,8 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [vatNumber, setVatNumber] = useState("");
   const [addressDocument, setAddressDocument] = useState<File | null>(null);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -33,14 +35,30 @@ const Auth = () => {
   }, [navigate]);
 
   const checkUserType = async (userId: string) => {
+    // Check if user owns a company
+    const { data: company } = await supabase
+      .from("companies")
+      .select("id")
+      .eq("owner_id", userId)
+      .maybeSingle();
+
+    if (company) {
+      navigate("/company-dashboard");
+      return;
+    }
+
     const { data: technician } = await supabase
       .from("technicians")
-      .select("id")
+      .select("id, company_id")
       .eq("profile_id", userId)
       .maybeSingle();
 
     if (technician) {
-      navigate("/technician-dashboard");
+      if (technician.company_id) {
+        navigate("/technician-dashboard");
+      } else {
+        navigate("/technician-dashboard");
+      }
     } else {
       navigate("/dashboard");
     }
@@ -114,6 +132,24 @@ const Auth = () => {
               return;
             }
             navigate("/technician-dashboard");
+          } else if (userType === "company") {
+            const { data: company } = await supabase
+              .from("companies")
+              .select("id")
+              .eq("owner_id", data.user.id)
+              .maybeSingle();
+
+            if (!company) {
+              toast({
+                title: "Accesso Negato",
+                description: "Non sei registrato come azienda. Registrati prima come azienda.",
+                variant: "destructive",
+              });
+              await supabase.auth.signOut();
+              setLoading(false);
+              return;
+            }
+            navigate("/company-dashboard");
           } else {
             navigate("/dashboard");
           }
@@ -138,6 +174,16 @@ const Auth = () => {
           toast({
             title: "Errore",
             description: "Inserisci il tuo numero di telefono",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
+        if (userType === "company" && !companyName) {
+          toast({
+            title: "Errore",
+            description: "Inserisci il nome dell'azienda",
             variant: "destructive",
           });
           setLoading(false);
@@ -184,7 +230,30 @@ const Auth = () => {
             description: "Account creato! Ora puoi accedere.",
           });
           
-          if (userType === "technician") {
+          if (userType === "company") {
+            // Create the company
+            const { data: company, error: companyError } = await supabase
+              .from('companies')
+              .insert({
+                name: companyName,
+                owner_id: authData.user.id,
+                phone: phone,
+                email: email,
+                vat_number: vatNumber || null,
+              })
+              .select()
+              .single();
+
+            if (companyError) {
+              toast({
+                title: "Errore",
+                description: "Errore nella creazione dell'azienda",
+                variant: "destructive",
+              });
+            } else {
+              navigate("/company-dashboard");
+            }
+          } else if (userType === "technician") {
             navigate("/tech-signup");
           } else {
             navigate("/dashboard");
@@ -206,7 +275,6 @@ const Auth = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
       const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
       if (!allowedTypes.includes(file.type)) {
         toast({
@@ -216,7 +284,6 @@ const Auth = () => {
         });
         return;
       }
-      // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "File troppo grande",
@@ -261,8 +328,20 @@ const Auth = () => {
               >
                 <Wrench className="h-8 w-8 text-secondary-foreground" />
                 <div className="text-center">
-                  <p className="font-semibold">Tecnico</p>
+                  <p className="font-semibold">Tecnico / Libero Professionista</p>
                   <p className="text-xs text-muted-foreground">Gestisci le tue richieste di lavoro</p>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full h-24 flex flex-col items-center justify-center gap-2 hover:bg-orange-500/10 hover:border-orange-500 transition-all"
+                onClick={() => setUserType("company")}
+              >
+                <Building2 className="h-8 w-8 text-orange-500" />
+                <div className="text-center">
+                  <p className="font-semibold">Azienda</p>
+                  <p className="text-xs text-muted-foreground">Gestisci un team di tecnici</p>
                 </div>
               </Button>
             </CardContent>
@@ -289,11 +368,13 @@ const Auth = () => {
             <div className="flex items-center gap-2 mb-2">
               {userType === "user" ? (
                 <User className="h-5 w-5 text-primary" />
+              ) : userType === "company" ? (
+                <Building2 className="h-5 w-5 text-orange-500" />
               ) : (
                 <Wrench className="h-5 w-5 text-secondary-foreground" />
               )}
               <span className="text-sm font-medium text-muted-foreground">
-                {userType === "user" ? "Area Utente" : "Area Tecnico"}
+                {userType === "user" ? "Area Utente" : userType === "company" ? "Area Azienda" : "Area Tecnico"}
               </span>
             </div>
             <CardTitle className="text-xl sm:text-2xl">
@@ -304,6 +385,8 @@ const Auth = () => {
                 ? "Accedi per accedere alla tua dashboard"
                 : userType === "technician" 
                   ? "Registrati per diventare un tecnico"
+                  : userType === "company"
+                  ? "Registra la tua azienda"
                   : "Registrati per iniziare a diagnosticare"}
             </CardDescription>
           </CardHeader>
@@ -311,8 +394,37 @@ const Auth = () => {
             <CardContent className="space-y-4">
               {!isLogin && (
                 <>
+                  {userType === "company" && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="companyName" className="text-sm sm:text-base">Nome Azienda *</Label>
+                        <Input
+                          id="companyName"
+                          type="text"
+                          placeholder="La Mia Azienda S.r.l."
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          required
+                          className="h-11 sm:h-12 text-base"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="vatNumber" className="text-sm sm:text-base">Partita IVA</Label>
+                        <Input
+                          id="vatNumber"
+                          type="text"
+                          placeholder="IT12345678901"
+                          value={vatNumber}
+                          onChange={(e) => setVatNumber(e.target.value)}
+                          className="h-11 sm:h-12 text-base"
+                        />
+                      </div>
+                    </>
+                  )}
                   <div className="space-y-2">
-                    <Label htmlFor="fullName" className="text-sm sm:text-base">Nome Completo *</Label>
+                    <Label htmlFor="fullName" className="text-sm sm:text-base">
+                      {userType === "company" ? "Nome Responsabile *" : "Nome Completo *"}
+                    </Label>
                     <Input
                       id="fullName"
                       type="text"
@@ -363,7 +475,7 @@ const Auth = () => {
                 />
               </div>
               
-              {!isLogin && (
+              {!isLogin && userType !== "company" && (
                 <div className="space-y-2">
                   <Label className="text-sm sm:text-base">Documento di Residenza</Label>
                   <p className="text-xs text-muted-foreground mb-2">
