@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { QuoteInChatCard } from "./QuoteInChatCard";
 import { CreateQuoteDialog } from "./CreateQuoteDialog";
+import { ChatAIAssistant } from "./ChatAIAssistant";
 
 interface Message {
   id: string;
@@ -64,6 +65,7 @@ export function ChatDialog({
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
   const [jobData, setJobData] = useState<any>(null);
+  const [diagnosisData, setDiagnosisData] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -87,12 +89,15 @@ export function ChatDialog({
   const loadJobData = async () => {
     const { data, error } = await supabase
       .from("jobs")
-      .select("id, user_id, diagnoses(problem_type)")
+      .select("id, user_id, diagnosis_id, diagnoses(problem_type, possible_cause, urgency_level, ai_analysis, estimated_cost_min, estimated_cost_max, estimated_time_hours)")
       .eq("id", jobId)
       .single();
 
     if (!error && data) {
       setJobData(data);
+      if (data.diagnoses) {
+        setDiagnosisData(data.diagnoses);
+      }
     }
   };
 
@@ -469,6 +474,19 @@ export function ChatDialog({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <ChatAIAssistant
+                jobContext={{
+                  problemType: diagnosisData?.problem_type,
+                  possibleCause: diagnosisData?.possible_cause,
+                  urgencyLevel: diagnosisData?.urgency_level,
+                  aiAnalysis: diagnosisData?.ai_analysis,
+                  estimatedCostMin: diagnosisData?.estimated_cost_min,
+                  estimatedCostMax: diagnosisData?.estimated_cost_max,
+                  estimatedHours: diagnosisData?.estimated_time_hours,
+                }}
+                isTechnician={isTechnician}
+                onSuggestion={(text) => setNewMessage(text)}
+              />
               {isTechnician && (
                 <Button
                   variant="outline"
