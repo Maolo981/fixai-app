@@ -759,6 +759,43 @@ const JobDetails = () => {
               />
             )}
 
+            {/* Complete Job Button for Technicians */}
+            {isTechnician && (job.status === 'confirmed' || job.status === 'in_progress') && (
+              <Button
+                onClick={async () => {
+                  try {
+                    const { error } = await supabase
+                      .from('jobs')
+                      .update({
+                        status: 'completed',
+                        completion_date: new Date().toISOString()
+                      })
+                      .eq('id', job.id);
+
+                    if (error) throw error;
+
+                    toast({
+                      title: "Lavoro Completato!",
+                      description: "Il cliente potrà ora lasciare un feedback.",
+                    });
+
+                    loadJobDetails();
+                  } catch (error: any) {
+                    toast({
+                      title: "Errore",
+                      description: "Impossibile completare il lavoro",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                size="lg"
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-5 w-5 mr-2" />
+                Segna come Completato
+              </Button>
+            )}
+
             {(job.status === 'requested' || job.status === 'confirmed' || job.status === 'scheduled') && !isTechnician && (
               <Button
                 onClick={() => setCancelDialogOpen(true)}
