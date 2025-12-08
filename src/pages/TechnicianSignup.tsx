@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Wrench, ArrowLeft, MapPin, Euro, Users } from "lucide-react";
+import { Wrench, ArrowLeft, MapPin, Euro, Users, Building2 } from "lucide-react";
 import { z } from "zod";
 
 const specialtiesOptions = [
@@ -23,10 +23,30 @@ const specialtiesOptions = [
   "Tecnico Caldaie",
 ];
 
+// Validazione Partita IVA italiana (11 cifre, algoritmo di controllo)
+const validateItalianVAT = (vat: string): boolean => {
+  const cleanVat = vat.replace(/\s/g, '');
+  if (!/^\d{11}$/.test(cleanVat)) return false;
+  
+  let sum = 0;
+  for (let i = 0; i < 11; i++) {
+    let digit = parseInt(cleanVat[i], 10);
+    if (i % 2 === 1) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+  }
+  return sum % 10 === 0;
+};
+
 const signupSchema = z.object({
   email: z.string().email("Email non valida"),
   password: z.string().min(6, "Password minimo 6 caratteri"),
   fullName: z.string().min(2, "Nome completo richiesto"),
+  vatNumber: z.string().refine(validateItalianVAT, {
+    message: "Partita IVA non valida. Deve essere composta da 11 cifre.",
+  }),
   hourlyRate: z.number().min(1, "Tariffa oraria richiesta").max(500, "Tariffa massima €500/h"),
   serviceRadius: z.number().min(1, "Raggio minimo 1 km").max(100, "Raggio massimo 100 km"),
   specialties: z.array(z.string()).min(1, "Seleziona almeno una specialità"),
@@ -42,6 +62,7 @@ export default function TechnicianSignup() {
   const [serviceRadius, setServiceRadius] = useState("15");
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [vatNumber, setVatNumber] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -87,13 +108,16 @@ export default function TechnicianSignup() {
     try {
       setLoading(true);
 
-      // Validate email and password
+      // Validate email, password and VAT
       const accountValidation = z.object({
         email: z.string().email("Email non valida"),
         password: z.string().min(6, "Password minimo 6 caratteri"),
+        vatNumber: z.string().refine(validateItalianVAT, {
+          message: "Partita IVA non valida. Deve essere composta da 11 cifre.",
+        }),
       });
 
-      const result = accountValidation.safeParse({ email, password });
+      const result = accountValidation.safeParse({ email, password, vatNumber });
       if (!result.success) {
         toast({
           title: "Errore validazione",
@@ -292,6 +316,29 @@ export default function TechnicianSignup() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="vatNumber" className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Partita IVA *
+                  </Label>
+                  <Input
+                    id="vatNumber"
+                    type="text"
+                    placeholder="12345678901"
+                    value={vatNumber}
+                    onChange={(e) => setVatNumber(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                    maxLength={11}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    11 cifre - Verrà verificata la validità
+                  </p>
+                  {vatNumber.length === 11 && (
+                    <p className={`text-xs mt-1 ${validateItalianVAT(vatNumber) ? 'text-green-600' : 'text-destructive'}`}>
+                      {validateItalianVAT(vatNumber) ? '✓ Partita IVA valida' : '✗ Partita IVA non valida'}
+                    </p>
+                  )}
                 </div>
 
                 <Button
