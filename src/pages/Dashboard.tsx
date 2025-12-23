@@ -341,7 +341,7 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-3 sm:py-4 flex justify-between items-center">
           <Link to="/">
             <h1 className="text-xl sm:text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-              AI Repair
+              FIXO
             </h1>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">

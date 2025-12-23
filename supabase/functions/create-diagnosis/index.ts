@@ -123,7 +123,6 @@ Analizza la conversazione e estrai informazioni strutturate sul problema descrit
     }
 
     const aiData = await aiResponse.json();
-    console.log('AI Response:', JSON.stringify(aiData));
     
     // Estrai i dati dalla chiamata alla funzione
     const toolCall = aiData.choices[0].message.tool_calls?.[0];

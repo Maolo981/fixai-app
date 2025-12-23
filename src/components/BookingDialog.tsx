@@ -128,8 +128,8 @@ export function BookingDialog({
         // Combina e rimuovi duplicati
         const allBooked = [...new Set([...bookedFromJobs, ...bookedFromSchedules])];
         setBookedSlots(allBooked);
-      } catch (err) {
-        console.error('Errore:', err);
+      } catch {
+        // Errore nel caricamento degli slot - continua silenziosamente
       } finally {
         setLoadingSlots(false);
       }
