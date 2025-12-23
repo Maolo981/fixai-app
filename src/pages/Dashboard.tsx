@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { QuickFeedbackDialog } from "@/components/QuickFeedbackDialog";
 import { ChatDialog } from "@/components/ChatDialog";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import { NotificationTester } from "@/components/NotificationTester";
 import { useNotifications } from "@/hooks/useNotifications";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { EmptyState } from "@/components/EmptyState";
@@ -607,6 +608,7 @@ const Dashboard = () => {
               <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
                 <h3 className="text-xl sm:text-2xl font-bold">Impostazioni</h3>
                 <NotificationSettings userId={user?.id} />
+                <NotificationTester userId={user?.id} />
               </div>
             </TabsContent>
           </Tabs>
