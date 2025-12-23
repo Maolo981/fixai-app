@@ -3,32 +3,12 @@ import { Card } from "@/components/ui/card";
 import { Camera, Clock, Shield, Users, Zap, Wrench, CheckCircle, ArrowRight, Building2, BarChart3, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { MobileLayout } from "@/components/MobileLayout";
-import { Helmet } from "react-helmet-async";
 
 const Index = () => {
   const currentYear = new Date().getFullYear();
-  
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "FIXO",
-    "description": "Diagnostica problemi domestici con intelligenza artificiale e trova tecnici qualificati vicino a te",
-    "applicationCategory": "UtilityApplication",
-    "operatingSystem": "Web",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "EUR"
-    }
-  };
 
   return (
     <MobileLayout showBottomNav={false}>
-      <Helmet>
-        <title>FIXO - Diagnosi AI e Riparazioni Casa | Trova Tecnici Qualificati</title>
-        <meta name="description" content="FIXO: diagnostica problemi domestici con intelligenza artificiale e trova tecnici qualificati nelle vicinanze. Riparazioni rapide, sicure e garantite." />
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      </Helmet>
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
