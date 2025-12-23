@@ -311,6 +311,15 @@ const Auth = () => {
         <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-6">
           <Card className="w-full max-w-md shadow-medium">
             <CardHeader className="text-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-fit mx-auto mb-2"
+                onClick={() => navigate("/")}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Torna alla Home
+              </Button>
               <CardTitle className="text-xl sm:text-2xl">Benvenuto</CardTitle>
               <CardDescription className="text-sm sm:text-base">
                 Come vuoi accedere?
