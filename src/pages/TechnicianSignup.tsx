@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Wrench, ArrowLeft, MapPin, Euro, Users, Building2 } from "lucide-react";
+import { Wrench, ArrowLeft, MapPin, Euro, Users, Building2, Sparkles, Shield, Star } from "lucide-react";
 import { z } from "zod";
+import { motion } from "framer-motion";
 
 const specialtiesOptions = [
   "Idraulico",
@@ -239,43 +240,127 @@ export default function TechnicianSignup() {
 
   return (
     <MobileLayout showBottomNav={false}>
-      <div className="min-h-screen bg-muted/30 py-8 px-4">
-        <div className="container max-w-2xl mx-auto">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/")}
-            className="mb-6"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Indietro
-          </Button>
-
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-hero rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Wrench className="h-8 w-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold mb-2">Registrati come Tecnico</h1>
-            <p className="text-muted-foreground">
-              {step === 1
-                ? "Crea il tuo account per iniziare"
-                : "Completa il tuo profilo professionale"}
-            </p>
+      <div className="min-h-screen bg-background">
+        {/* Hero Header with Gradient */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-accent pb-16 pt-8 px-4">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-accent/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
           </div>
 
+          <div className="relative z-10 container max-w-2xl mx-auto">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/")}
+              className="mb-6 text-white/90 hover:text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Indietro
+            </Button>
+
+            <motion.div 
+              className="text-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              {/* Partner Badge */}
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full mb-6 border border-white/30"
+              >
+                <Sparkles className="h-4 w-4 text-yellow-300" />
+                <span className="text-sm font-medium text-white">Diventa Partner</span>
+                <Star className="h-4 w-4 text-yellow-300" />
+              </motion.div>
+
+              {/* Large Icon with Glow Effect */}
+              <motion.div 
+                className="relative w-24 h-24 mx-auto mb-6"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+              >
+                {/* Glow rings */}
+                <div className="absolute inset-0 bg-white/30 rounded-3xl blur-xl animate-pulse" />
+                <div className="absolute inset-2 bg-white/20 rounded-2xl blur-lg animate-pulse" style={{ animationDelay: '0.5s' }} />
+                {/* Icon container */}
+                <div className="relative w-full h-full bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center border-2 border-white/40 shadow-2xl">
+                  <Wrench className="h-12 w-12 text-white drop-shadow-lg" />
+                </div>
+              </motion.div>
+
+              <motion.h1 
+                className="text-3xl md:text-4xl font-bold mb-3 text-white drop-shadow-lg"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                Unisciti ai Migliori Tecnici
+              </motion.h1>
+
+              <motion.p 
+                className="text-white/80 text-lg max-w-md mx-auto"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                {step === 1
+                  ? "Crea il tuo account e inizia a guadagnare con le tue competenze"
+                  : "Completa il tuo profilo per ricevere le prime richieste"}
+              </motion.p>
+
+              {/* Trust indicators */}
+              <motion.div 
+                className="flex items-center justify-center gap-6 mt-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+              >
+                <div className="flex items-center gap-1.5 text-white/70 text-sm">
+                  <Shield className="h-4 w-4" />
+                  <span>Verificato</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-white/70 text-sm">
+                  <Star className="h-4 w-4" />
+                  <span>+500 Tecnici</span>
+                </div>
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="container max-w-2xl mx-auto px-4 -mt-8 relative z-20 pb-8">
           {/* Step Indicators */}
-          <div className="flex justify-center gap-2 mb-8">
-            <div
-              className={`h-2 w-24 rounded-full transition-colors ${
-                step >= 1 ? "bg-primary" : "bg-muted"
-              }`}
-            />
-            <div
-              className={`h-2 w-24 rounded-full transition-colors ${
-                step >= 2 ? "bg-primary" : "bg-muted"
-              }`}
-            />
-          </div>
+          <motion.div 
+            className="bg-card rounded-2xl shadow-lg border p-4 mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
+              <span className="font-medium">Step {step} di 2</span>
+              <span>{step === 1 ? 'Dati Account' : 'Profilo Professionale'}</span>
+            </div>
+            <div className="flex gap-2">
+              <div
+                className={`h-2 flex-1 rounded-full transition-all duration-500 ${
+                  step >= 1 ? "bg-primary" : "bg-muted"
+                }`}
+              />
+              <div
+                className={`h-2 flex-1 rounded-full transition-all duration-500 ${
+                  step >= 2 ? "bg-primary" : "bg-muted"
+                }`}
+              />
+            </div>
+          </motion.div>
 
           {step === 1 ? (
             <Card>
