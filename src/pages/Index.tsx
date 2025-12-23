@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Camera, Clock, Shield, Users, Zap, Wrench, CheckCircle, ArrowRight } from "lucide-react";
+import { Camera, Clock, Shield, Users, Zap, Wrench, CheckCircle, ArrowRight, Building2, BarChart3, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { MobileLayout } from "@/components/MobileLayout";
 
@@ -217,6 +217,68 @@ const Index = () => {
                   <Button size="lg" variant="secondary" className="h-14 px-8 text-base font-medium shadow-medium hover:shadow-strong transition-all hover:scale-105">
                     <Wrench className="mr-2 h-5 w-5" />
                     Registrati come Tecnico
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Company Section */}
+        <section className="py-16 sm:py-24 bg-gradient-to-br from-accent/10 via-primary/5 to-secondary/10">
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center gap-2 bg-accent/20 text-accent-foreground px-4 py-2 rounded-full text-sm font-medium mb-6">
+                  <Building2 className="h-4 w-4 text-accent" />
+                  Per Aziende
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+                  Gestisci un'azienda? Scopri FIXO Business
+                </h2>
+                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                  Porta il tuo team di tecnici su FIXO e gestisci tutto da un'unica piattaforma professionale
+                </p>
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-3 mb-10">
+                <Card className="p-6 text-center border-2 hover:border-accent hover:shadow-medium transition-all group">
+                  <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <Users className="h-6 w-6 text-accent" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Team Unificato</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Gestisci tutti i tuoi tecnici da un'unica dashboard centralizzata
+                  </p>
+                </Card>
+
+                <Card className="p-6 text-center border-2 hover:border-accent hover:shadow-medium transition-all group">
+                  <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <BarChart3 className="h-6 w-6 text-accent" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Report e Analytics</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Monitora performance, guadagni e soddisfazione clienti in tempo reale
+                  </p>
+                </Card>
+
+                <Card className="p-6 text-center border-2 hover:border-accent hover:shadow-medium transition-all group">
+                  <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <TrendingUp className="h-6 w-6 text-accent" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Crescita Scalabile</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Espandi il tuo business con strumenti professionali e automazioni
+                  </p>
+                </Card>
+              </div>
+
+              <div className="text-center">
+                <Link to="/auth?type=azienda">
+                  <Button size="lg" className="h-14 px-8 text-base font-medium shadow-medium hover:shadow-strong transition-all hover:scale-105 bg-gradient-to-r from-accent to-primary border-0">
+                    <Building2 className="mr-2 h-5 w-5" />
+                    Registra la tua Azienda
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
