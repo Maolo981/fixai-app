@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Wrench, ArrowLeft, Upload, FileText, X, Building2 } from "lucide-react";
+import { Loader2, User, Wrench, ArrowLeft, Upload, FileText, X, Building2, Sparkles } from "lucide-react";
 import { MobileLayout } from "@/components/MobileLayout";
+import { motion, AnimatePresence } from "framer-motion";
 
 type UserType = "user" | "technician" | "company" | null;
 
@@ -304,68 +305,183 @@ const Auth = () => {
     }
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.1 }
+    },
+    exit: { opacity: 0, transition: { duration: 0.2 } }
+  } as const;
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
+  } as const;
+
+  const cardVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: 20 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+    exit: { opacity: 0, scale: 0.95, y: -20, transition: { duration: 0.2 } }
+  } as const;
+
+  const buttonHoverVariants = {
+    rest: { scale: 1 },
+    hover: { scale: 1.02, transition: { duration: 0.2 } },
+    tap: { scale: 0.98 }
+  } as const;
+
   // User type selection screen
   if (!userType) {
     return (
       <MobileLayout showBottomNav={false}>
-        <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-6">
-          <Card className="w-full max-w-md shadow-medium">
-            <CardHeader className="text-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-fit mx-auto mb-2"
-                onClick={() => navigate("/")}
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Torna alla Home
-              </Button>
-              <CardTitle className="text-xl sm:text-2xl">Benvenuto</CardTitle>
-              <CardDescription className="text-sm sm:text-base">
-                Come vuoi accedere?
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button
-                variant="outline"
-                className="w-full h-24 flex flex-col items-center justify-center gap-2 hover:bg-primary/5 hover:border-primary transition-all"
-                onClick={() => setUserType("user")}
-              >
-                <User className="h-8 w-8 text-primary" />
-                <div className="text-center">
-                  <p className="font-semibold">Utente</p>
-                  <p className="text-xs text-muted-foreground">Cerca un tecnico per le tue riparazioni</p>
-                </div>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="w-full h-24 flex flex-col items-center justify-center gap-2 hover:bg-blue-500/10 hover:border-blue-500 transition-all"
-                onClick={() => {
-                  setUserType("technician");
-                  setIsLogin(true); // Tecnici usano solo login qui, registrazione va su /tech-signup
-                }}
-              >
-                <Wrench className="h-8 w-8 text-blue-500" />
-                <div className="text-center">
-                  <p className="font-semibold">Tecnico / Libero Professionista</p>
-                  <p className="text-xs text-muted-foreground">Gestisci le tue richieste di lavoro</p>
-                </div>
-              </Button>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/10 px-4 py-6 overflow-hidden">
+          {/* Background decorations */}
+          <div className="absolute top-0 left-0 w-72 h-72 bg-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
+          
+          <AnimatePresence mode="wait">
+            <motion.div
+              key="user-type-selection"
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="w-full max-w-md relative z-10"
+            >
+              <Card className="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
+                <CardHeader className="text-center pb-2">
+                  <motion.div variants={itemVariants}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-fit mx-auto mb-4 hover:bg-primary/10"
+                      onClick={() => navigate("/")}
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-1" />
+                      Torna alla Home
+                    </Button>
+                  </motion.div>
+                  
+                  <motion.div 
+                    variants={itemVariants}
+                    className="flex justify-center mb-4"
+                  >
+                    <div className="relative">
+                      <motion.div
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                        className="w-16 h-16 bg-gradient-to-br from-primary to-primary/70 rounded-2xl flex items-center justify-center shadow-lg"
+                      >
+                        <Sparkles className="h-8 w-8 text-primary-foreground" />
+                      </motion.div>
+                      <div className="absolute inset-0 bg-primary/30 rounded-2xl blur-xl" />
+                    </div>
+                  </motion.div>
+                  
+                  <motion.div variants={itemVariants}>
+                    <CardTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                      Benvenuto
+                    </CardTitle>
+                  </motion.div>
+                  <motion.div variants={itemVariants}>
+                    <CardDescription className="text-base">
+                      Come vuoi accedere?
+                    </CardDescription>
+                  </motion.div>
+                </CardHeader>
+                
+                <CardContent className="space-y-4 pt-4">
+                  <motion.div variants={containerVariants} initial="hidden" animate="visible">
+                    {/* Utente */}
+                    <motion.div variants={itemVariants} className="mb-4">
+                      <motion.div
+                        variants={buttonHoverVariants}
+                        initial="rest"
+                        whileHover="hover"
+                        whileTap="tap"
+                      >
+                        <Button
+                          variant="outline"
+                          className="w-full h-24 flex flex-col items-center justify-center gap-2 hover:bg-primary/5 hover:border-primary transition-all border-2"
+                          onClick={() => setUserType("user")}
+                        >
+                          <motion.div
+                            whileHover={{ rotate: [0, -10, 10, 0] }}
+                            transition={{ duration: 0.5 }}
+                          >
+                            <User className="h-8 w-8 text-primary" />
+                          </motion.div>
+                          <div className="text-center">
+                            <p className="font-semibold">Utente</p>
+                            <p className="text-xs text-muted-foreground">Cerca un tecnico per le tue riparazioni</p>
+                          </div>
+                        </Button>
+                      </motion.div>
+                    </motion.div>
+                    
+                    {/* Tecnico */}
+                    <motion.div variants={itemVariants} className="mb-4">
+                      <motion.div
+                        variants={buttonHoverVariants}
+                        initial="rest"
+                        whileHover="hover"
+                        whileTap="tap"
+                      >
+                        <Button
+                          variant="outline"
+                          className="w-full h-24 flex flex-col items-center justify-center gap-2 hover:bg-blue-500/10 hover:border-blue-500 transition-all border-2"
+                          onClick={() => {
+                            setUserType("technician");
+                            setIsLogin(true);
+                          }}
+                        >
+                          <motion.div
+                            whileHover={{ rotate: 45 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                          >
+                            <Wrench className="h-8 w-8 text-blue-500" />
+                          </motion.div>
+                          <div className="text-center">
+                            <p className="font-semibold">Tecnico / Libero Professionista</p>
+                            <p className="text-xs text-muted-foreground">Gestisci le tue richieste di lavoro</p>
+                          </div>
+                        </Button>
+                      </motion.div>
+                    </motion.div>
 
-              <Button
-                variant="outline"
-                className="w-full h-24 flex flex-col items-center justify-center gap-2 hover:bg-orange-500/10 hover:border-orange-500 transition-all"
-                onClick={() => setUserType("company")}
-              >
-                <Building2 className="h-8 w-8 text-orange-500" />
-                <div className="text-center">
-                  <p className="font-semibold">Azienda</p>
-                  <p className="text-xs text-muted-foreground">Gestisci un team di tecnici</p>
-                </div>
-              </Button>
-            </CardContent>
-          </Card>
+                    {/* Azienda */}
+                    <motion.div variants={itemVariants}>
+                      <motion.div
+                        variants={buttonHoverVariants}
+                        initial="rest"
+                        whileHover="hover"
+                        whileTap="tap"
+                      >
+                        <Button
+                          variant="outline"
+                          className="w-full h-24 flex flex-col items-center justify-center gap-2 hover:bg-orange-500/10 hover:border-orange-500 transition-all border-2"
+                          onClick={() => setUserType("company")}
+                        >
+                          <motion.div
+                            whileHover={{ y: -5 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                          >
+                            <Building2 className="h-8 w-8 text-orange-500" />
+                          </motion.div>
+                          <div className="text-center">
+                            <p className="font-semibold">Azienda</p>
+                            <p className="text-xs text-muted-foreground">Gestisci un team di tecnici</p>
+                          </div>
+                        </Button>
+                      </motion.div>
+                    </motion.div>
+                  </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </MobileLayout>
     );
@@ -373,196 +489,291 @@ const Auth = () => {
 
   return (
     <MobileLayout showBottomNav={false}>
-      <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-6">
-        <Card className="w-full max-w-md shadow-medium">
-          <CardHeader>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-fit -ml-2 mb-2"
-              onClick={() => setUserType(null)}
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Indietro
-            </Button>
-            <div className="flex items-center gap-2 mb-2">
-              {userType === "user" ? (
-                <User className="h-5 w-5 text-primary" />
-              ) : userType === "company" ? (
-                <Building2 className="h-5 w-5 text-orange-500" />
-              ) : (
-                <Wrench className="h-5 w-5 text-secondary-foreground" />
-              )}
-              <span className="text-sm font-medium text-muted-foreground">
-                {userType === "user" ? "Area Utente" : userType === "company" ? "Area Azienda" : "Area Tecnico"}
-              </span>
-            </div>
-            <CardTitle className="text-xl sm:text-2xl">
-              {isLogin ? "Bentornato" : "Crea Account"}
-            </CardTitle>
-            <CardDescription className="text-sm sm:text-base">
-              {isLogin
-                ? "Accedi per accedere alla tua dashboard"
-                : userType === "technician" 
-                  ? "Registrati per diventare un tecnico"
-                  : userType === "company"
-                  ? "Registra la tua azienda"
-                  : "Registrati per iniziare a diagnosticare"}
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              {!isLogin && (
-                <>
-                  {userType === "company" && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="companyName" className="text-sm sm:text-base">Nome Azienda *</Label>
-                        <Input
-                          id="companyName"
-                          type="text"
-                          placeholder="La Mia Azienda S.r.l."
-                          value={companyName}
-                          onChange={(e) => setCompanyName(e.target.value)}
-                          required
-                          className="h-11 sm:h-12 text-base"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="vatNumber" className="text-sm sm:text-base">Partita IVA</Label>
-                        <Input
-                          id="vatNumber"
-                          type="text"
-                          placeholder="IT12345678901"
-                          value={vatNumber}
-                          onChange={(e) => setVatNumber(e.target.value)}
-                          className="h-11 sm:h-12 text-base"
-                        />
-                      </div>
-                    </>
-                  )}
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName" className="text-sm sm:text-base">
-                      {userType === "company" ? "Nome Responsabile *" : "Nome Completo *"}
-                    </Label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      placeholder="Mario Rossi"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required={!isLogin}
-                      className="h-11 sm:h-12 text-base"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-sm sm:text-base">Numero di Telefono *</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+39 333 1234567"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      required={!isLogin}
-                      className="h-11 sm:h-12 text-base"
-                    />
-                  </div>
-                </>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm sm:text-base">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="tua@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-11 sm:h-12 text-base"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm sm:text-base">Password *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  className="h-11 sm:h-12 text-base"
-                />
-              </div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/10 px-4 py-6 overflow-hidden">
+        {/* Background decorations */}
+        <div className="absolute top-0 right-0 w-72 h-72 bg-primary/10 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3" />
+        
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`login-form-${userType}-${isLogin}`}
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="w-full max-w-md relative z-10"
+          >
+            <Card className="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
+              <CardHeader>
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-fit -ml-2 mb-2 hover:bg-primary/10"
+                    onClick={() => setUserType(null)}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-1" />
+                    Indietro
+                  </Button>
+                </motion.div>
+                
+                <motion.div 
+                  className="flex items-center gap-2 mb-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                >
+                  <motion.div
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                  >
+                    {userType === "user" ? (
+                      <User className="h-5 w-5 text-primary" />
+                    ) : userType === "company" ? (
+                      <Building2 className="h-5 w-5 text-orange-500" />
+                    ) : (
+                      <Wrench className="h-5 w-5 text-blue-500" />
+                    )}
+                  </motion.div>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {userType === "user" ? "Area Utente" : userType === "company" ? "Area Azienda" : "Area Tecnico"}
+                  </span>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <CardTitle className="text-xl sm:text-2xl">
+                    {isLogin ? "Bentornato" : "Crea Account"}
+                  </CardTitle>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                >
+                  <CardDescription className="text-sm sm:text-base">
+                    {isLogin
+                      ? "Accedi per accedere alla tua dashboard"
+                      : userType === "technician" 
+                        ? "Registrati per diventare un tecnico"
+                        : userType === "company"
+                        ? "Registra la tua azienda"
+                        : "Registrati per iniziare a diagnosticare"}
+                  </CardDescription>
+                </motion.div>
+              </CardHeader>
               
-              {!isLogin && userType !== "company" && (
-                <div className="space-y-2">
-                  <Label className="text-sm sm:text-base">Documento di Residenza</Label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Carica un documento che attesti il tuo indirizzo (bolletta, documento d'identità, etc.)
-                  </p>
-                  {addressDocument ? (
-                    <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                      <FileText className="h-5 w-5 text-primary" />
-                      <span className="text-sm flex-1 truncate">{addressDocument.name}</span>
+              <form onSubmit={handleSubmit}>
+                <CardContent className="space-y-4">
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="space-y-4"
+                  >
+                    <AnimatePresence mode="wait">
+                      {!isLogin && (
+                        <motion.div
+                          key="signup-fields"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="space-y-4"
+                        >
+                          {userType === "company" && (
+                            <>
+                              <motion.div variants={itemVariants} className="space-y-2">
+                                <Label htmlFor="companyName" className="text-sm sm:text-base">Nome Azienda *</Label>
+                                <Input
+                                  id="companyName"
+                                  type="text"
+                                  placeholder="La Mia Azienda S.r.l."
+                                  value={companyName}
+                                  onChange={(e) => setCompanyName(e.target.value)}
+                                  required
+                                  className="h-11 sm:h-12 text-base transition-all focus:ring-2 focus:ring-primary/20"
+                                />
+                              </motion.div>
+                              <motion.div variants={itemVariants} className="space-y-2">
+                                <Label htmlFor="vatNumber" className="text-sm sm:text-base">Partita IVA</Label>
+                                <Input
+                                  id="vatNumber"
+                                  type="text"
+                                  placeholder="IT12345678901"
+                                  value={vatNumber}
+                                  onChange={(e) => setVatNumber(e.target.value)}
+                                  className="h-11 sm:h-12 text-base transition-all focus:ring-2 focus:ring-primary/20"
+                                />
+                              </motion.div>
+                            </>
+                          )}
+                          <motion.div variants={itemVariants} className="space-y-2">
+                            <Label htmlFor="fullName" className="text-sm sm:text-base">
+                              {userType === "company" ? "Nome Responsabile *" : "Nome Completo *"}
+                            </Label>
+                            <Input
+                              id="fullName"
+                              type="text"
+                              placeholder="Mario Rossi"
+                              value={fullName}
+                              onChange={(e) => setFullName(e.target.value)}
+                              required={!isLogin}
+                              className="h-11 sm:h-12 text-base transition-all focus:ring-2 focus:ring-primary/20"
+                            />
+                          </motion.div>
+                          <motion.div variants={itemVariants} className="space-y-2">
+                            <Label htmlFor="phone" className="text-sm sm:text-base">Numero di Telefono *</Label>
+                            <Input
+                              id="phone"
+                              type="tel"
+                              placeholder="+39 333 1234567"
+                              value={phone}
+                              onChange={(e) => setPhone(e.target.value)}
+                              required={!isLogin}
+                              className="h-11 sm:h-12 text-base transition-all focus:ring-2 focus:ring-primary/20"
+                            />
+                          </motion.div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    
+                    <motion.div variants={itemVariants} className="space-y-2">
+                      <Label htmlFor="email" className="text-sm sm:text-base">Email *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="tua@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="h-11 sm:h-12 text-base transition-all focus:ring-2 focus:ring-primary/20"
+                      />
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} className="space-y-2">
+                      <Label htmlFor="password" className="text-sm sm:text-base">Password *</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={6}
+                        className="h-11 sm:h-12 text-base transition-all focus:ring-2 focus:ring-primary/20"
+                      />
+                    </motion.div>
+                    
+                    <AnimatePresence>
+                      {!isLogin && userType !== "company" && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="space-y-2"
+                        >
+                          <Label className="text-sm sm:text-base">Documento di Residenza</Label>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Carica un documento che attesti il tuo indirizzo (bolletta, documento d'identità, etc.)
+                          </p>
+                          {addressDocument ? (
+                            <motion.div 
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="flex items-center gap-2 p-3 bg-muted rounded-lg"
+                            >
+                              <FileText className="h-5 w-5 text-primary" />
+                              <span className="text-sm flex-1 truncate">{addressDocument.name}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setAddressDocument(null)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </motion.div>
+                          ) : (
+                            <motion.label 
+                              whileHover={{ scale: 1.01, borderColor: "hsl(var(--primary))" }}
+                              whileTap={{ scale: 0.99 }}
+                              className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                            >
+                              <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                              <span className="text-sm text-muted-foreground">Clicca per caricare</span>
+                              <span className="text-xs text-muted-foreground">PDF, JPG, PNG (max 10MB)</span>
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                onChange={handleFileChange}
+                              />
+                            </motion.label>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                </CardContent>
+                
+                <CardFooter className="flex flex-col space-y-3 sm:space-y-4">
+                  <motion.div 
+                    className="w-full"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button 
+                      type="submit" 
+                      className="w-full h-12 sm:h-14 text-base sm:text-lg touch-manipulation transition-all shadow-lg hover:shadow-xl" 
+                      disabled={loading || uploadingDoc}
+                    >
+                      {(loading || uploadingDoc) && <Loader2 className="mr-2 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />}
+                      {uploadingDoc ? "Caricamento documento..." : isLogin ? "Accedi" : "Crea Account"}
+                    </Button>
+                  </motion.div>
+                  
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className="w-full"
+                  >
+                    {userType === "technician" ? (
                       <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        onClick={() => setAddressDocument(null)}
+                        className="w-full h-11 sm:h-12 text-sm sm:text-base touch-manipulation hover:bg-primary/10"
+                        onClick={() => navigate("/tech-signup")}
                       >
-                        <X className="h-4 w-4" />
+                        Non hai un account? Registrati come Tecnico
                       </Button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                      <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-                      <span className="text-sm text-muted-foreground">Clicca per caricare</span>
-                      <span className="text-xs text-muted-foreground">PDF, JPG, PNG (max 10MB)</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept=".pdf,.jpg,.jpeg,.png,.webp"
-                        onChange={handleFileChange}
-                      />
-                    </label>
-                  )}
-                </div>
-              )}
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-3 sm:space-y-4">
-              <Button 
-                type="submit" 
-                className="w-full h-12 sm:h-14 text-base sm:text-lg touch-manipulation active:scale-95 transition-transform" 
-                disabled={loading || uploadingDoc}
-              >
-                {(loading || uploadingDoc) && <Loader2 className="mr-2 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />}
-                {uploadingDoc ? "Caricamento documento..." : isLogin ? "Accedi" : "Crea Account"}
-              </Button>
-              {userType === "technician" ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full h-11 sm:h-12 text-sm sm:text-base touch-manipulation"
-                  onClick={() => navigate("/tech-signup")}
-                >
-                  Non hai un account? Registrati come Tecnico
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full h-11 sm:h-12 text-sm sm:text-base touch-manipulation"
-                  onClick={() => setIsLogin(!isLogin)}
-                >
-                  {isLogin
-                    ? "Non hai un account? Registrati"
-                    : "Hai già un account? Accedi"}
-                </Button>
-              )}
-            </CardFooter>
-          </form>
-        </Card>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="w-full h-11 sm:h-12 text-sm sm:text-base touch-manipulation hover:bg-primary/10"
+                        onClick={() => setIsLogin(!isLogin)}
+                      >
+                        {isLogin
+                          ? "Non hai un account? Registrati"
+                          : "Hai già un account? Accedi"}
+                      </Button>
+                    )}
+                  </motion.div>
+                </CardFooter>
+              </form>
+            </Card>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </MobileLayout>
   );
