@@ -411,7 +411,7 @@ export const TechnicianProfile = ({ technicianId }: TechnicianProfileProps) => {
           <div className="grid grid-cols-3 gap-2">
             {portfolioImages.map((url, index) => (
               <div key={index} className="relative aspect-square rounded-lg overflow-hidden group">
-                <img src={url} alt={`Portfolio ${index + 1}`} className="w-full h-full object-cover" />
+                <img src={url} alt={`Lavoro ${index + 1} del portfolio`} className="w-full h-full object-cover" />
                 <button
                   onClick={() => removePortfolioImage(index)}
                   className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"

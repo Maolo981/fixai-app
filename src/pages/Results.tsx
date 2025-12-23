@@ -137,7 +137,7 @@ const Results = () => {
       
       // If no technicians found within 100km, try 300km
       if (!data || data.length === 0) {
-        console.log("No technicians within 100km, expanding search to 300km");
+        // Expand search radius if no technicians found nearby
         const result = await supabase.rpc('get_nearby_technicians', {
           user_lat: coordinates.latitude,
           user_lon: coordinates.longitude,
@@ -173,7 +173,6 @@ const Results = () => {
       
       // If still no results at all, fallback to all technicians
       if (allTechnicians.length === 0) {
-        console.log("No technicians found nearby, loading all technicians");
         loadTechniciansBySpecialty();
       }
     } catch (error: any) {

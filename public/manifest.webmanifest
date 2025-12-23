@@ -1,7 +1,7 @@
 {
-  "name": "RepairApp - Diagnosi Riparazioni",
-  "short_name": "RepairApp",
-  "description": "Diagnostica problemi domestici con l'AI e trova tecnici qualificati",
+  "name": "FIXO - Diagnosi AI e Riparazioni Casa",
+  "short_name": "FIXO",
+  "description": "Diagnostica problemi domestici con l'AI e trova tecnici qualificati vicino a te",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

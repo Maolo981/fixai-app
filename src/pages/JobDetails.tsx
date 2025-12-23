@@ -203,7 +203,6 @@ const JobDetails = () => {
         .maybeSingle();
 
       if (error) {
-        console.error("Errore nel caricamento del job:", error);
         throw error;
       }
       
@@ -217,10 +216,8 @@ const JobDetails = () => {
         return;
       }
       
-      console.log("Job caricato con successo:", data);
       setJob(data as unknown as Job);
     } catch (error: any) {
-      console.error("Errore completo:", error);
       toast({
         title: "Errore",
         description: error.message || "Impossibile caricare i dettagli della prenotazione",
