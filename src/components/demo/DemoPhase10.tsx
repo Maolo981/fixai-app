@@ -169,8 +169,14 @@ export function DemoPhase10({ onNext }: DemoPhaseProps) {
         </CardContent>
       </Card>
 
-      <p className="text-sm text-center text-green-600 font-medium">
-        🎉 Fine della demo! Hai visto l'intero flusso FIXO.
+      {/* CTA to continue */}
+      <Button className="w-full" size="lg" onClick={onNext}>
+        <CheckCircle className="h-4 w-4 mr-2" />
+        Continua demo
+      </Button>
+
+      <p className="text-sm text-center text-muted-foreground">
+        Scopri come funziona il modello FIXO
       </p>
     </div>
   );
