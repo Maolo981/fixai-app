@@ -184,43 +184,64 @@ export type Database = {
       diagnoses: {
         Row: {
           ai_analysis: string
+          ai_probability: number | null
+          ai_risk: string | null
+          ai_steps: string[] | null
+          category: string | null
           created_at: string | null
           estimated_cost_max: number | null
           estimated_cost_min: number | null
           estimated_time_hours: number | null
           id: string
           image_url: string
+          input_images: string[] | null
+          input_text: string | null
           possible_cause: string | null
           problem_type: string
           recommended_specialty: string
+          status: string | null
           urgency_level: string
           user_id: string
         }
         Insert: {
           ai_analysis: string
+          ai_probability?: number | null
+          ai_risk?: string | null
+          ai_steps?: string[] | null
+          category?: string | null
           created_at?: string | null
           estimated_cost_max?: number | null
           estimated_cost_min?: number | null
           estimated_time_hours?: number | null
           id?: string
           image_url: string
+          input_images?: string[] | null
+          input_text?: string | null
           possible_cause?: string | null
           problem_type: string
           recommended_specialty: string
+          status?: string | null
           urgency_level: string
           user_id: string
         }
         Update: {
           ai_analysis?: string
+          ai_probability?: number | null
+          ai_risk?: string | null
+          ai_steps?: string[] | null
+          category?: string | null
           created_at?: string | null
           estimated_cost_max?: number | null
           estimated_cost_min?: number | null
           estimated_time_hours?: number | null
           id?: string
           image_url?: string
+          input_images?: string[] | null
+          input_text?: string | null
           possible_cause?: string | null
           problem_type?: string
           recommended_specialty?: string
+          status?: string | null
           urgency_level?: string
           user_id?: string
         }
