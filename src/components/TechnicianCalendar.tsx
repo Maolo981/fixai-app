@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { format, startOfWeek, addDays, isSameDay, parseISO, addWeeks, subWeeks, startOfDay, subDays } from "date-fns";
+import { format, startOfWeek, addDays, isSameDay, parseISO, addWeeks, subWeeks, subDays } from "date-fns";
 import { it } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, User, Wrench, X, MapPin, AlertCircle, CheckCircle, ExternalLink, Sparkles } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, User, Wrench, X, MapPin, AlertCircle, CheckCircle, ExternalLink, Ban, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,7 +77,7 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
-  const [selectedDay, setSelectedDay] = useState(() => new Date()); // For mobile single-day view
+  const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [calendarSlots, setCalendarSlots] = useState<CalendarSlot[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,7 +122,7 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
       }
     });
 
-    // 2. Load jobs with proposed_slot (reschedule_proposed status)
+    // 2. Load jobs with proposed_slot (reschedule_proposed status) - PROPOSED
     const { data: proposedJobs } = await supabase
       .from("jobs")
       .select(`
@@ -162,7 +162,7 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
       }
     }
 
-    // 3. Load jobs with confirmed_slot (confirmed status)
+    // 3. Load jobs with confirmed_slot (confirmed status) - CONFIRMED
     const { data: confirmedJobs } = await supabase
       .from("jobs")
       .select(`
@@ -202,7 +202,7 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
       }
     }
 
-    // 4. Load in-progress jobs (busy)
+    // 4. Load in-progress jobs (BUSY)
     const { data: busyJobs } = await supabase
       .from("jobs")
       .select(`
@@ -288,57 +288,16 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
       const slotEnd = new Date(date);
       slotEnd.setHours(hour + 1, 0, 0, 0);
       
-      return start < slotEnd && end > slotStart;
+      return isSameDay(start, date) && start < slotEnd && end > slotStart;
     });
   };
 
-  // Check if a slot is "suggested" (compatible with pending requests)
-  const isSuggestedSlot = (date: Date, hour: number): { suggested: boolean; compatibleRequests: PendingRequest[] } => {
-    if (pendingRequests.length === 0) return { suggested: false, compatibleRequests: [] };
-    
-    const existingSlots = getSlotsForHour(date, hour);
-    if (existingSlots.length > 0) return { suggested: false, compatibleRequests: [] };
-
-    const slotDate = format(date, "yyyy-MM-dd");
-    const slotHour = hour;
-    const isPast = new Date(new Date(date).setHours(hour)) < new Date();
-    if (isPast) return { suggested: false, compatibleRequests: [] };
-
-    const compatible: PendingRequest[] = [];
-
-    for (const request of pendingRequests) {
-      // Flexible requests are always compatible with any future slot
-      if (request.flexible) {
-        compatible.push(request);
-        continue;
-      }
-
-      // Check if any preferred slot matches this time
-      if (request.preferred_slots && request.preferred_slots.length > 0) {
-        const hasMatch = request.preferred_slots.some(slot => {
-          if (slot.date !== slotDate) return false;
-          const startHour = parseInt(slot.start_time.split(':')[0]);
-          return slotHour >= startHour && slotHour < startHour + (request.estimated_duration || 2);
-        });
-        if (hasMatch) {
-          compatible.push(request);
-        }
-      }
-    }
-
-    return { suggested: compatible.length > 0, compatibleRequests: compatible };
-  };
-
-  const handleSlotClick = (date: Date, hour: number, compatibleRequests?: PendingRequest[]) => {
+  const handleSlotClick = (date: Date, hour: number) => {
     const existingSlots = getSlotsForHour(date, hour);
     if (existingSlots.length > 0) {
       setSelectedEvent(existingSlots[0]);
     } else {
       setSelectedSlot({ date, hour });
-      // Pre-select first compatible request if available
-      if (compatibleRequests && compatibleRequests.length > 0) {
-        setSelectedRequestId(compatibleRequests[0].id);
-      }
       if (pendingRequests.length > 0) {
         setFreeSlotDialogOpen(true);
       } else {
@@ -468,13 +427,13 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
   const getSlotStyle = (slot: CalendarSlot) => {
     switch (slot.status) {
       case 'proposed':
-        return "bg-amber-500/20 border-amber-500/50 text-amber-700 dark:text-amber-300";
+        return "border-2 border-dashed border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300";
       case 'confirmed':
-        return "bg-primary/20 border-primary/50 text-primary";
+        return "bg-primary/30 border border-primary text-primary-foreground dark:text-primary";
       case 'busy':
-        return "bg-blue-500/20 border-blue-500/50 text-blue-700 dark:text-blue-300";
+        return "bg-blue-600/40 border border-blue-600 text-blue-900 dark:text-blue-100";
       case 'blocked':
-        return "bg-muted/50 border-muted-foreground/30 text-muted-foreground";
+        return "bg-muted border border-muted-foreground/40 text-muted-foreground";
       default:
         return "bg-muted/30 border-border";
     }
@@ -498,6 +457,8 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
         return <CheckCircle className="h-3 w-3" />;
       case 'busy':
         return <Wrench className="h-3 w-3" />;
+      case 'blocked':
+        return <Ban className="h-3 w-3" />;
       default:
         return null;
     }
@@ -508,11 +469,14 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
   const goToNextDay = () => setSelectedDay(addDays(selectedDay, 1));
   const goToToday = () => setSelectedDay(new Date());
 
+  // Count pending requests for the info banner
+  const flexibleRequests = pendingRequests.filter(r => r.flexible);
+  const requestsWithSlots = pendingRequests.filter(r => !r.flexible && r.preferred_slots && r.preferred_slots.length > 0);
+
   return (
     <Card className="w-full overflow-hidden">
       <CardHeader className="pb-2 px-3 sm:px-6">
         {isMobile ? (
-          // Mobile Header - Single Day Navigation
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -541,7 +505,6 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
             </div>
           </div>
         ) : (
-          // Desktop Header - Week Navigation
           <>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
@@ -566,31 +529,44 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
           </>
         )}
       </CardHeader>
+
       <CardContent className="p-0">
+        {/* Info banner for pending requests - NOT filling calendar */}
+        {pendingRequests.length > 0 && (
+          <div className="mx-3 sm:mx-6 mb-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-amber-700 dark:text-amber-300">
+                  {pendingRequests.length} richiesta/e in attesa
+                </p>
+                <p className="text-amber-600/80 dark:text-amber-400/80 text-xs mt-0.5">
+                  {flexibleRequests.length > 0 && (
+                    <span>{flexibleRequests.length} cliente/i flessibile/i – scegli uno slot libero. </span>
+                  )}
+                  {requestsWithSlots.length > 0 && (
+                    <span>{requestsWithSlots.length} con fasce orarie richieste.</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isMobile ? (
-          // Mobile: Single Day View
           <ScrollArea className="h-[400px]">
-            <div className="divide-y">
+            <div className="divide-y divide-border">
               {HOURS.map((hour) => {
                 const daySlots = getSlotsForHour(selectedDay, hour);
                 const isPast = new Date(new Date(selectedDay).setHours(hour)) < new Date();
-                const { suggested, compatibleRequests } = isSuggestedSlot(selectedDay, hour);
 
                 return (
                   <div
                     key={hour}
-                    className={`flex min-h-[56px] ${
-                      isPast 
-                        ? "bg-muted/20" 
-                        : suggested 
-                          ? "bg-green-500/10 active:bg-green-500/20" 
-                          : "active:bg-muted/30"
-                    }`}
-                    onClick={() => !isPast && handleSlotClick(new Date(selectedDay), hour, compatibleRequests)}
+                    className={`flex min-h-[56px] ${isPast ? "bg-muted/30" : "active:bg-muted/20"}`}
+                    onClick={() => !isPast && handleSlotClick(new Date(selectedDay), hour)}
                   >
-                    <div className={`w-14 flex-shrink-0 p-2 text-xs text-muted-foreground flex items-start justify-center border-r ${
-                      suggested ? "bg-green-500/20" : "bg-muted/30"
-                    }`}>
+                    <div className="w-14 flex-shrink-0 p-2 text-xs text-muted-foreground flex items-start justify-center border-r bg-muted/20">
                       {hour}:00
                     </div>
                     <div className="flex-1 p-1.5 relative">
@@ -600,7 +576,7 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
                             key={slot.id}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className={`rounded-lg border p-2 ${getSlotStyle(slot)}`}
+                            className={`rounded-lg p-2 ${getSlotStyle(slot)}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedEvent(slot);
@@ -611,9 +587,13 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
                               <span className="font-medium text-sm truncate">
                                 {slot.job?.problem_type || (slot.status === 'blocked' ? 'Bloccato' : 'Evento')}
                               </span>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-auto">
+                                {getStatusLabel(slot.status)}
+                              </Badge>
                             </div>
                             {slot.job?.client_name && (
-                              <p className="text-xs opacity-75 mt-0.5 truncate">
+                              <p className="text-xs opacity-75 mt-0.5 truncate flex items-center gap-1">
+                                <User className="h-3 w-3" />
                                 {slot.job.client_name}
                               </p>
                             )}
@@ -621,18 +601,9 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
                         ))
                       ) : (
                         !isPast && (
-                          suggested ? (
-                            <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
-                              <Sparkles className="h-3.5 w-3.5" />
-                              <span className="text-xs font-medium">
-                                Consigliato ({compatibleRequests.length})
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground/50 italic">
-                              Libero
-                            </span>
-                          )
+                          <span className="text-xs text-muted-foreground/50">
+                            Libero
+                          </span>
                         )
                       )}
                     </div>
@@ -642,7 +613,6 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
             </div>
           </ScrollArea>
         ) : (
-          // Desktop: Week View
           <ScrollArea className="h-[500px]">
             <div className="min-w-[600px]">
               {/* Header with days */}
@@ -670,35 +640,32 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
               {/* Time slots */}
               {HOURS.map((hour) => (
                 <div key={hour} className="grid grid-cols-8 border-b">
-                  <div className="p-2 text-center text-xs text-muted-foreground border-r bg-muted/30">
+                  <div className="p-2 text-center text-xs text-muted-foreground border-r bg-muted/20">
                     {hour}:00
                   </div>
                   {weekDays.map((day, dayIndex) => {
                     const daySlots = getSlotsForHour(day, hour);
-                    const isPast = new Date(day.setHours(hour)) < new Date();
-                    const { suggested, compatibleRequests } = isSuggestedSlot(day, hour);
+                    const isPast = new Date(new Date(day).setHours(hour)) < new Date();
 
                     return (
                       <div
                         key={dayIndex}
                         className={`relative min-h-[60px] border-r last:border-r-0 p-1 ${
                           isPast 
-                            ? "bg-muted/20" 
-                            : suggested
-                              ? "bg-green-500/10 hover:bg-green-500/20 cursor-pointer"
-                              : "hover:bg-muted/30 cursor-pointer"
+                            ? "bg-muted/30" 
+                            : "hover:bg-muted/20 cursor-pointer"
                         } ${isSameDay(day, new Date()) ? "bg-primary/5" : ""}`}
-                        onClick={() => !isPast && handleSlotClick(new Date(day), hour, compatibleRequests)}
+                        onClick={() => !isPast && handleSlotClick(new Date(day), hour)}
                       >
                         <AnimatePresence>
-                          {daySlots.length > 0 ? (
+                          {daySlots.length > 0 && (
                             daySlots.map((slot) => (
                               <motion.div
                                 key={slot.id}
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
-                                className={`absolute inset-1 rounded-md border p-1 text-xs overflow-hidden flex flex-col ${getSlotStyle(slot)}`}
+                                className={`absolute inset-1 rounded-md p-1 text-xs overflow-hidden flex flex-col ${getSlotStyle(slot)}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedEvent(slot);
@@ -717,19 +684,6 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
                                 )}
                               </motion.div>
                             ))
-                          ) : (
-                            !isPast && suggested && (
-                              <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="absolute inset-1 flex items-center justify-center"
-                              >
-                                <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                                  <Sparkles className="h-3 w-3" />
-                                  <span className="text-[10px] font-medium">{compatibleRequests.length}</span>
-                                </div>
-                              </motion.div>
-                            )
                           )}
                         </AnimatePresence>
                       </div>
@@ -741,28 +695,26 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
           </ScrollArea>
         )}
 
-        {/* Legend */}
-        <div className="p-2 sm:p-3 border-t flex flex-wrap gap-2 sm:gap-3 text-xs">
-          {pendingRequests.length > 0 && (
-            <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-green-500/20 border border-green-500/50" />
-              <span className="text-green-600 dark:text-green-400 font-medium">Consigliato</span>
-            </div>
-          )}
-          <div className="flex items-center gap-1">
-            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-amber-500/20 border border-amber-500/50" />
+        {/* Legend - Clean, always visible */}
+        <div className="p-3 border-t flex flex-wrap gap-3 text-xs">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-background border border-muted-foreground/20" />
+            <span className="text-muted-foreground">Libero</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded border-2 border-dashed border-amber-500 bg-amber-500/10" />
             <span>Proposto</span>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-primary/20 border border-primary/50" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-primary/30 border border-primary" />
             <span>Confermato</span>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-blue-500/20 border border-blue-500/50" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-blue-600/40 border border-blue-600" />
             <span>Occupato</span>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-muted/50 border border-muted-foreground/30" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-muted border border-muted-foreground/40" />
             <span>Bloccato</span>
           </div>
         </div>
@@ -804,6 +756,7 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         {request.client_name} • {request.estimated_duration || 2}h stimate
+                        {request.flexible && <span className="ml-1 text-amber-600">(flessibile)</span>}
                       </p>
                     </button>
                   ))}
@@ -896,7 +849,8 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
             <div className="space-y-4 py-4">
               <div className="flex items-center gap-2">
                 <Badge className={getSlotStyle(selectedEvent)}>
-                  {getStatusLabel(selectedEvent.status)}
+                  {getStatusIcon(selectedEvent.status)}
+                  <span className="ml-1">{getStatusLabel(selectedEvent.status)}</span>
                 </Badge>
               </div>
 
@@ -928,7 +882,7 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
                     )}
 
                     {selectedEvent.status === 'proposed' && (
-                      <div className="flex items-center gap-2 p-3 bg-amber-500/10 rounded-lg text-sm">
+                      <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-dashed border-amber-500/50 rounded-lg text-sm">
                         <AlertCircle className="h-4 w-4 text-amber-600" />
                         <span className="text-amber-700 dark:text-amber-300">In attesa di risposta dal cliente</span>
                       </div>
