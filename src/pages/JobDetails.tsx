@@ -23,7 +23,8 @@ import {
   XCircle,
   CreditCard,
   FileText,
-  DollarSign
+  DollarSign,
+  Car
 } from "lucide-react";
 import {
   AlertDialog,
@@ -48,6 +49,7 @@ import { BookingSlotsDialog } from "@/components/BookingSlotsDialog";
 import { TechnicianActionsCard } from "@/components/TechnicianActionsCard";
 import { TechnicianProposeDialog } from "@/components/TechnicianProposeDialog";
 import { TechnicianJobDetailView } from "@/components/TechnicianJobDetailView";
+import { TechnicianPostConfirmActions } from "@/components/TechnicianPostConfirmActions";
 
 interface Quote {
   id: string;
@@ -114,6 +116,7 @@ interface Job {
   profiles?: {
     full_name: string;
     phone?: string;
+    address?: string;
   };
 }
 
@@ -265,13 +268,19 @@ const JobDetails = () => {
       // Load user profile for technician view (to get client name)
       let profilesData = null;
       if (data.user_id) {
+        // For technician view, load client name, phone and address (address only if confirmed)
         const { data: userProfile } = await supabase
           .from('profiles')
-          .select('full_name, phone')
+          .select('full_name, phone, address')
           .eq('id', data.user_id)
           .single();
         
-        profilesData = userProfile;
+        // Only include address if job is confirmed or beyond
+        const isConfirmedOrBeyond = ['confirmed', 'en_route', 'in_progress', 'completed'].includes(data.status || '');
+        profilesData = {
+          ...userProfile,
+          address: isConfirmedOrBeyond ? userProfile?.address : undefined
+        };
       }
       
       setJob({ ...data, profiles: profilesData } as unknown as Job);
@@ -504,6 +513,107 @@ const JobDetails = () => {
     );
   }
 
+  // Technician view for confirmed/in_progress jobs
+  const isPostConfirmTechnician = isTechnician && ['confirmed', 'en_route', 'in_progress', 'completed'].includes(job.status);
+  if (isPostConfirmTechnician) {
+    return (
+      <MobileLayout>
+        <div className="min-h-screen bg-muted/30">
+          <header className="bg-card border-b sticky top-0 z-40 shadow-soft">
+            <div className="container mx-auto px-4 py-4">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate("/technician-dashboard")}
+                  className="shrink-0"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <div className="flex-1">
+                  <h1 className="text-lg font-bold">Dettagli Intervento</h1>
+                  <p className="text-xs text-muted-foreground">
+                    {job.diagnoses?.problem_type}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <div className="container mx-auto px-4 py-6 space-y-4 max-w-lg">
+            <TechnicianPostConfirmActions
+              job={{
+                id: job.id,
+                user_id: job.user_id,
+                status: job.status,
+                confirmed_slot: job.confirmed_slot as any,
+                scheduled_date: job.scheduled_date || undefined,
+                estimated_duration: job.estimated_duration,
+                diagnoses: job.diagnoses,
+              }}
+              clientInfo={{
+                full_name: job.profiles?.full_name || "Cliente",
+                phone: job.profiles?.phone,
+                address: job.profiles?.address,
+              }}
+              onJobUpdated={loadJobDetails}
+              onOpenChat={() => setChatDialogOpen(true)}
+            />
+
+            {/* Diagnosis Details for technician */}
+            {job.diagnoses && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Dettagli Problema</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Problema</span>
+                    <span className="font-medium text-right max-w-[60%]">{job.diagnoses.problem_type}</span>
+                  </div>
+                  {job.diagnoses.estimated_cost_min && job.diagnoses.estimated_cost_max && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Costo stimato</span>
+                      <span className="font-medium">€{job.diagnoses.estimated_cost_min} - €{job.diagnoses.estimated_cost_max}</span>
+                    </div>
+                  )}
+                  {job.diagnoses.ai_analysis && (
+                    <div className="pt-2 border-t mt-2">
+                      <p className="text-xs text-muted-foreground">{job.diagnoses.ai_analysis}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Diagnosis Image */}
+            {job.diagnoses?.image_url && (
+              <Card>
+                <CardContent className="p-4">
+                  <img
+                    src={job.diagnoses.image_url}
+                    alt="Problema"
+                    className="w-full rounded-lg"
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <ChatDialog
+            open={chatDialogOpen}
+            onOpenChange={setChatDialogOpen}
+            jobId={job.id}
+            technicianName={job.technicians?.full_name || ''}
+            isTechnician={isTechnician}
+            technicianId={job.technician_id}
+            userId={job.user_id}
+          />
+        </div>
+      </MobileLayout>
+    );
+  }
+
   const statusInfo = getStatusInfo(job.status);
   const StatusIcon = statusInfo.icon;
 
@@ -633,6 +743,87 @@ const JobDetails = () => {
                       </p>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Tecnico in Viaggio Banner */}
+          {job.status === 'en_route' && (
+            <Card className="border-2 border-blue-300 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                  <Car className="h-6 w-6" />
+                  Tecnico in viaggio
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  Il tecnico sta arrivando. Traccia la sua posizione in tempo reale qui sotto.
+                </p>
+                {job.technicians && (
+                  <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center gap-3">
+                    <User className="h-5 w-5 text-blue-700 dark:text-blue-300" />
+                    <span className="font-medium text-blue-900 dark:text-blue-100">
+                      {job.technicians.full_name}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lavoro in Corso Banner */}
+          {job.status === 'in_progress' && (
+            <Card className="border-2 border-orange-300 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-orange-900 dark:text-orange-100">
+                  <AlertCircle className="h-6 w-6" />
+                  Intervento in corso
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-orange-800 dark:text-orange-200">
+                  Il tecnico sta lavorando al tuo problema. Ti avviseremo quando avrà terminato.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lavoro Completato Banner */}
+          {job.status === 'completed' && !job.user_rating && (
+            <Card className="border-2 border-green-300 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-900 dark:text-green-100">
+                  <CheckCircle className="h-6 w-6" />
+                  Intervento completato
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-green-800 dark:text-green-200">
+                  Il lavoro è stato completato con successo.
+                </p>
+                <div className="flex gap-3">
+                  {job.payment_status !== 'paid' && (
+                    <Button
+                      onClick={() => {
+                        // Scroll to payment section
+                        document.getElementById('payment-section')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="flex-1"
+                    >
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Procedi al pagamento
+                    </Button>
+                  )}
+                  <Button
+                    variant={job.payment_status === 'paid' ? 'default' : 'outline'}
+                    onClick={() => setReviewDialogOpen(true)}
+                    className="flex-1"
+                  >
+                    <Star className="h-4 w-4 mr-2" />
+                    Lascia recensione
+                  </Button>
                 </div>
               </CardContent>
             </Card>
