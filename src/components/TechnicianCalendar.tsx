@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { format, startOfWeek, addDays, isSameDay, parseISO, addWeeks, subWeeks, startOfDay } from "date-fns";
+import { format, startOfWeek, addDays, isSameDay, parseISO, addWeeks, subWeeks, startOfDay, subDays } from "date-fns";
 import { it } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, User, Wrench, X, MapPin, AlertCircle, CheckCircle, ExternalLink } from "lucide-react";
@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TimeSlot {
   date: string;
@@ -74,7 +75,9 @@ const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8:00 - 19:00
 
 export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [selectedDay, setSelectedDay] = useState(() => new Date()); // For mobile single-day view
   const [calendarSlots, setCalendarSlots] = useState<CalendarSlot[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -459,124 +462,222 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
     }
   };
 
+  // Mobile: navigate by day
+  const goToPrevDay = () => setSelectedDay(subDays(selectedDay, 1));
+  const goToNextDay = () => setSelectedDay(addDays(selectedDay, 1));
+  const goToToday = () => setSelectedDay(new Date());
+
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-primary" />
-            Il Mio Calendario
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => setCurrentWeekStart(subWeeks(currentWeekStart, 1))}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}>
-              Oggi
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => setCurrentWeekStart(addWeeks(currentWeekStart, 1))}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+    <Card className="w-full overflow-hidden">
+      <CardHeader className="pb-2 px-3 sm:px-6">
+        {isMobile ? (
+          // Mobile Header - Single Day Navigation
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarIcon className="h-4 w-4 text-primary" />
+                Calendario
+              </CardTitle>
+              <Button variant="outline" size="sm" className="text-xs h-8" onClick={goToToday}>
+                Oggi
+              </Button>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToPrevDay}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex-1 text-center">
+                <p className="text-sm font-medium capitalize">
+                  {format(selectedDay, "EEEE", { locale: it })}
+                </p>
+                <p className={`text-lg font-bold ${isSameDay(selectedDay, new Date()) ? "text-primary" : ""}`}>
+                  {format(selectedDay, "d MMMM yyyy", { locale: it })}
+                </p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToNextDay}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {format(currentWeekStart, "d MMMM", { locale: it })} - {format(addDays(currentWeekStart, 6), "d MMMM yyyy", { locale: it })}
-        </p>
+        ) : (
+          // Desktop Header - Week Navigation
+          <>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-primary" />
+                Il Mio Calendario
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={() => setCurrentWeekStart(subWeeks(currentWeekStart, 1))}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}>
+                  Oggi
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentWeekStart(addWeeks(currentWeekStart, 1))}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {format(currentWeekStart, "d MMMM", { locale: it })} - {format(addDays(currentWeekStart, 6), "d MMMM yyyy", { locale: it })}
+            </p>
+          </>
+        )}
       </CardHeader>
       <CardContent className="p-0">
-        <ScrollArea className="h-[500px]">
-          <div className="min-w-[600px]">
-            {/* Header with days */}
-            <div className="grid grid-cols-8 border-b sticky top-0 bg-background z-10">
-              <div className="p-2 text-center text-xs font-medium text-muted-foreground border-r">
-                Ora
-              </div>
-              {weekDays.map((day, i) => (
-                <div
-                  key={i}
-                  className={`p-2 text-center border-r last:border-r-0 ${
-                    isSameDay(day, new Date()) ? "bg-primary/10" : ""
-                  }`}
-                >
-                  <p className="text-xs font-medium text-muted-foreground">
-                    {format(day, "EEE", { locale: it })}
-                  </p>
-                  <p className={`text-lg font-bold ${isSameDay(day, new Date()) ? "text-primary" : ""}`}>
-                    {format(day, "d")}
-                  </p>
-                </div>
-              ))}
-            </div>
+        {isMobile ? (
+          // Mobile: Single Day View
+          <ScrollArea className="h-[400px]">
+            <div className="divide-y">
+              {HOURS.map((hour) => {
+                const daySlots = getSlotsForHour(selectedDay, hour);
+                const isPast = new Date(new Date(selectedDay).setHours(hour)) < new Date();
 
-            {/* Time slots */}
-            {HOURS.map((hour) => (
-              <div key={hour} className="grid grid-cols-8 border-b">
-                <div className="p-2 text-center text-xs text-muted-foreground border-r bg-muted/30">
-                  {hour}:00
-                </div>
-                {weekDays.map((day, dayIndex) => {
-                  const daySlots = getSlotsForHour(day, hour);
-                  const isPast = new Date(day.setHours(hour)) < new Date();
-                  
-                  return (
-                    <div
-                      key={dayIndex}
-                      className={`relative min-h-[60px] border-r last:border-r-0 p-1 ${
-                        isPast ? "bg-muted/20" : "hover:bg-muted/30 cursor-pointer"
-                      } ${isSameDay(day, new Date()) ? "bg-primary/5" : ""}`}
-                      onClick={() => !isPast && handleSlotClick(new Date(day), hour)}
-                    >
-                      <AnimatePresence>
-                        {daySlots.map((slot) => (
+                return (
+                  <div
+                    key={hour}
+                    className={`flex min-h-[56px] ${isPast ? "bg-muted/20" : "active:bg-muted/30"}`}
+                    onClick={() => !isPast && handleSlotClick(new Date(selectedDay), hour)}
+                  >
+                    <div className="w-14 flex-shrink-0 p-2 text-xs text-muted-foreground bg-muted/30 flex items-start justify-center border-r">
+                      {hour}:00
+                    </div>
+                    <div className="flex-1 p-1.5 relative">
+                      {daySlots.length > 0 ? (
+                        daySlots.map((slot) => (
                           <motion.div
                             key={slot.id}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className={`absolute inset-1 rounded-md border p-1 text-xs overflow-hidden flex flex-col ${getSlotStyle(slot)}`}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className={`rounded-lg border p-2 ${getSlotStyle(slot)}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedEvent(slot);
                             }}
                           >
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5">
                               {getStatusIcon(slot.status)}
-                              <span className="truncate font-medium">
+                              <span className="font-medium text-sm truncate">
                                 {slot.job?.problem_type || (slot.status === 'blocked' ? 'Bloccato' : 'Evento')}
                               </span>
                             </div>
                             {slot.job?.client_name && (
-                              <span className="truncate text-[10px] opacity-75">
+                              <p className="text-xs opacity-75 mt-0.5 truncate">
                                 {slot.job.client_name}
-                              </span>
+                              </p>
                             )}
                           </motion.div>
-                        ))}
-                      </AnimatePresence>
+                        ))
+                      ) : (
+                        !isPast && (
+                          <span className="text-xs text-muted-foreground/50 italic">
+                            Libero
+                          </span>
+                        )
+                      )}
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        ) : (
+          // Desktop: Week View
+          <ScrollArea className="h-[500px]">
+            <div className="min-w-[600px]">
+              {/* Header with days */}
+              <div className="grid grid-cols-8 border-b sticky top-0 bg-background z-10">
+                <div className="p-2 text-center text-xs font-medium text-muted-foreground border-r">
+                  Ora
+                </div>
+                {weekDays.map((day, i) => (
+                  <div
+                    key={i}
+                    className={`p-2 text-center border-r last:border-r-0 ${
+                      isSameDay(day, new Date()) ? "bg-primary/10" : ""
+                    }`}
+                  >
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {format(day, "EEE", { locale: it })}
+                    </p>
+                    <p className={`text-lg font-bold ${isSameDay(day, new Date()) ? "text-primary" : ""}`}>
+                      {format(day, "d")}
+                    </p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </ScrollArea>
+
+              {/* Time slots */}
+              {HOURS.map((hour) => (
+                <div key={hour} className="grid grid-cols-8 border-b">
+                  <div className="p-2 text-center text-xs text-muted-foreground border-r bg-muted/30">
+                    {hour}:00
+                  </div>
+                  {weekDays.map((day, dayIndex) => {
+                    const daySlots = getSlotsForHour(day, hour);
+                    const isPast = new Date(day.setHours(hour)) < new Date();
+
+                    return (
+                      <div
+                        key={dayIndex}
+                        className={`relative min-h-[60px] border-r last:border-r-0 p-1 ${
+                          isPast ? "bg-muted/20" : "hover:bg-muted/30 cursor-pointer"
+                        } ${isSameDay(day, new Date()) ? "bg-primary/5" : ""}`}
+                        onClick={() => !isPast && handleSlotClick(new Date(day), hour)}
+                      >
+                        <AnimatePresence>
+                          {daySlots.map((slot) => (
+                            <motion.div
+                              key={slot.id}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.9 }}
+                              className={`absolute inset-1 rounded-md border p-1 text-xs overflow-hidden flex flex-col ${getSlotStyle(slot)}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedEvent(slot);
+                              }}
+                            >
+                              <div className="flex items-center gap-1">
+                                {getStatusIcon(slot.status)}
+                                <span className="truncate font-medium">
+                                  {slot.job?.problem_type || (slot.status === 'blocked' ? 'Bloccato' : 'Evento')}
+                                </span>
+                              </div>
+                              {slot.job?.client_name && (
+                                <span className="truncate text-[10px] opacity-75">
+                                  {slot.job.client_name}
+                                </span>
+                              )}
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
 
         {/* Legend */}
-        <div className="p-3 border-t flex flex-wrap gap-3 text-xs">
+        <div className="p-2 sm:p-3 border-t flex flex-wrap gap-2 sm:gap-3 text-xs">
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-amber-500/20 border border-amber-500/50" />
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-amber-500/20 border border-amber-500/50" />
             <span>Proposto</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-primary/20 border border-primary/50" />
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-primary/20 border border-primary/50" />
             <span>Confermato</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-blue-500/20 border border-blue-500/50" />
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-blue-500/20 border border-blue-500/50" />
             <span>Occupato</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-muted/50 border border-muted-foreground/30" />
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-muted/50 border border-muted-foreground/30" />
             <span>Bloccato</span>
           </div>
         </div>
