@@ -1,15 +1,18 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   CheckCircle,
-  Euro,
+  CreditCard,
   Home,
   Heart,
   Shield,
-  Sparkles,
-  X,
-  Zap
+  Smartphone,
+  Banknote,
+  Headphones,
+  Eye,
+  Lock,
+  Sparkles
 } from "lucide-react";
 
 interface DemoPhaseProps {
@@ -19,180 +22,180 @@ interface DemoPhaseProps {
 export function DemoPhase12({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-5">
-      {/* BLOCCO 1 - Messaggio Chiave */}
-      <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
+      {/* Header */}
+      <div className="text-center pb-2">
+        <h2 className="text-xl font-bold mb-1">Come guadagna FIXO</h2>
+        <p className="text-sm text-muted-foreground">
+          Modello ibrido, semplice e trasparente
+        </p>
+      </div>
+
+      {/* Blocco 1 - Accesso all'app */}
+      <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
         <CardContent className="py-5">
-          <div className="text-center">
-            <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
-              <Heart className="h-6 w-6 text-primary" />
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+              <Smartphone className="h-5 w-5 text-primary" />
             </div>
-            <h3 className="text-lg font-bold mb-2">
-              FIXO non fa pagare l'uso dell'app
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              FIXO è una piattaforma che mette in contatto clienti e tecnici.
-              <br />
-              L'uso dell'app è <strong>gratuito</strong> per entrambi.
-              <br />
-              FIXO guadagna solo quando il servizio viene utilizzato correttamente.
+            <div>
+              <h3 className="font-bold mb-2">
+                FIXO non fa pagare l'uso dell'app
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                FIXO mette in contatto clienti e tecnici.
+                <br />
+                L'uso dell'app è <strong>gratuito</strong> per entrambi.
+                <br />
+                Nessun abbonamento, nessun costo per registrarsi.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Blocco 2 - Modello di guadagno */}
+      <Card>
+        <CardContent className="py-5 space-y-4">
+          <h3 className="font-bold text-center">FIXO guadagna in due modi</h3>
+          
+          {/* Modo 1 */}
+          <div className="bg-muted/40 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">1</span>
+              <span className="font-semibold text-sm">Costo fisso di gestione della chiamata</span>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed pl-8">
+              Per ogni intervento confermato, FIXO applica un piccolo costo fisso di servizio.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-3 pl-8">
+              <Badge variant="secondary" className="text-xs font-normal">
+                <Sparkles className="h-3 w-3 mr-1" />
+                Uso AI
+              </Badge>
+              <Badge variant="secondary" className="text-xs font-normal">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Gestione richiesta
+              </Badge>
+              <Badge variant="secondary" className="text-xs font-normal">
+                <Eye className="h-3 w-3 mr-1" />
+                Sempre visibile
+              </Badge>
+            </div>
+          </div>
+
+          {/* Modo 2 */}
+          <div className="bg-muted/40 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">2</span>
+              <span className="font-semibold text-sm">Commissione opzionale (2–3%)</span>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed pl-8">
+              Se il cliente paga tramite FIXO (carta o PayPal), la piattaforma trattiene una piccola commissione sul totale.
+            </p>
+            <p className="text-xs text-primary font-medium mt-2 pl-8">
+              Percentuale bassa e indicata prima del pagamento.
             </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* BLOCCO 2 - Spiegazione Modello Ibrido */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Euro className="h-5 w-5 text-primary" />
-            Modello di guadagno ibrido
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>• FIXO può guadagnare in <strong>due modi</strong></p>
-            <p>• Il modello è <strong>flessibile</strong> e adattabile al tipo di intervento</p>
-            <p>• <strong>Nessun costo fisso</strong> per cliente o tecnico</p>
-          </div>
-
-          <div className="space-y-3 pt-2">
-            {/* Modo 1 */}
-            <div className="bg-muted/50 rounded-lg p-3">
-              <div className="flex items-start gap-2">
-                <Badge variant="outline" className="mt-0.5 shrink-0">1</Badge>
-                <div>
-                  <p className="font-medium text-sm mb-1">
-                    Commissione sul servizio
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Se il cliente paga tramite FIXO, la piattaforma trattiene una piccola commissione sul totale dell'intervento.
-                  </p>
-                </div>
-              </div>
+      {/* Blocco 3 - Confronto */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Pagamento fuori app */}
+        <Card className="border-muted">
+          <CardContent className="py-4 px-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Banknote className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-semibold">Pagamento fuori app</span>
             </div>
+            <ul className="space-y-2 text-xs text-muted-foreground">
+              <li className="flex items-start gap-1.5">
+                <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 shrink-0" />
+                <span>Pagamento diretto al tecnico</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 shrink-0" />
+                <span>Solo costo fisso di gestione</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 shrink-0" />
+                <span>Nessuna commissione extra</span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
 
-            {/* Modo 2 */}
-            <div className="bg-muted/50 rounded-lg p-3">
-              <div className="flex items-start gap-2">
-                <Badge variant="outline" className="mt-0.5 shrink-0">2</Badge>
-                <div>
-                  <p className="font-medium text-sm mb-1">
-                    Costo di servizio per l'uso della piattaforma
-                  </p>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    In alcuni casi FIXO può applicare un piccolo costo fisso di gestione per:
-                  </p>
-                  <ul className="text-xs text-muted-foreground space-y-1">
-                    <li className="flex items-center gap-1.5">
-                      <Zap className="h-3 w-3 text-primary" />
-                      utilizzo dell'AI
-                    </li>
-                    <li className="flex items-center gap-1.5">
-                      <Sparkles className="h-3 w-3 text-primary" />
-                      gestione della richiesta
-                    </li>
-                    <li className="flex items-center gap-1.5">
-                      <CheckCircle className="h-3 w-3 text-primary" />
-                      organizzazione dell'intervento
-                    </li>
-                  </ul>
-                  <p className="text-xs text-primary font-medium mt-2">
-                    Questo costo è sempre visibile prima della conferma.
-                  </p>
-                </div>
-              </div>
+        {/* Pagamento in app */}
+        <Card className="border-primary/50 bg-primary/5">
+          <CardContent className="py-4 px-3">
+            <div className="flex items-center gap-2 mb-3">
+              <CreditCard className="h-4 w-4 text-primary" />
+              <span className="text-xs font-semibold">Pagamento in app</span>
+            </div>
+            <ul className="space-y-2 text-xs text-muted-foreground">
+              <li className="flex items-start gap-1.5">
+                <Lock className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+                <span>Pagamento tracciato</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <Shield className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+                <span>Protezione cliente e tecnico</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <Headphones className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+                <span>Assistenza se problemi</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <span className="text-xs text-primary font-medium">Commissione 2–3%</span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Blocco 4 - Messaggio di fiducia */}
+      <Card className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <Heart className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm text-amber-800 dark:text-amber-200 mb-2">
+                FIXO guadagna solo se il servizio funziona
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+                FIXO non guadagna sulla semplice richiesta.
+                <br />
+                Guadagna solo quando l'intervento viene gestito correttamente.
+                <br />
+                <strong>Nessun costo nascosto. Nessun obbligo di pagamento in app.</strong>
+              </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* BLOCCO 3 - Esempio Illustrativo */}
-      <Card className="border-2 border-dashed border-primary/30">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Esempio illustrativo</CardTitle>
-            <Badge variant="secondary">DEMO</Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-center p-3 bg-primary/10 rounded-lg">
-            <p className="text-sm text-muted-foreground">Costo intervento totale</p>
-            <p className="text-2xl font-bold text-primary">€128,75</p>
-          </div>
-
-          <div className="grid gap-3">
-            {/* Scenario A */}
-            <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-              <p className="font-medium text-sm text-green-800 dark:text-green-200 mb-2 flex items-center gap-2">
-                <span className="h-5 w-5 rounded-full bg-green-500 text-white text-xs flex items-center justify-center font-bold">A</span>
-                Pagamento tramite FIXO
-              </p>
-              <ul className="text-xs text-green-700 dark:text-green-300 space-y-1">
-                <li>• Totale pagato dal cliente: €128,75</li>
-                <li>• Quota di servizio FIXO: visibile e trasparente</li>
-                <li>• Tecnico riceve il resto</li>
-              </ul>
+      {/* Blocco finale - Chiusura */}
+      <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-300 dark:border-green-800">
+        <CardContent className="py-5">
+          <div className="text-center mb-4">
+            <div className="h-12 w-12 rounded-full bg-green-500 flex items-center justify-center mx-auto mb-3">
+              <CheckCircle className="h-6 w-6 text-white" />
             </div>
-
-            {/* Scenario B */}
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-              <p className="font-medium text-sm text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
-                <span className="h-5 w-5 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">B</span>
-                Pagamento gestito direttamente dal tecnico
-              </p>
-              <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-                <li>• FIXO trattiene solo il costo di utilizzo della piattaforma (se previsto)</li>
-                <li>• Nessun vincolo di abbonamento</li>
-              </ul>
-            </div>
+            <h3 className="font-bold text-green-800 dark:text-green-200">
+              Processo trasparente
+            </h3>
           </div>
-
-          <p className="text-xs text-muted-foreground text-center italic">
-            Questo è un esempio DEMO. I valori possono variare in base al tipo di intervento.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* BLOCCO 4 - Cosa FIXO NON Fa */}
-      <Card className="bg-muted/30">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            Cosa FIXO non fa
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
             {[
-              "Nessun abbonamento obbligatorio",
-              "Nessun costo di ingresso",
-              "Nessun vincolo di esclusiva",
-              "Nessun costo nascosto"
+              "Costi chiari prima della conferma",
+              "Pagamento libero: in app o diretto",
+              "FIXO allineata all'interesse di clienti e tecnici"
             ].map((item, index) => (
-              <div key={index} className="flex items-center gap-2 text-sm">
-                <X className="h-4 w-4 text-red-500 shrink-0" />
-                <span className="text-xs">{item}</span>
+              <div key={index} className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300">
+                <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                <span>{item}</span>
               </div>
             ))}
-          </div>
-          <p className="text-xs text-muted-foreground pt-2 border-t">
-            FIXO non è un intermediario invasivo, ma uno strumento che semplifica il contatto tra cliente e professionista.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* BLOCCO 5 - Chiusura */}
-      <Card className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border-green-300 dark:border-green-800">
-        <CardContent className="py-5">
-          <div className="text-center">
-            <h3 className="text-lg font-bold text-green-800 dark:text-green-200 mb-3">
-              Un modello sostenibile per tutti
-            </h3>
-            <div className="space-y-2 text-sm text-green-700 dark:text-green-300">
-              <p>Il cliente ottiene un servizio chiaro e tracciato.</p>
-              <p>Il tecnico lavora senza abbonamenti o vincoli.</p>
-              <p className="font-medium">FIXO guadagna solo quando la piattaforma crea valore reale.</p>
-            </div>
           </div>
         </CardContent>
       </Card>
