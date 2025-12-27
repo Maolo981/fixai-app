@@ -19,6 +19,7 @@ import TechnicianDashboard from "./pages/TechnicianDashboard";
 import TechnicianSignup from "./pages/TechnicianSignup";
 import CompanyDashboard from "./pages/CompanyDashboard";
 import DiagnosisDetail from "./pages/DiagnosisDetail";
+import DemoFlow from "./pages/DemoFlow";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/tech-signup" element={<TechnicianSignup />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/install" element={<Install />} />
+            <Route path="/demo" element={<DemoFlow />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
