@@ -25,7 +25,7 @@ export function DemoPhase1() {
           <div className="border-2 border-dashed border-primary/30 rounded-lg p-6 text-center bg-primary/5">
             <div className="mb-3">
               <img 
-                src="https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&h=300&fit=crop"
+                src="https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400&h=300&fit=crop"
                 alt="Problema caldaia"
                 className="w-full h-40 object-cover rounded-lg"
               />
