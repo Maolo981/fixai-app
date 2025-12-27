@@ -50,6 +50,8 @@ import { TechnicianActionsCard } from "@/components/TechnicianActionsCard";
 import { TechnicianProposeDialog } from "@/components/TechnicianProposeDialog";
 import { TechnicianJobDetailView } from "@/components/TechnicianJobDetailView";
 import { TechnicianPostConfirmActions } from "@/components/TechnicianPostConfirmActions";
+import { useDemoMode } from "@/components/DemoModeProvider";
+import { DemoJobDetails } from "@/components/DemoJobDetails";
 
 interface Quote {
   id: string;
@@ -125,6 +127,7 @@ const JobDetails = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { fireMultipleConfetti } = useConfetti();
+  const { isDemoMode } = useDemoMode();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
@@ -474,6 +477,11 @@ const JobDetails = () => {
       });
     }
   };
+
+  // Demo Mode - show demo UI instead of real data
+  if (isDemoMode) {
+    return <DemoJobDetails />;
+  }
 
   if (loading) {
     return (
