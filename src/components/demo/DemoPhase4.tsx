@@ -13,7 +13,11 @@ import {
   Sparkles
 } from "lucide-react";
 
-export function DemoPhase4() {
+interface DemoPhaseProps {
+  onNext?: () => void;
+}
+
+export function DemoPhase4({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
       {/* Notification Banner */}
@@ -103,13 +107,13 @@ export function DemoPhase4() {
 
       {/* Actions */}
       <div className="space-y-2">
-        <Button className="w-full" size="lg" disabled>
+        <Button className="w-full" size="lg" onClick={onNext}>
           <CheckCircle className="h-4 w-4 mr-2" />
           Accetta e scegli orario
         </Button>
         
         <div className="flex gap-2">
-          <Button variant="outline" className="flex-1" disabled>
+          <Button variant="outline" className="flex-1" onClick={onNext}>
             <MessageCircle className="h-4 w-4 mr-2" />
             Chat
           </Button>
@@ -118,16 +122,7 @@ export function DemoPhase4() {
             Proponi altro
           </Button>
         </div>
-        
-        <Button variant="ghost" className="w-full text-red-500" disabled>
-          <XCircle className="h-4 w-4 mr-2" />
-          Rifiuta richiesta
-        </Button>
       </div>
-
-      <p className="text-xs text-center text-muted-foreground">
-        ⬆️ Il tecnico vede tutti i dettagli della richiesta
-      </p>
     </div>
   );
 }

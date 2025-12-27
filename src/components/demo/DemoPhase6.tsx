@@ -20,7 +20,11 @@ const DEMO_CALENDAR = [
   { time: "17:00", status: "free", label: null },
 ];
 
-export function DemoPhase6() {
+interface DemoPhaseProps {
+  onNext?: () => void;
+}
+
+export function DemoPhase6({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -133,14 +137,10 @@ export function DemoPhase6() {
       </Card>
 
       {/* CTA */}
-      <Button className="w-full" size="lg" disabled>
+      <Button className="w-full" size="lg" onClick={onNext}>
         <CheckCircle className="h-4 w-4 mr-2" />
         Conferma orario
       </Button>
-
-      <p className="text-xs text-center text-muted-foreground">
-        ⬆️ Il tecnico seleziona lo slot e conferma l'appuntamento
-      </p>
     </div>
   );
 }

@@ -11,7 +11,11 @@ import {
   FileText
 } from "lucide-react";
 
-export function DemoPhase9() {
+interface DemoPhaseProps {
+  onNext?: () => void;
+}
+
+export function DemoPhase9({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
       {/* Completion Banner */}
@@ -133,14 +137,10 @@ export function DemoPhase9() {
       </Card>
 
       {/* CTA */}
-      <Button className="w-full" size="lg" disabled>
+      <Button className="w-full" size="lg" onClick={onNext}>
         <CheckCircle className="h-4 w-4 mr-2" />
         Conferma completamento
       </Button>
-
-      <p className="text-xs text-center text-muted-foreground">
-        ⬆️ Il tecnico compila il riepilogo e conferma la fine del lavoro
-      </p>
     </div>
   );
 }

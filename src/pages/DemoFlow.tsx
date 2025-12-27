@@ -132,16 +132,16 @@ const DemoFlow = () => {
 
   const renderPhaseContent = () => {
     switch (currentPhase) {
-      case 0: return <DemoPhase1 />;
-      case 1: return <DemoPhase2 />;
-      case 2: return <DemoPhase3 />;
-      case 3: return <DemoPhase4 />;
-      case 4: return <DemoPhase5 />;
-      case 5: return <DemoPhase6 />;
-      case 6: return <DemoPhase7 />;
-      case 7: return <DemoPhase8 />;
-      case 8: return <DemoPhase9 />;
-      case 9: return <DemoPhase10 />;
+      case 0: return <DemoPhase1 onNext={goNext} />;
+      case 1: return <DemoPhase2 onNext={goNext} />;
+      case 2: return <DemoPhase3 onNext={goNext} />;
+      case 3: return <DemoPhase4 onNext={goNext} />;
+      case 4: return <DemoPhase5 onNext={goNext} />;
+      case 5: return <DemoPhase6 onNext={goNext} />;
+      case 6: return <DemoPhase7 onNext={goNext} />;
+      case 7: return <DemoPhase8 onNext={goNext} />;
+      case 8: return <DemoPhase9 onNext={goNext} />;
+      case 9: return <DemoPhase10 onNext={goNext} />;
       default: return null;
     }
   };
