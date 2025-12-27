@@ -47,6 +47,7 @@ import { BookingDialog } from "@/components/BookingDialog";
 import { BookingSlotsDialog } from "@/components/BookingSlotsDialog";
 import { TechnicianActionsCard } from "@/components/TechnicianActionsCard";
 import { TechnicianProposeDialog } from "@/components/TechnicianProposeDialog";
+import { TechnicianJobDetailView } from "@/components/TechnicianJobDetailView";
 
 interface Quote {
   id: string;
@@ -110,6 +111,10 @@ interface Job {
     avatar_url?: string;
   };
   quotes?: Quote[];
+  profiles?: {
+    full_name: string;
+    phone?: string;
+  };
 }
 
 const JobDetails = () => {
@@ -256,8 +261,20 @@ const JobDetails = () => {
         navigate("/dashboard");
         return;
       }
+
+      // Load user profile for technician view (to get client name)
+      let profilesData = null;
+      if (data.user_id) {
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('full_name, phone')
+          .eq('id', data.user_id)
+          .single();
+        
+        profilesData = userProfile;
+      }
       
-      setJob(data as unknown as Job);
+      setJob({ ...data, profiles: profilesData } as unknown as Job);
     } catch (error: any) {
       toast({
         title: "Errore",
@@ -461,6 +478,29 @@ const JobDetails = () => {
 
   if (!job) {
     return null;
+  }
+
+  // Technician view for pending requests
+  const isPendingRequest = job.status === 'requested' || job.status === 'pending_technician_confirmation';
+  if (isTechnician && isPendingRequest && (job.preferred_slots?.length || job.flexible)) {
+    return (
+      <>
+        <TechnicianJobDetailView
+          job={job}
+          clientName={job.profiles?.full_name || "Cliente"}
+          onJobUpdated={loadJobDetails}
+          onOpenChat={() => setChatDialogOpen(true)}
+        />
+        <ChatDialog
+          open={chatDialogOpen}
+          onOpenChange={setChatDialogOpen}
+          jobId={job.id}
+          technicianName={job.technicians?.full_name || ''}
+          technicianId={job.technician_id}
+          userId={job.user_id}
+        />
+      </>
+    );
   }
 
   const statusInfo = getStatusInfo(job.status);
