@@ -622,7 +622,9 @@ const JobDetails = () => {
           {job.technicians && (
             <Card>
               <CardHeader>
-                <CardTitle>Tecnico Assegnato</CardTitle>
+                <CardTitle>
+                  {job.status === 'technician_selected' ? 'Tecnico Selezionato' : 'Tecnico Assegnato'}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-4">
@@ -647,6 +649,16 @@ const JobDetails = () => {
                     </div>
                   </div>
                 </div>
+                
+                {/* Status line for technician_selected */}
+                {job.status === 'technician_selected' && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                      <strong>Stato:</strong> in attesa di conferma da parte del tecnico. La richiesta non è ancora definitiva.
+                    </p>
+                  </div>
+                )}
+                
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Tariffa oraria</span>
@@ -662,30 +674,76 @@ const JobDetails = () => {
             </Card>
           )}
 
-          {/* Booking Section - quando il tecnico è selezionato ma non ancora prenotato */}
+          {/* Prossimo Passo Section - quando il tecnico è selezionato ma non ancora richiesto */}
           {job.status === 'technician_selected' && job.technicians && (
             <Card className="border-2 border-primary/50 bg-primary/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Prenota Appuntamento
+                  <AlertCircle className="h-5 w-5 text-primary" />
+                  Prossimo passo
                 </CardTitle>
-                <CardDescription>
-                  Hai selezionato {job.technicians.full_name}. Ora scegli data e ora per l'intervento.
-                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  La selezione del tecnico non è vincolante. Potrai annullare in qualsiasi momento prima della conferma.
+                  Invia la richiesta al tecnico per verificare la disponibilità e confermare l'intervento. Nessun pagamento verrà effettuato in questa fase.
                 </p>
                 <Button
-                  onClick={() => setBookingDialogOpen(true)}
+                  onClick={async () => {
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) return;
+
+                      const { data: userProfile } = await supabase
+                        .from('profiles')
+                        .select('full_name')
+                        .eq('id', user.id)
+                        .single();
+
+                      // Aggiorna lo stato del job a "requested"
+                      const { error } = await supabase
+                        .from('jobs')
+                        .update({ status: 'requested' })
+                        .eq('id', job.id);
+
+                      if (error) throw error;
+
+                      // Invia notifica al tecnico
+                      await supabase
+                        .from('technician_notifications')
+                        .insert({
+                          technician_id: job.technician_id,
+                          job_id: job.id,
+                          type: 'booking_request',
+                          title: 'Nuova Richiesta di Intervento',
+                          message: `${userProfile?.full_name || 'Un cliente'} ha inviato una richiesta per "${job.diagnoses?.problem_type}". Verifica la disponibilità e rispondi.`
+                        });
+
+                      toast({
+                        title: "Richiesta inviata",
+                        description: "Ti avviseremo non appena il tecnico risponde.",
+                      });
+
+                      fireMultipleConfetti();
+                      setShowConfirmation(true);
+                      loadJobDetails();
+                    } catch (error: any) {
+                      console.error('Error sending request:', error);
+                      toast({
+                        title: "Errore",
+                        description: "Impossibile inviare la richiesta. Riprova.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
                   size="lg"
                   className="w-full"
                 >
-                  <Calendar className="h-5 w-5 mr-2" />
-                  Scegli Data e Ora
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  Conferma richiesta di intervento
                 </Button>
+                <p className="text-xs text-center text-muted-foreground">
+                  La conferma dell'intervento avverrà solo dopo l'accettazione del tecnico.
+                </p>
               </CardContent>
             </Card>
           )}
