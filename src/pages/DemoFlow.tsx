@@ -20,7 +20,10 @@ import {
   CreditCard,
   Star,
   Play,
-  RotateCcw
+  RotateCcw,
+  Lock,
+  Euro,
+  TrendingUp
 } from "lucide-react";
 import { MobileLayout } from "@/components/MobileLayout";
 import { DemoPhase1 } from "@/components/demo/DemoPhase1";
@@ -33,6 +36,9 @@ import { DemoPhase7 } from "@/components/demo/DemoPhase7";
 import { DemoPhase8 } from "@/components/demo/DemoPhase8";
 import { DemoPhase9 } from "@/components/demo/DemoPhase9";
 import { DemoPhase10 } from "@/components/demo/DemoPhase10";
+import { DemoPhase11 } from "@/components/demo/DemoPhase11";
+import { DemoPhase12 } from "@/components/demo/DemoPhase12";
+import { DemoPhase13 } from "@/components/demo/DemoPhase13";
 
 const PHASES = [
   { 
@@ -86,24 +92,45 @@ const PHASES = [
   },
   { 
     id: 8, 
+    title: "Pre-autorizzazione pagamento", 
+    role: "cliente",
+    icon: Lock,
+    description: "Garanzia senza addebito"
+  },
+  { 
+    id: 9, 
     title: "Intervento in corso", 
     role: "tecnico",
     icon: Car,
     description: "In viaggio → In corso"
   },
   { 
-    id: 9, 
+    id: 10, 
     title: "Intervento completato", 
     role: "tecnico",
     icon: Wrench,
     description: "Fine lavoro e riepilogo"
   },
   { 
-    id: 10, 
+    id: 11, 
     title: "Pagamento e valutazione", 
     role: "cliente",
     icon: Star,
     description: "Pagamento e recensione"
+  },
+  { 
+    id: 12, 
+    title: "Conclusione intervento", 
+    role: "sistema",
+    icon: Euro,
+    description: "Costo finale e pagamento automatico"
+  },
+  { 
+    id: 13, 
+    title: "Come guadagna FIXO", 
+    role: "info",
+    icon: TrendingUp,
+    description: "Modello di business trasparente"
   },
 ];
 
@@ -139,9 +166,12 @@ const DemoFlow = () => {
       case 4: return <DemoPhase5 onNext={goNext} />;
       case 5: return <DemoPhase6 onNext={goNext} />;
       case 6: return <DemoPhase7 onNext={goNext} />;
-      case 7: return <DemoPhase8 onNext={goNext} />;
-      case 8: return <DemoPhase9 onNext={goNext} />;
-      case 9: return <DemoPhase10 onNext={goNext} />;
+      case 7: return <DemoPhase11 onNext={goNext} />;
+      case 8: return <DemoPhase8 onNext={goNext} />;
+      case 9: return <DemoPhase9 onNext={goNext} />;
+      case 10: return <DemoPhase10 onNext={goNext} />;
+      case 11: return <DemoPhase12 onNext={goNext} />;
+      case 12: return <DemoPhase13 onNext={goNext} />;
       default: return null;
     }
   };
@@ -154,6 +184,10 @@ const DemoFlow = () => {
         return <Badge className="bg-orange-500">🔧 Tecnico</Badge>;
       case "entrambi":
         return <Badge className="bg-purple-500">👥 Entrambi</Badge>;
+      case "sistema":
+        return <Badge className="bg-green-500">⚡ Sistema</Badge>;
+      case "info":
+        return <Badge className="bg-primary">ℹ️ Info</Badge>;
       default:
         return null;
     }
