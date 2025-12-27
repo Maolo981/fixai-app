@@ -113,21 +113,27 @@ export function getContactWarningMessage(): string {
   return "Per tutelare il lavoro e garantire il pagamento, i contatti diretti sono disponibili solo dopo la conferma dell'intervento.";
 }
 
-// Quick replies for pre-confirmation chat
+// Quick replies for pre-confirmation chat - TECHNICIAN
 export const TECHNICIAN_QUICK_REPLIES = [
-  "Puoi mandare una foto più ravvicinata?",
-  "La perdita è sotto il lavandino?",
+  "Posso venire la mattina",
+  "Posso venire il pomeriggio",
+  "Ho disponibilità oggi",
+  "Puoi mandare una foto più chiara?",
   "Serve accesso al contatore?",
-  "Quanto tempo dura il problema?",
-  "Hai già provato a chiudere l'acqua?",
-  "È un edificio condominiale?",
 ];
 
+// Quick replies for pre-confirmation chat - CLIENT
 export const CLIENT_QUICK_REPLIES = [
   "Preferisco la mattina",
   "Preferisco il pomeriggio",
   "Sono flessibile con gli orari",
   "Posso mandare altre foto",
-  "Quanto tempo ci vuole?",
-  "Qual è il costo stimato?",
 ];
+
+// System messages for chat
+export const TECHNICIAN_SYSTEM_MESSAGE = "Il cliente ha aperto una chat. L'appuntamento non è ancora confermato.";
+export const CLIENT_SYSTEM_MESSAGE = "Il tecnico può rispondere per chiarimenti prima di confermare l'orario.";
+
+// Banner messages
+export const TECHNICIAN_BANNER_MESSAGE = "Contatti e indirizzo del cliente saranno visibili solo dopo la conferma dell'orario.";
+export const CLIENT_BANNER_MESSAGE = "Contatti del tecnico e indirizzo saranno visibili solo dopo la conferma dell'orario.";
