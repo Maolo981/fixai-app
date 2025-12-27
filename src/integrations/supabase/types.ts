@@ -301,14 +301,20 @@ export type Database = {
         Row: {
           cancellation_reason: string | null
           completion_date: string | null
+          confirmed_slot: Json | null
           created_at: string | null
           diagnosis_id: string | null
+          estimated_duration: number | null
           final_cost: number | null
+          flexible: boolean | null
           id: string
           is_urgent: boolean | null
           payment_status: string | null
+          preferred_slots: Json | null
+          proposed_slot: Json | null
           quote_id: string | null
           scheduled_date: string | null
+          slot_status: string | null
           status: string | null
           technician_id: string | null
           technician_rating: number | null
@@ -316,20 +322,27 @@ export type Database = {
           updated_at: string | null
           urgency_surcharge: number | null
           user_id: string
+          user_notes: string | null
           user_rating: number | null
           user_review: string | null
         }
         Insert: {
           cancellation_reason?: string | null
           completion_date?: string | null
+          confirmed_slot?: Json | null
           created_at?: string | null
           diagnosis_id?: string | null
+          estimated_duration?: number | null
           final_cost?: number | null
+          flexible?: boolean | null
           id?: string
           is_urgent?: boolean | null
           payment_status?: string | null
+          preferred_slots?: Json | null
+          proposed_slot?: Json | null
           quote_id?: string | null
           scheduled_date?: string | null
+          slot_status?: string | null
           status?: string | null
           technician_id?: string | null
           technician_rating?: number | null
@@ -337,20 +350,27 @@ export type Database = {
           updated_at?: string | null
           urgency_surcharge?: number | null
           user_id: string
+          user_notes?: string | null
           user_rating?: number | null
           user_review?: string | null
         }
         Update: {
           cancellation_reason?: string | null
           completion_date?: string | null
+          confirmed_slot?: Json | null
           created_at?: string | null
           diagnosis_id?: string | null
+          estimated_duration?: number | null
           final_cost?: number | null
+          flexible?: boolean | null
           id?: string
           is_urgent?: boolean | null
           payment_status?: string | null
+          preferred_slots?: Json | null
+          proposed_slot?: Json | null
           quote_id?: string | null
           scheduled_date?: string | null
+          slot_status?: string | null
           status?: string | null
           technician_id?: string | null
           technician_rating?: number | null
@@ -358,6 +378,7 @@ export type Database = {
           updated_at?: string | null
           urgency_surcharge?: number | null
           user_id?: string
+          user_notes?: string | null
           user_rating?: number | null
           user_review?: string | null
         }
