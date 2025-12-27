@@ -487,10 +487,10 @@ export function TechnicianJobDetailView({
                     onSelect={handleDateSelect}
                     disabled={(date) => isBefore(date, startOfDay(new Date()))}
                     modifiers={{
-                      available: (date) => isDateAvailable(date)
+                      available: (date) => isDateAvailable(date) && !(selectedDate && format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd"))
                     }}
                     modifiersClassNames={{
-                      available: "bg-primary/20 text-primary font-semibold"
+                      available: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-primary"
                     }}
                     locale={it}
                     className={cn("rounded-md border mt-2 pointer-events-auto")}
