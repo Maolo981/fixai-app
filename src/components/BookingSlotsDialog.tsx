@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import {
   Dialog,
   DialogContent,
@@ -63,15 +63,6 @@ const TIME_SLOTS = [
   { start: "17:00", end: "19:00", label: "17:00 - 19:00" },
 ];
 
-const DURATION_OPTIONS = [
-  { value: "1", label: "1 ora" },
-  { value: "1.5", label: "1.5 ore" },
-  { value: "2", label: "2 ore" },
-  { value: "2.5", label: "2.5 ore" },
-  { value: "3", label: "3 ore" },
-  { value: "4", label: "4 ore" },
-  { value: "5", label: "5+ ore" },
-];
 
 export function BookingSlotsDialog({
   open,
@@ -87,7 +78,6 @@ export function BookingSlotsDialog({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(addDays(new Date(), 1));
   const [selectedSlots, setSelectedSlots] = useState<TimeSlot[]>([]);
   const [flexible, setFlexible] = useState(false);
-  const [estimatedDuration, setEstimatedDuration] = useState(estimatedTimeHours.toString());
   const [userNotes, setUserNotes] = useState("");
   const [showTimeSlots, setShowTimeSlots] = useState(false);
 
@@ -120,7 +110,7 @@ export function BookingSlotsDialog({
     onConfirm({
       preferred_slots: selectedSlots,
       flexible,
-      estimated_duration: parseFloat(estimatedDuration),
+      estimated_duration: estimatedTimeHours,
       user_notes: userNotes,
     });
   };
@@ -289,22 +279,16 @@ export function BookingSlotsDialog({
             </div>
           )}
 
-          {/* Durata stimata */}
-          <div className="space-y-2">
-            <Label className="font-medium">Durata stimata dell'intervento</Label>
-            <Select value={estimatedDuration} onValueChange={setEstimatedDuration}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DURATION_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Durata stimata (solo informativa) */}
+          {estimatedTimeHours > 0 && (
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Durata stimata:</span>
+              </div>
+              <span className="text-sm font-medium">{estimatedTimeHours}h circa</span>
+            </div>
+          )}
 
           {/* Note per il tecnico */}
           <div className="space-y-2">
