@@ -20,6 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { TechnicianReviewsDialog } from "@/components/TechnicianReviewsDialog";
 import { AIDiagnosisCard } from "@/components/AIDiagnosisCard";
+import { TechnicianSelectionCard } from "@/components/TechnicianSelectionCard";
 
 interface Diagnosis {
   id: string;
@@ -331,6 +332,59 @@ const Results = () => {
     setMaxDistance(300);
   };
 
+  const handleSelectTechnician = async (technician: Technician) => {
+    if (!diagnosis) return;
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast({
+        title: "Errore",
+        description: "Devi essere autenticato per selezionare un tecnico",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    try {
+      // Crea un job con status 'technician_selected' senza prenotazione
+      const { data: newJob, error } = await supabase
+        .from('jobs')
+        .insert({
+          user_id: user.id,
+          diagnosis_id: diagnosis.id,
+          technician_id: technician.id,
+          status: 'technician_selected',
+          payment_status: 'pending',
+          is_urgent: isUrgent,
+          urgency_surcharge: isUrgent ? urgencyFee : 0
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Errore nella selezione del tecnico:", error);
+        throw error;
+      }
+
+      toast({
+        title: "Tecnico Selezionato",
+        description: `Hai selezionato ${technician.full_name}. Procedi con la conferma.`,
+      });
+
+      // Naviga alla pagina JobDetails per procedere con il flusso
+      navigate(`/jobs/${newJob.id}?selected=true`);
+    } catch (error: any) {
+      console.error('Selection error:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile selezionare il tecnico. Riprova.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleBookingClick = async (technician: Technician) => {
     if (!diagnosis) return;
     
@@ -605,18 +659,13 @@ const Results = () => {
           showActions={false}
         />
 
-        {/* Matched Technicians */}
+        {/* Sezione Scegli il tecnico */}
         <Card className="shadow-medium">
           <CardHeader>
             <div className="flex items-center justify-between mb-2">
-              <CardTitle className="flex items-center text-base sm:text-lg">
-                <Users className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
-                {coordinates ? 'Tecnici Nelle Vicinanze' : 'Tecnici Raccomandati'}
-                {technicians.length > 0 && technicians[0]?.distance_km && (
-                  <span className="text-sm font-normal text-muted-foreground ml-2">
-                    (fino a {Math.round(technicians[technicians.length - 1].distance_km)} km)
-                  </span>
-                )}
+              <CardTitle className="flex items-center text-xl sm:text-2xl">
+                <Users className="mr-3 h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+                Scegli il tecnico
               </CardTitle>
               <Button
                 variant={showFilters ? "default" : "outline"}
@@ -633,17 +682,14 @@ const Results = () => {
                 )}
               </Button>
             </div>
-            <CardDescription className="text-xs sm:text-sm">
-              {coordinates 
-                ? 'Ordinati per distanza dalla tua posizione'
-                : 'Tecnici più votati disponibili'
-              }
-              {filteredTechnicians.length !== technicians.length && (
-                <span className="block mt-1 text-primary">
-                  Mostrando {filteredTechnicians.length} di {technicians.length} tecnici
-                </span>
-              )}
+            <CardDescription className="text-sm sm:text-base">
+              Confronta i professionisti disponibili e seleziona quello che preferisci
             </CardDescription>
+            {filteredTechnicians.length !== technicians.length && (
+              <p className="text-xs text-primary mt-2">
+                Mostrando {filteredTechnicians.length} di {technicians.length} tecnici
+              </p>
+            )}
           </CardHeader>
 
           {/* Pannello Filtri */}
@@ -760,84 +806,13 @@ const Results = () => {
               <TabsContent value="list" className="mt-0">
                 <CardContent className="space-y-3 sm:space-y-4">
                   {filteredTechnicians.map((tech) => (
-                    <Card key={tech.id} className={`bg-gradient-card border-border touch-manipulation active:scale-[0.98] transition-transform ${tech.id === bestOfferId ? 'ring-2 ring-primary' : ''}`}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start gap-3">
-                          {/* Avatar */}
-                          <div className="shrink-0">
-                            {tech.avatar_url ? (
-                              <img 
-                                src={tech.avatar_url} 
-                                alt={tech.full_name}
-                                className="h-12 w-12 sm:h-14 sm:w-14 rounded-full object-cover border-2 border-border"
-                              />
-                            ) : (
-                              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-primary/10 flex items-center justify-center border-2 border-border">
-                                <Users className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                              <CardTitle className="text-base sm:text-lg truncate">{tech.full_name}</CardTitle>
-                              {tech.id === bestOfferId && (
-                                <Badge className="bg-primary text-primary-foreground text-xs whitespace-nowrap">
-                                  🏆 Offerta Migliore
-                                </Badge>
-                              )}
-                              <div className="flex flex-wrap items-center gap-2">
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); handleReviewsClick(tech); }}
-                                  className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors"
-                                >
-                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                  {tech.rating}
-                                </button>
-                                {tech.distance_km && (
-                                  <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                                    <MapPin className="h-3 w-3" />
-                                    <span className="text-xs">{formatDistance(tech.distance_km)}</span>
-                                  </Badge>
-                                )}
-                                {tech.availability_status === 'available' ? (
-                                  <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 flex items-center gap-1">
-                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                    <span className="text-xs">Disponibile</span>
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30 flex items-center gap-1">
-                                    <div className="w-2 h-2 rounded-full bg-red-500" />
-                                    <span className="text-xs">Non disponibile</span>
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <CardDescription className="text-xs sm:text-sm line-clamp-1 mb-2">
-                              {tech.specialties.join(', ')}
-                            </CardDescription>
-                            <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
-                              <div>{tech.total_jobs} lavori completati • €{tech.hourly_rate}/ora</div>
-                              {tech.availability_status === 'available' && (
-                                <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                                  <Clock className="h-3 w-3" />
-                                  <span className="text-xs font-medium">Orari: 09:00-13:00, 14:00-18:00</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <Button 
-                          className="w-full h-11 sm:h-10 touch-manipulation active:scale-95 transition-transform"
-                          onClick={() => handleBookingClick(tech)}
-                        >
-                          Prenota Ora
-                        </Button>
-                      </CardContent>
-                    </Card>
+                    <TechnicianSelectionCard
+                      key={tech.id}
+                      technician={tech}
+                      recommendedSpecialty={diagnosis.recommended_specialty}
+                      onSelect={handleSelectTechnician}
+                      onViewReviews={handleReviewsClick}
+                    />
                   ))}
                 </CardContent>
               </TabsContent>
@@ -852,7 +827,7 @@ const Results = () => {
                     technicians={filteredTechnicians.filter((t): t is Technician & { latitude: number; longitude: number } => 
                       t.latitude !== undefined && t.longitude !== undefined
                     )}
-                    onTechnicianSelect={(tech) => handleBookingClick(tech as Technician)}
+                    onTechnicianSelect={(tech) => handleSelectTechnician(tech as Technician)}
                   />
                 </CardContent>
               </TabsContent>
@@ -878,69 +853,24 @@ const Results = () => {
                 </Alert>
               ) : (
                 filteredTechnicians.map((tech) => (
-                  <Card key={tech.id} className="bg-gradient-card border-border touch-manipulation active:scale-[0.98] transition-transform">
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                            <CardTitle className="text-base sm:text-lg truncate">{tech.full_name}</CardTitle>
-                            <div className="flex flex-wrap items-center gap-2">
-                              {tech.distance_km && (
-                                <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                                  <MapPin className="h-3 w-3" />
-                                  <span className="text-xs">{formatDistance(tech.distance_km)}</span>
-                                </Badge>
-                              )}
-                              {tech.availability_status === 'available' ? (
-                                <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 flex items-center gap-1">
-                                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                  <span className="text-xs">Disponibile</span>
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30 flex items-center gap-1">
-                                  <div className="w-2 h-2 rounded-full bg-red-500" />
-                                  <span className="text-xs">Non disponibile</span>
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          <CardDescription className="text-xs sm:text-sm line-clamp-1">
-                            {tech.specialties.join(', ')}
-                          </CardDescription>
-                        </div>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleReviewsClick(tech); }}
-                          className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors"
-                        >
-                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                          {tech.rating}
-                        </button>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                        <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
-                          <div>{tech.total_jobs} lavori • €{tech.hourly_rate}/ora</div>
-                          {tech.availability_status === 'available' && (
-                            <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                              <Clock className="h-3 w-3" />
-                              <span className="text-xs font-medium">Orari: 09:00-13:00, 14:00-18:00</span>
-                            </div>
-                          )}
-                        </div>
-                        <Button 
-                          className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation active:scale-95 transition-transform"
-                          onClick={() => handleBookingClick(tech)}
-                        >
-                          Prenota Ora
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <TechnicianSelectionCard
+                    key={tech.id}
+                    technician={tech}
+                    recommendedSpecialty={diagnosis.recommended_specialty}
+                    onSelect={handleSelectTechnician}
+                    onViewReviews={handleReviewsClick}
+                  />
                 ))
               )}
             </CardContent>
           )}
+          
+          {/* Testo fisso sotto la lista */}
+          <div className="px-6 pb-6">
+            <p className="text-xs sm:text-sm text-muted-foreground text-center italic">
+              La selezione del tecnico non è vincolante. Potrai confermare in seguito.
+            </p>
+          </div>
         </Card>
       </div>
     </div>
