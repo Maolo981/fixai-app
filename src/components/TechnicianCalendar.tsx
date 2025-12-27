@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { format, startOfWeek, addDays, isSameDay, parseISO, addWeeks, subWeeks, startOfDay, subDays } from "date-fns";
 import { it } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, User, Wrench, X, MapPin, AlertCircle, CheckCircle, ExternalLink } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, User, Wrench, X, MapPin, AlertCircle, CheckCircle, ExternalLink, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -292,12 +292,53 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
     });
   };
 
-  const handleSlotClick = (date: Date, hour: number) => {
+  // Check if a slot is "suggested" (compatible with pending requests)
+  const isSuggestedSlot = (date: Date, hour: number): { suggested: boolean; compatibleRequests: PendingRequest[] } => {
+    if (pendingRequests.length === 0) return { suggested: false, compatibleRequests: [] };
+    
+    const existingSlots = getSlotsForHour(date, hour);
+    if (existingSlots.length > 0) return { suggested: false, compatibleRequests: [] };
+
+    const slotDate = format(date, "yyyy-MM-dd");
+    const slotHour = hour;
+    const isPast = new Date(new Date(date).setHours(hour)) < new Date();
+    if (isPast) return { suggested: false, compatibleRequests: [] };
+
+    const compatible: PendingRequest[] = [];
+
+    for (const request of pendingRequests) {
+      // Flexible requests are always compatible with any future slot
+      if (request.flexible) {
+        compatible.push(request);
+        continue;
+      }
+
+      // Check if any preferred slot matches this time
+      if (request.preferred_slots && request.preferred_slots.length > 0) {
+        const hasMatch = request.preferred_slots.some(slot => {
+          if (slot.date !== slotDate) return false;
+          const startHour = parseInt(slot.start_time.split(':')[0]);
+          return slotHour >= startHour && slotHour < startHour + (request.estimated_duration || 2);
+        });
+        if (hasMatch) {
+          compatible.push(request);
+        }
+      }
+    }
+
+    return { suggested: compatible.length > 0, compatibleRequests: compatible };
+  };
+
+  const handleSlotClick = (date: Date, hour: number, compatibleRequests?: PendingRequest[]) => {
     const existingSlots = getSlotsForHour(date, hour);
     if (existingSlots.length > 0) {
       setSelectedEvent(existingSlots[0]);
     } else {
       setSelectedSlot({ date, hour });
+      // Pre-select first compatible request if available
+      if (compatibleRequests && compatibleRequests.length > 0) {
+        setSelectedRequestId(compatibleRequests[0].id);
+      }
       if (pendingRequests.length > 0) {
         setFreeSlotDialogOpen(true);
       } else {
@@ -533,14 +574,23 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
               {HOURS.map((hour) => {
                 const daySlots = getSlotsForHour(selectedDay, hour);
                 const isPast = new Date(new Date(selectedDay).setHours(hour)) < new Date();
+                const { suggested, compatibleRequests } = isSuggestedSlot(selectedDay, hour);
 
                 return (
                   <div
                     key={hour}
-                    className={`flex min-h-[56px] ${isPast ? "bg-muted/20" : "active:bg-muted/30"}`}
-                    onClick={() => !isPast && handleSlotClick(new Date(selectedDay), hour)}
+                    className={`flex min-h-[56px] ${
+                      isPast 
+                        ? "bg-muted/20" 
+                        : suggested 
+                          ? "bg-green-500/10 active:bg-green-500/20" 
+                          : "active:bg-muted/30"
+                    }`}
+                    onClick={() => !isPast && handleSlotClick(new Date(selectedDay), hour, compatibleRequests)}
                   >
-                    <div className="w-14 flex-shrink-0 p-2 text-xs text-muted-foreground bg-muted/30 flex items-start justify-center border-r">
+                    <div className={`w-14 flex-shrink-0 p-2 text-xs text-muted-foreground flex items-start justify-center border-r ${
+                      suggested ? "bg-green-500/20" : "bg-muted/30"
+                    }`}>
                       {hour}:00
                     </div>
                     <div className="flex-1 p-1.5 relative">
@@ -571,9 +621,18 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
                         ))
                       ) : (
                         !isPast && (
-                          <span className="text-xs text-muted-foreground/50 italic">
-                            Libero
-                          </span>
+                          suggested ? (
+                            <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                              <Sparkles className="h-3.5 w-3.5" />
+                              <span className="text-xs font-medium">
+                                Consigliato ({compatibleRequests.length})
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/50 italic">
+                              Libero
+                            </span>
+                          )
                         )
                       )}
                     </div>
@@ -617,41 +676,61 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
                   {weekDays.map((day, dayIndex) => {
                     const daySlots = getSlotsForHour(day, hour);
                     const isPast = new Date(day.setHours(hour)) < new Date();
+                    const { suggested, compatibleRequests } = isSuggestedSlot(day, hour);
 
                     return (
                       <div
                         key={dayIndex}
                         className={`relative min-h-[60px] border-r last:border-r-0 p-1 ${
-                          isPast ? "bg-muted/20" : "hover:bg-muted/30 cursor-pointer"
+                          isPast 
+                            ? "bg-muted/20" 
+                            : suggested
+                              ? "bg-green-500/10 hover:bg-green-500/20 cursor-pointer"
+                              : "hover:bg-muted/30 cursor-pointer"
                         } ${isSameDay(day, new Date()) ? "bg-primary/5" : ""}`}
-                        onClick={() => !isPast && handleSlotClick(new Date(day), hour)}
+                        onClick={() => !isPast && handleSlotClick(new Date(day), hour, compatibleRequests)}
                       >
                         <AnimatePresence>
-                          {daySlots.map((slot) => (
-                            <motion.div
-                              key={slot.id}
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.9 }}
-                              className={`absolute inset-1 rounded-md border p-1 text-xs overflow-hidden flex flex-col ${getSlotStyle(slot)}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedEvent(slot);
-                              }}
-                            >
-                              <div className="flex items-center gap-1">
-                                {getStatusIcon(slot.status)}
-                                <span className="truncate font-medium">
-                                  {slot.job?.problem_type || (slot.status === 'blocked' ? 'Bloccato' : 'Evento')}
-                                </span>
-                              </div>
-                              {slot.job?.client_name && (
-                                <span className="truncate text-[10px] opacity-75">
-                                  {slot.job.client_name}
-                                </span>
-                              )}
-                            </motion.div>
-                          ))}
+                          {daySlots.length > 0 ? (
+                            daySlots.map((slot) => (
+                              <motion.div
+                                key={slot.id}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className={`absolute inset-1 rounded-md border p-1 text-xs overflow-hidden flex flex-col ${getSlotStyle(slot)}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedEvent(slot);
+                                }}
+                              >
+                                <div className="flex items-center gap-1">
+                                  {getStatusIcon(slot.status)}
+                                  <span className="truncate font-medium">
+                                    {slot.job?.problem_type || (slot.status === 'blocked' ? 'Bloccato' : 'Evento')}
+                                  </span>
+                                </div>
+                                {slot.job?.client_name && (
+                                  <span className="truncate text-[10px] opacity-75">
+                                    {slot.job.client_name}
+                                  </span>
+                                )}
+                              </motion.div>
+                            ))
+                          ) : (
+                            !isPast && suggested && (
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="absolute inset-1 flex items-center justify-center"
+                              >
+                                <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                                  <Sparkles className="h-3 w-3" />
+                                  <span className="text-[10px] font-medium">{compatibleRequests.length}</span>
+                                </div>
+                              </motion.div>
+                            )
+                          )}
                         </AnimatePresence>
                       </div>
                     );
@@ -664,6 +743,12 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
 
         {/* Legend */}
         <div className="p-2 sm:p-3 border-t flex flex-wrap gap-2 sm:gap-3 text-xs">
+          {pendingRequests.length > 0 && (
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-green-500/20 border border-green-500/50" />
+              <span className="text-green-600 dark:text-green-400 font-medium">Consigliato</span>
+            </div>
+          )}
           <div className="flex items-center gap-1">
             <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-amber-500/20 border border-amber-500/50" />
             <span>Proposto</span>
