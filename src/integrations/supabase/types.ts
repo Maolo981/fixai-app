@@ -548,6 +548,7 @@ export type Database = {
           created_at: string | null
           email: string
           full_name: string | null
+          has_seen_onboarding: boolean | null
           id: string
           is_technician: boolean | null
           latitude: number | null
@@ -562,6 +563,7 @@ export type Database = {
           created_at?: string | null
           email: string
           full_name?: string | null
+          has_seen_onboarding?: boolean | null
           id: string
           is_technician?: boolean | null
           latitude?: number | null
@@ -576,6 +578,7 @@ export type Database = {
           created_at?: string | null
           email?: string
           full_name?: string | null
+          has_seen_onboarding?: boolean | null
           id?: string
           is_technician?: boolean | null
           latitude?: number | null
