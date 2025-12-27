@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -33,6 +34,27 @@ import { DemoPhase9 } from "@/components/demo/DemoPhase9";
 import { DemoPhase10 } from "@/components/demo/DemoPhase10";
 import { DemoPhase11 } from "@/components/demo/DemoPhase11";
 import { DemoPhase12 } from "@/components/demo/DemoPhase12";
+
+const pageVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 300 : -300,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction < 0 ? 300 : -300,
+    opacity: 0,
+  }),
+};
+
+const pageTransition = {
+  type: "tween" as const,
+  ease: "easeInOut" as const,
+  duration: 0.3,
+};
 
 const PHASES = [
   { 
@@ -124,23 +146,31 @@ const PHASES = [
 const DemoFlow = () => {
   const navigate = useNavigate();
   const [currentPhase, setCurrentPhase] = useState(0);
-
+  const [direction, setDirection] = useState(0);
   const phase = PHASES[currentPhase];
   const progress = ((currentPhase + 1) / PHASES.length) * 100;
 
   const goNext = () => {
     if (currentPhase < PHASES.length - 1) {
+      setDirection(1);
       setCurrentPhase(currentPhase + 1);
     }
   };
 
   const goPrev = () => {
     if (currentPhase > 0) {
+      setDirection(-1);
       setCurrentPhase(currentPhase - 1);
     }
   };
 
+  const goToPhase = (index: number) => {
+    setDirection(index > currentPhase ? 1 : -1);
+    setCurrentPhase(index);
+  };
+
   const restart = () => {
+    setDirection(-1);
     setCurrentPhase(0);
   };
 
@@ -253,8 +283,20 @@ const DemoFlow = () => {
         </div>
 
         {/* Phase Content */}
-        <div className="container mx-auto px-4 py-6 max-w-lg">
-          {renderPhaseContent()}
+        <div className="container mx-auto px-4 py-6 max-w-lg overflow-hidden">
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={currentPhase}
+              custom={direction}
+              variants={pageVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={pageTransition}
+            >
+              {renderPhaseContent()}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Navigation */}
@@ -291,16 +333,20 @@ const DemoFlow = () => {
           {/* Step Dots */}
           <div className="flex justify-center gap-1.5 mt-3">
             {PHASES.map((_, index) => (
-              <button
+              <motion.button
                 key={index}
-                onClick={() => setCurrentPhase(index)}
-                className={`h-2 rounded-full transition-all ${
+                onClick={() => goToPhase(index)}
+                className={`h-2 rounded-full ${
                   index === currentPhase 
-                    ? "w-6 bg-primary" 
+                    ? "bg-primary" 
                     : index < currentPhase
-                      ? "w-2 bg-green-500"
-                      : "w-2 bg-muted-foreground/30"
+                      ? "bg-green-500"
+                      : "bg-muted-foreground/30"
                 }`}
+                animate={{
+                  width: index === currentPhase ? 24 : 8,
+                }}
+                transition={{ duration: 0.2 }}
               />
             ))}
           </div>
