@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays, TrendingUp, User, Car, Zap, Users, LogOut } from "lucide-react";
-import { TechnicianJobRequestCard } from "@/components/TechnicianJobRequestCard";
+import { UnifiedRequestCard } from "@/components/UnifiedRequestCard";
 import { CreateQuoteDialog } from "@/components/CreateQuoteDialog";
 import { QuoteCard } from "@/components/QuoteCard";
 import { TechnicianCalendar } from "@/components/TechnicianCalendar";
@@ -334,15 +334,11 @@ export default function TechnicianDashboard() {
     return jobs.filter((job) => job.status === status);
   };
 
-  // Jobs con slot orari da gestire
-  const pendingSlotJobs = jobs.filter(
-    (job) => (job.status === 'requested' || job.status === 'pending_technician_confirmation') && 
-             (job.preferred_slots?.length || job.flexible)
-  );
-
-  // Jobs richiesti senza slot (legacy flow)
-  const legacyRequestedJobs = jobs.filter(
-    (job) => job.status === 'requested' && !job.preferred_slots?.length && !job.flexible
+  // Tutte le richieste in attesa (nuovo flow + legacy)
+  const allPendingRequests = jobs.filter(
+    (job) => job.status === 'requested' || 
+             job.status === 'pending_technician_confirmation' ||
+             job.status === 'reschedule_proposed'
   );
 
   const unreadNotifications = notifications.filter(n => !n.read);
@@ -495,91 +491,15 @@ export default function TechnicianDashboard() {
           </TabsContent>
 
           <TabsContent value="requested" className="space-y-4">
-            {/* Nuove richieste con slot orari */}
-            {pendingSlotJobs.map((job) => (
-              <TechnicianJobRequestCard
+            {allPendingRequests.map((job) => (
+              <UnifiedRequestCard
                 key={job.id}
                 job={job}
-                onJobUpdated={loadJobs}
                 onStartChat={() => navigate(`/jobs/${job.id}?startChat=true`)}
               />
             ))}
 
-            {/* Legacy requests senza slot */}
-            {legacyRequestedJobs.map((job) => (
-              <Card key={job.id} className={job.is_urgent ? 'border-red-500 border-2 bg-red-500/5' : ''}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="text-lg">{job.diagnoses?.problem_type}</CardTitle>
-                        {job.is_urgent && (
-                          <Badge variant="destructive" className="bg-red-500 text-white animate-pulse">
-                            <Zap className="h-3 w-3 mr-1" />
-                            URGENTE
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Cliente: {job.profiles?.full_name}
-                      </p>
-                    </div>
-                    <Badge {...getStatusBadge(job.status)}>{getStatusBadge(job.status).label}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {job.is_urgent && job.urgency_surcharge && (
-                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2">
-                      <p className="text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
-                        <Zap className="h-3 w-3" />
-                        Intervento urgente - Supplemento €{job.urgency_surcharge}
-                      </p>
-                    </div>
-                  )}
-                  <p className="text-sm">{job.diagnoses?.ai_analysis}</p>
-                  {job.scheduled_date && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4" />
-                      {new Date(job.scheduled_date).toLocaleDateString("it-IT", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate(`/jobs/${job.id}?startChat=true`)}
-                      className="flex-1"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-1" />
-                      Chat
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => updateJobStatus(job.id, "confirmed")}
-                      className={`flex-1 ${job.is_urgent ? 'bg-red-500 hover:bg-red-600' : ''}`}
-                    >
-                      Accetta
-                    </Button>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setSelectedJobForQuote(job)}
-                    className="w-full"
-                  >
-                    Invia Preventivo
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-
-            {pendingSlotJobs.length === 0 && legacyRequestedJobs.length === 0 && (
+            {allPendingRequests.length === 0 && (
               <p className="text-center text-muted-foreground py-8">Nessuna richiesta</p>
             )}
           </TabsContent>
