@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Wrench, Clock, CheckCircle, Calendar, Bell, MessageCircle, X, CalendarDays, TrendingUp, User, Car, Zap, Users, LogOut } from "lucide-react";
+import { TechnicianJobRequestCard } from "@/components/TechnicianJobRequestCard";
 import { CreateQuoteDialog } from "@/components/CreateQuoteDialog";
 import { QuoteCard } from "@/components/QuoteCard";
 import { TechnicianCalendar } from "@/components/TechnicianCalendar";
@@ -20,6 +21,13 @@ import { ClientRatingsTab } from "@/components/ClientRatingsTab";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
+interface TimeSlot {
+  date: string;
+  start_time: string;
+  end_time: string;
+  label: string;
+}
+
 interface Job {
   id: string;
   user_id: string;
@@ -29,9 +37,17 @@ interface Job {
   created_at: string;
   is_urgent?: boolean;
   urgency_surcharge?: number;
+  preferred_slots?: TimeSlot[];
+  flexible?: boolean;
+  estimated_duration?: number;
+  user_notes?: string;
   diagnoses: {
     problem_type: string;
     ai_analysis: string;
+    urgency_level?: string;
+    estimated_cost_min?: number;
+    estimated_cost_max?: number;
+    estimated_time_hours?: number;
   } | null;
   profiles: {
     full_name: string;
@@ -127,7 +143,7 @@ export default function TechnicianDashboard() {
       .from("jobs")
       .select(`
         *,
-        diagnoses (problem_type, ai_analysis)
+        diagnoses (problem_type, ai_analysis, urgency_level, estimated_cost_min, estimated_cost_max, estimated_time_hours)
       `)
       .eq("technician_id", technicianId)
       .order("is_urgent", { ascending: false })
@@ -152,10 +168,11 @@ export default function TechnicianDashboard() {
           return {
             ...job,
             profiles: profileData,
-          };
+            preferred_slots: (job.preferred_slots as unknown) as TimeSlot[] | undefined,
+          } as Job;
         })
       );
-      setJobs(jobsWithProfiles);
+      setJobs(jobsWithProfiles as Job[]);
     }
     setLoading(false);
   };
@@ -310,9 +327,23 @@ export default function TechnicianDashboard() {
     return statusMap[status] || { label: status, variant: "secondary" };
   };
 
-  const filterJobsByStatus = (status: string) => {
+  const filterJobsByStatus = (status: string | string[]) => {
+    if (Array.isArray(status)) {
+      return jobs.filter((job) => status.includes(job.status));
+    }
     return jobs.filter((job) => job.status === status);
   };
+
+  // Jobs con slot orari da gestire
+  const pendingSlotJobs = jobs.filter(
+    (job) => (job.status === 'requested' || job.status === 'pending_technician_confirmation') && 
+             (job.preferred_slots?.length || job.flexible)
+  );
+
+  // Jobs richiesti senza slot (legacy flow)
+  const legacyRequestedJobs = jobs.filter(
+    (job) => job.status === 'requested' && !job.preferred_slots?.length && !job.flexible
+  );
 
   const unreadNotifications = notifications.filter(n => !n.read);
 
@@ -464,7 +495,18 @@ export default function TechnicianDashboard() {
           </TabsContent>
 
           <TabsContent value="requested" className="space-y-4">
-            {filterJobsByStatus("requested").map((job) => (
+            {/* Nuove richieste con slot orari */}
+            {pendingSlotJobs.map((job) => (
+              <TechnicianJobRequestCard
+                key={job.id}
+                job={job}
+                onJobUpdated={loadJobs}
+                onStartChat={() => navigate(`/jobs/${job.id}?startChat=true`)}
+              />
+            ))}
+
+            {/* Legacy requests senza slot */}
+            {legacyRequestedJobs.map((job) => (
               <Card key={job.id} className={job.is_urgent ? 'border-red-500 border-2 bg-red-500/5' : ''}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -536,7 +578,8 @@ export default function TechnicianDashboard() {
                 </CardContent>
               </Card>
             ))}
-            {filterJobsByStatus("requested").length === 0 && (
+
+            {pendingSlotJobs.length === 0 && legacyRequestedJobs.length === 0 && (
               <p className="text-center text-muted-foreground py-8">Nessuna richiesta</p>
             )}
           </TabsContent>
