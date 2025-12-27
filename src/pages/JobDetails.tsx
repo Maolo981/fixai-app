@@ -43,6 +43,7 @@ import { RefundStatusCard } from "@/components/RefundStatusCard";
 import { NavigationButton } from "@/components/NavigationButton";
 import { TechnicianLiveTracker } from "@/components/TechnicianLiveTracker";
 import { usePayments } from "@/hooks/usePayments";
+import { BookingDialog } from "@/components/BookingDialog";
 
 interface Quote {
   id: string;
@@ -72,6 +73,8 @@ interface Job {
   user_rating: number | null;
   user_review: string | null;
   final_cost: number | null;
+  is_urgent?: boolean;
+  urgency_surcharge?: number;
   diagnoses?: {
     problem_type: string;
     urgency_level: string;
@@ -109,6 +112,8 @@ const JobDetails = () => {
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [isTechnician, setIsTechnician] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [urgencyFee, setUrgencyFee] = useState(30);
 
   const {
     payments,
@@ -121,6 +126,7 @@ const JobDetails = () => {
 
   useEffect(() => {
     loadJobDetails();
+    loadUrgencyFee();
     
     // Controlla se è una nuova prenotazione
     const urlParams = new URLSearchParams(window.location.search);
@@ -132,12 +138,28 @@ const JobDetails = () => {
       // Rimuovi il parametro dall'URL
       window.history.replaceState({}, '', `/jobs/${id}`);
     }
+    // Se è stata selezionata solo il tecnico (senza prenotazione)
+    if (urlParams.get('selected') === 'true') {
+      window.history.replaceState({}, '', `/jobs/${id}`);
+    }
     // Se il tecnico ha avviato la chat
     if (urlParams.get('startChat') === 'true') {
       setChatDialogOpen(true);
       window.history.replaceState({}, '', `/jobs/${id}`);
     }
   }, [id]);
+
+  const loadUrgencyFee = async () => {
+    const { data } = await supabase
+      .from('payment_settings')
+      .select('urgency_fee')
+      .limit(1)
+      .maybeSingle();
+    
+    if (data?.urgency_fee) {
+      setUrgencyFee(data.urgency_fee);
+    }
+  };
 
   const loadJobDetails = async () => {
     try {
@@ -231,6 +253,8 @@ const JobDetails = () => {
 
   const getStatusInfo = (status: string) => {
     switch (status.toLowerCase()) {
+      case 'technician_selected':
+        return { label: 'Tecnico Selezionato', icon: User, color: 'text-blue-500' };
       case 'requested':
         return { label: 'Richiesto', icon: Clock, color: 'text-blue-500' };
       case 'pending':
@@ -335,6 +359,70 @@ const JobDetails = () => {
       title: "Pagamento completato!",
       description: "Il pagamento è stato elaborato con successo",
     });
+  };
+
+  const handleBookingConfirm = async (appointmentDate: Date, time: string) => {
+    if (!job || !job.technicians) return;
+
+    try {
+      // Get user profile for notification
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      // Aggiorna il job con la data di prenotazione e cambia lo status a 'requested'
+      const { error } = await supabase
+        .from('jobs')
+        .update({
+          status: 'requested',
+          scheduled_date: appointmentDate.toISOString(),
+        })
+        .eq('id', job.id);
+
+      if (error) throw error;
+
+      // Invia notifica al tecnico
+      const formattedDate = appointmentDate.toLocaleDateString('it-IT', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+
+      const isUrgent = job.is_urgent;
+      const urgentPrefix = isUrgent ? '🚨 URGENTE: ' : '';
+      await supabase
+        .from('technician_notifications')
+        .insert({
+          technician_id: job.technician_id,
+          job_id: job.id,
+          type: isUrgent ? 'urgent_booking' : 'booking_request',
+          title: isUrgent ? '🚨 Richiesta URGENTE!' : 'Nuova Richiesta di Prenotazione',
+          message: `${urgentPrefix}${userProfile?.full_name || 'Un cliente'} ha richiesto un appuntamento per "${job.diagnoses?.problem_type}" il ${formattedDate} alle ${time}. Avvia la chat per discutere i dettagli.`
+        });
+
+      toast({
+        title: isUrgent ? "Richiesta Urgente Inviata!" : "Richiesta Inviata!",
+        description: `Richiesta inviata a ${job.technicians.full_name}. Il tecnico ti contatterà in chat.`,
+      });
+
+      // Lancia confetti
+      fireMultipleConfetti();
+      
+      setShowConfirmation(true);
+      loadJobDetails();
+    } catch (error: any) {
+      console.error('Booking error:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile completare la prenotazione. Riprova.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -570,6 +658,34 @@ const JobDetails = () => {
                     ))}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Booking Section - quando il tecnico è selezionato ma non ancora prenotato */}
+          {job.status === 'technician_selected' && job.technicians && (
+            <Card className="border-2 border-primary/50 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Prenota Appuntamento
+                </CardTitle>
+                <CardDescription>
+                  Hai selezionato {job.technicians.full_name}. Ora scegli data e ora per l'intervento.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  La selezione del tecnico non è vincolante. Potrai annullare in qualsiasi momento prima della conferma.
+                </p>
+                <Button
+                  onClick={() => setBookingDialogOpen(true)}
+                  size="lg"
+                  className="w-full"
+                >
+                  <Calendar className="h-5 w-5 mr-2" />
+                  Scegli Data e Ora
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -879,6 +995,20 @@ const JobDetails = () => {
           amount={paymentAmount}
           onSuccess={handlePaymentSuccess}
         />
+
+        {job.technicians && (
+          <BookingDialog
+            open={bookingDialogOpen}
+            onOpenChange={setBookingDialogOpen}
+            technicianName={job.technicians.full_name}
+            technicianId={job.technician_id}
+            technicianHourlyRate={job.technicians.hourly_rate}
+            estimatedHours={job.diagnoses?.estimated_time_hours || 2}
+            isUrgent={job.is_urgent}
+            urgencyFee={urgencyFee}
+            onConfirm={handleBookingConfirm}
+          />
+        )}
 
         <AlertDialog open={cancelDialogOpen} onOpenChange={(open) => {
           setCancelDialogOpen(open);
