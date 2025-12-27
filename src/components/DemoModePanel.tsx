@@ -1,4 +1,5 @@
 import { useDemoMode } from "./DemoModeProvider";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +29,12 @@ const STATUS_FLOW = ["pending", "confirmed", "en_route", "in_progress", "complet
 
 export function DemoModePanel() {
   const { isDemoMode, toggleDemoMode, demoStatus, setDemoStatus, advanceStatus } = useDemoMode();
+  const location = useLocation();
+
+  // Nascondi il pannello nella pagina demo
+  if (location.pathname === "/demo") {
+    return null;
+  }
 
   if (!isDemoMode) {
     return (
