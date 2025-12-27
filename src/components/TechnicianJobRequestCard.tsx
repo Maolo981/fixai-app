@@ -38,7 +38,7 @@ import {
   Zap,
   CalendarCheck,
   CalendarClock,
-  Sparkles
+  AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -214,7 +214,7 @@ export function TechnicianJobRequestCard({
           : "border-border hover:border-primary/50"
       )}>
         <CardContent className="p-4 space-y-4">
-          {/* Header con tipo intervento e urgenza */}
+          {/* Header con tipo intervento, urgenza e stato */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -233,7 +233,11 @@ export function TechnicianJobRequestCard({
                 <span>{job.profiles?.full_name}</span>
               </div>
             </div>
-            <div className="text-right shrink-0">
+            <div className="text-right shrink-0 space-y-1">
+              <Badge variant="outline" className="text-amber-600 border-amber-400 bg-amber-50 dark:bg-amber-950/30">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                In attesa di conferma
+              </Badge>
               <p className="text-xs text-muted-foreground">
                 {formatDistanceToNow(new Date(job.created_at), { addSuffix: true, locale: it })}
               </p>
@@ -266,8 +270,8 @@ export function TechnicianJobRequestCard({
             </div>
             {job.flexible ? (
               <div className="flex items-center gap-2 text-sm text-primary">
-                <Sparkles className="h-4 w-4" />
-                <span>Cliente flessibile - qualsiasi orario</span>
+                <CheckCircle className="h-4 w-4" />
+                <span>Cliente flessibile - scegli uno slot libero</span>
               </div>
             ) : preferredSlots.length > 0 ? (
               <div className="space-y-1.5">

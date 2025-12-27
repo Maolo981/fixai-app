@@ -21,7 +21,11 @@ import {
   detectContactInfo, 
   getContactWarningMessage,
   TECHNICIAN_QUICK_REPLIES,
-  CLIENT_QUICK_REPLIES
+  CLIENT_QUICK_REPLIES,
+  TECHNICIAN_SYSTEM_MESSAGE,
+  CLIENT_SYSTEM_MESSAGE,
+  TECHNICIAN_BANNER_MESSAGE,
+  CLIENT_BANNER_MESSAGE
 } from "@/utils/contactFilter";
 
 interface Message {
@@ -576,17 +580,32 @@ export function ChatDialog({
     });
   };
 
+  // Dynamic content based on role
+  const chatTitle = isTechnician ? "Chat con il cliente" : "Chat con il tecnico";
+  const chatSubtitle = isJobConfirmed 
+    ? "💬 Messaggi in tempo reale" 
+    : isTechnician 
+      ? "Richiesta in attesa di conferma" 
+      : "In attesa di conferma dell'orario";
+  const bannerMessage = isTechnician ? TECHNICIAN_BANNER_MESSAGE : CLIENT_BANNER_MESSAGE;
+  const systemMessage = isTechnician ? TECHNICIAN_SYSTEM_MESSAGE : CLIENT_SYSTEM_MESSAGE;
+  const inputPlaceholder = isJobConfirmed 
+    ? "Scrivi un messaggio..." 
+    : isTechnician 
+      ? "Scrivi un messaggio al cliente (contatti non consentiti)" 
+      : "Scrivi un messaggio al tecnico (contatti non consentiti)";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] h-[600px] flex flex-col p-0">
+      <DialogContent className="sm:max-w-[500px] h-[650px] flex flex-col p-0">
         <DialogHeader className="p-4 pb-3 border-b">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-primary" />
               <div>
-                <DialogTitle>Chat con {technicianName}</DialogTitle>
+                <DialogTitle>{chatTitle}</DialogTitle>
                 <p className="text-xs text-muted-foreground mt-1">
-                  💬 Messaggi in tempo reale
+                  {chatSubtitle}
                 </p>
               </div>
             </div>
@@ -604,14 +623,14 @@ export function ChatDialog({
                 isTechnician={isTechnician}
                 onSuggestion={(text) => setNewMessage(text)}
               />
-              {isTechnician && (
+              {isTechnician && isJobConfirmed && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setQuoteDialogOpen(true)}
                 >
                   <FileText className="h-4 w-4 mr-1" />
-                  Crea Preventivo
+                  Preventivo
                 </Button>
               )}
               <Button
@@ -630,7 +649,7 @@ export function ChatDialog({
           <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800">
             <div className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-200">
               <Lock className="h-4 w-4 flex-shrink-0" />
-              <span>Contatti e indirizzo saranno disponibili dopo la conferma dell'orario.</span>
+              <span>{bannerMessage}</span>
             </div>
           </div>
         )}
@@ -648,13 +667,22 @@ export function ChatDialog({
 
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           <div className="space-y-4">
-            {messages.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">Nessun messaggio ancora</p>
-                <p className="text-xs mt-1">Inizia la conversazione!</p>
-              </div>
-            ) : (
+          {/* System message for pre-confirmation */}
+          {!isJobConfirmed && messages.length === 0 && (
+            <div className="bg-muted/50 rounded-lg p-3 mb-4">
+              <p className="text-xs text-muted-foreground text-center">
+                ℹ️ {systemMessage}
+              </p>
+            </div>
+          )}
+
+          {messages.length === 0 ? (
+            <div className="text-center text-muted-foreground py-8">
+              <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-20" />
+              <p className="text-sm">Nessun messaggio ancora</p>
+              <p className="text-xs mt-1">Inizia la conversazione!</p>
+            </div>
+          ) : (
               messages.map((msg) => {
                 const isOwnMessage = msg.sender_id === currentUserId;
                 const messageQuote = msg.quote_id ? quotes[msg.quote_id] : null;
@@ -790,7 +818,7 @@ export function ChatDialog({
               <ImageIcon className="h-4 w-4" />
             </Button>
             <Input
-              placeholder={isJobConfirmed ? "Scrivi un messaggio..." : "Scrivi un messaggio (no contatti)..."}
+              placeholder={inputPlaceholder}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               disabled={isSending}
@@ -809,9 +837,9 @@ export function ChatDialog({
             </Button>
           </form>
 
-          {/* Persistent CTA for pre-confirmation */}
+          {/* Persistent CTAs for pre-confirmation - Technician */}
           {!isJobConfirmed && isTechnician && (
-            <div className="px-4 pb-4 pt-0">
+            <div className="px-4 pb-4 pt-0 space-y-2">
               <Button 
                 className="w-full" 
                 onClick={handleConfirmAndChooseTime}
@@ -819,6 +847,38 @@ export function ChatDialog({
                 <Calendar className="h-4 w-4 mr-2" />
                 Conferma e scegli orario
               </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  className="flex-1 text-xs"
+                  size="sm"
+                  onClick={handleConfirmAndChooseTime}
+                >
+                  Proponi altro orario
+                </Button>
+                <Button 
+                  variant="ghost"
+                  className="flex-1 text-xs text-muted-foreground"
+                  size="sm"
+                  onClick={() => {
+                    onOpenChange(false);
+                    // The reject action is handled in the request card
+                  }}
+                >
+                  Rifiuta richiesta
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Client waiting message */}
+          {!isJobConfirmed && !isTechnician && (
+            <div className="px-4 pb-4 pt-0">
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <p className="text-sm text-muted-foreground">
+                  ⏳ Attendi conferma del tecnico
+                </p>
+              </div>
             </div>
           )}
         </div>
