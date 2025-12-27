@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { format, addDays, isBefore, startOfDay } from "date-fns";
+import { format, addDays, isBefore, startOfDay, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +33,8 @@ import {
   User, 
   CheckCircle,
   XCircle,
-  MessageCircle
+  MessageCircle,
+  Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -108,16 +109,33 @@ export function TechnicianJobDetailView({
   const { toast } = useToast();
   const [proposeDialogOpen, setProposeDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(addDays(new Date(), 1));
+  const [confirmationShown, setConfirmationShown] = useState(false);
+  const [confirmedSlotData, setConfirmedSlotData] = useState<TimeSlot | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string; label: string } | null>(null);
-  const [selectedPreferredSlot, setSelectedPreferredSlot] = useState<TimeSlot | null>(null);
 
   const preferredSlots = job.preferred_slots || [];
   const statusInfo = getStatusBadge(job.status);
 
+  // Get unique dates from preferred slots
+  const availableDates = [...new Set(preferredSlots.map(slot => slot.date))];
+  
+  // Get slots for selected date
+  const slotsForSelectedDate = preferredSlots.filter(
+    slot => slot.date === (selectedDate ? format(selectedDate, "yyyy-MM-dd") : null)
+  );
+
+  // Check if selected date has available slots
+  const isDateAvailable = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    return availableDates.includes(dateStr);
+  };
+
   const handleConfirmSlot = async () => {
-    // Se cliente flessibile, usa la selezione dal calendario
+    let slotToConfirm: TimeSlot;
+    
     if (job.flexible) {
+      // For flexible client, use calendar selection
       if (!selectedDate || !selectedSlot) {
         toast({
           title: "Seleziona un orario",
@@ -126,93 +144,71 @@ export function TechnicianJobDetailView({
         });
         return;
       }
-
-      try {
-        const confirmedSlot: TimeSlot = {
-          date: format(selectedDate, "yyyy-MM-dd"),
-          start_time: selectedSlot.start,
-          end_time: selectedSlot.end,
-          label: `${format(selectedDate, "EEEE d MMMM", { locale: it })} ${selectedSlot.label}`,
-        };
-
-        const { error } = await supabase
-          .from('jobs')
-          .update({
-            status: 'confirmed',
-            slot_status: 'confirmed',
-            confirmed_slot: JSON.parse(JSON.stringify(confirmedSlot)),
-            scheduled_date: `${confirmedSlot.date}T${confirmedSlot.start_time}:00`
-          } as any)
-          .eq('id', job.id);
-
-        if (error) throw error;
-
-        await supabase
-          .from('notification_logs')
-          .insert({
-            user_id: job.user_id,
-            notification_type: 'slot_confirmed',
-            reference_id: job.id
-          });
-
-        toast({
-          title: "Appuntamento confermato",
-          description: `Hai fissato: ${confirmedSlot.label}`,
-        });
-
-        onJobUpdated();
-      } catch (error) {
-        toast({
-          title: "Errore",
-          description: "Impossibile confermare l'orario",
-          variant: "destructive",
-        });
-      }
+      slotToConfirm = {
+        date: format(selectedDate, "yyyy-MM-dd"),
+        start_time: selectedSlot.start,
+        end_time: selectedSlot.end,
+        label: `${format(selectedDate, "EEEE d MMMM", { locale: it })} ${selectedSlot.label}`,
+      };
     } else {
-      // Usa lo slot preferito selezionato
-      if (!selectedPreferredSlot) {
+      // For preferred slots, require both date and slot selection
+      if (!selectedDate || !selectedSlot) {
         toast({
           title: "Seleziona un orario",
-          description: "Seleziona uno degli orari proposti dal cliente",
+          description: "Devi selezionare data e fascia oraria",
           variant: "destructive",
         });
         return;
       }
-
-      try {
-        const { error } = await supabase
-          .from('jobs')
-          .update({
-            status: 'confirmed',
-            slot_status: 'confirmed',
-            confirmed_slot: JSON.parse(JSON.stringify(selectedPreferredSlot)),
-            scheduled_date: `${selectedPreferredSlot.date}T${selectedPreferredSlot.start_time}:00`
-          } as any)
-          .eq('id', job.id);
-
-        if (error) throw error;
-
-        await supabase
-          .from('notification_logs')
-          .insert({
-            user_id: job.user_id,
-            notification_type: 'slot_confirmed',
-            reference_id: job.id
-          });
-
-        toast({
-          title: "Appuntamento confermato",
-          description: `Hai accettato: ${selectedPreferredSlot.label}`,
-        });
-
-        onJobUpdated();
-      } catch (error) {
+      
+      // Find the matching preferred slot
+      const dateStr = format(selectedDate, "yyyy-MM-dd");
+      const matchingSlot = preferredSlots.find(
+        slot => slot.date === dateStr && slot.start_time === selectedSlot.start && slot.end_time === selectedSlot.end
+      );
+      
+      if (!matchingSlot) {
         toast({
           title: "Errore",
-          description: "Impossibile confermare l'orario",
+          description: "Seleziona una fascia oraria valida per questa data",
           variant: "destructive",
         });
+        return;
       }
+      
+      slotToConfirm = matchingSlot;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .update({
+          status: 'confirmed',
+          slot_status: 'confirmed',
+          confirmed_slot: JSON.parse(JSON.stringify(slotToConfirm)),
+          scheduled_date: `${slotToConfirm.date}T${slotToConfirm.start_time}:00`
+        } as any)
+        .eq('id', job.id);
+
+      if (error) throw error;
+
+      await supabase
+        .from('notification_logs')
+        .insert({
+          user_id: job.user_id,
+          notification_type: 'slot_confirmed',
+          reference_id: job.id
+        });
+
+      // Show confirmation screen
+      setConfirmedSlotData(slotToConfirm);
+      setConfirmationShown(true);
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: "Impossibile confermare l'orario",
+        variant: "destructive",
+      });
     }
   };
 
@@ -305,9 +301,78 @@ export function TechnicianJobDetailView({
     }
   };
 
-  const canConfirm = job.flexible 
-    ? (selectedDate && selectedSlot) 
-    : selectedPreferredSlot;
+  // Handle date selection - reset slot when date changes
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    setSelectedSlot(null); // Reset slot when date changes
+  };
+
+  // Check if confirm button should be enabled
+  const canConfirm = selectedDate && selectedSlot;
+
+  // If confirmation screen is shown
+  if (confirmationShown && confirmedSlotData) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex flex-col">
+        <header className="bg-card border-b sticky top-0 z-40">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center gap-3">
+              <h1 className="text-lg font-bold">Orario confermato</h1>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 container mx-auto px-4 py-6 space-y-4 max-w-lg flex flex-col items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <CheckCircle className="h-8 w-8 text-primary" />
+          </div>
+          
+          <h2 className="text-xl font-bold text-center">Appuntamento confermato!</h2>
+          
+          <Card className="w-full">
+            <CardContent className="pt-6 space-y-3">
+              <div className="flex items-center gap-3">
+                <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Data</p>
+                  <p className="font-medium capitalize">
+                    {format(parseISO(confirmedSlotData.date), "EEEE d MMMM yyyy", { locale: it })}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Orario</p>
+                  <p className="font-medium">{confirmedSlotData.start_time} - {confirmedSlotData.end_time}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Durata</p>
+                  <p className="font-medium">{job.diagnoses?.estimated_time_hours || job.estimated_duration || 2}h</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg w-full">
+            <Bell className="h-5 w-5 text-primary shrink-0" />
+            <p className="text-sm text-primary">Il cliente è stato notificato della conferma.</p>
+          </div>
+
+          <Button
+            onClick={() => navigate('/technician-dashboard')}
+            className="w-full mt-4"
+            size="lg"
+          >
+            Torna alla dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col">
@@ -385,7 +450,7 @@ export function TechnicianJobDetailView({
                   <Calendar
                     mode="single"
                     selected={selectedDate}
-                    onSelect={setSelectedDate}
+                    onSelect={handleDateSelect}
                     disabled={(date) => isBefore(date, startOfDay(new Date()))}
                     locale={it}
                     className={cn("rounded-md border mt-2 pointer-events-auto")}
@@ -393,7 +458,7 @@ export function TechnicianJobDetailView({
                 </div>
                 {selectedDate && (
                   <div>
-                    <Label className="text-xs text-muted-foreground">Seleziona orario</Label>
+                    <Label className="text-xs text-muted-foreground">Seleziona fascia oraria</Label>
                     <div className="grid grid-cols-2 gap-2 mt-2">
                       {TIME_SLOTS.map((slot) => (
                         <Button
@@ -410,28 +475,55 @@ export function TechnicianJobDetailView({
                 )}
               </div>
             ) : preferredSlots.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Seleziona uno degli orari proposti:
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Seleziona una data e poi la fascia oraria disponibile.
                 </p>
-                {preferredSlots.map((slot, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedPreferredSlot(slot)}
-                    className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors",
-                      selectedPreferredSlot?.label === slot.label
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:bg-muted/50"
+                <div>
+                  <Label className="text-xs text-muted-foreground">Seleziona giorno</Label>
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    disabled={(date) => isBefore(date, startOfDay(new Date()))}
+                    modifiers={{
+                      available: (date) => isDateAvailable(date)
+                    }}
+                    modifiersClassNames={{
+                      available: "bg-primary/20 text-primary font-semibold"
+                    }}
+                    locale={it}
+                    className={cn("rounded-md border mt-2 pointer-events-auto")}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    I giorni evidenziati hanno fasce orarie proposte dal cliente.
+                  </p>
+                </div>
+                {selectedDate && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Seleziona fascia oraria</Label>
+                    {slotsForSelectedDate.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-2 mt-2">
+                        {slotsForSelectedDate.map((slot, index) => (
+                          <Button
+                            key={index}
+                            variant={selectedSlot?.start === slot.start_time && selectedSlot?.end === slot.end_time ? "default" : "outline"}
+                            size="sm"
+                            className="justify-start"
+                            onClick={() => setSelectedSlot({ start: slot.start_time, end: slot.end_time, label: `${slot.start_time} - ${slot.end_time}` })}
+                          >
+                            <Clock className="h-4 w-4 mr-2" />
+                            {slot.start_time} - {slot.end_time}
+                          </Button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Nessuna fascia oraria disponibile per questa data. Seleziona uno dei giorni evidenziati.
+                      </p>
                     )}
-                  >
-                    <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="text-sm capitalize flex-1">{slot.label}</span>
-                    {selectedPreferredSlot?.label === slot.label && (
-                      <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                    )}
-                  </button>
-                ))}
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Nessun orario specificato.</p>
@@ -506,7 +598,7 @@ export function TechnicianJobDetailView({
               <Calendar
                 mode="single"
                 selected={selectedDate}
-                onSelect={setSelectedDate}
+                onSelect={handleDateSelect}
                 disabled={(date) => isBefore(date, startOfDay(new Date()))}
                 locale={it}
                 className={cn("rounded-md border mt-2 pointer-events-auto")}
