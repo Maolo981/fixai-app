@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SupportChatBot } from "@/components/SupportChatBot";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
+import { DemoModeProvider } from "@/components/DemoModeProvider";
+import { DemoModePanel } from "@/components/DemoModePanel";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Diagnose from "./pages/Diagnose";
@@ -23,30 +25,33 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/diagnose" element={<Diagnose />} />
-          <Route path="/results/:id" element={<Results />} />
-          <Route path="/diagnosis/:id" element={<DiagnosisDetail />} />
-          <Route path="/jobs/:id" element={<JobDetails />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/technician-dashboard" element={<TechnicianDashboard />} />
-          <Route path="/company-dashboard" element={<CompanyDashboard />} />
-          <Route path="/tech-signup" element={<TechnicianSignup />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/install" element={<Install />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <SupportChatBot />
-        <PWAInstallBanner />
-      </BrowserRouter>
-    </TooltipProvider>
+    <DemoModeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/diagnose" element={<Diagnose />} />
+            <Route path="/results/:id" element={<Results />} />
+            <Route path="/diagnosis/:id" element={<DiagnosisDetail />} />
+            <Route path="/jobs/:id" element={<JobDetails />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/technician-dashboard" element={<TechnicianDashboard />} />
+            <Route path="/company-dashboard" element={<CompanyDashboard />} />
+            <Route path="/tech-signup" element={<TechnicianSignup />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/install" element={<Install />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <SupportChatBot />
+          <PWAInstallBanner />
+          <DemoModePanel />
+        </BrowserRouter>
+      </TooltipProvider>
+    </DemoModeProvider>
   </QueryClientProvider>
 );
 
