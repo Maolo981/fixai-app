@@ -13,7 +13,11 @@ import {
   Unlock
 } from "lucide-react";
 
-export function DemoPhase7() {
+interface DemoPhaseProps {
+  onNext?: () => void;
+}
+
+export function DemoPhase7({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
       {/* Success Banner */}
@@ -124,18 +128,11 @@ export function DemoPhase7() {
 
       {/* Actions */}
       <div className="space-y-2">
-        <Button className="w-full" disabled>
+        <Button className="w-full" onClick={onNext}>
           <MessageCircle className="h-4 w-4 mr-2" />
-          Chat con il tecnico
-        </Button>
-        <Button variant="outline" className="w-full text-red-500" disabled>
-          Annulla prenotazione
+          Procedi all'intervento
         </Button>
       </div>
-
-      <p className="text-xs text-center text-muted-foreground">
-        ⬆️ Il cliente vede l'appuntamento confermato con i contatti sbloccati
-      </p>
     </div>
   );
 }

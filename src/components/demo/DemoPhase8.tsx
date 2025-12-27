@@ -11,7 +11,11 @@ import {
   CheckCircle
 } from "lucide-react";
 
-export function DemoPhase8() {
+interface DemoPhaseProps {
+  onNext?: () => void;
+}
+
+export function DemoPhase8({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
       {/* Status Timeline */}
@@ -122,20 +126,12 @@ export function DemoPhase8() {
             <Car className="h-4 w-4 mr-2" />
             ✓ Sono in viaggio (cliccato)
           </Button>
-          <Button className="w-full" disabled>
+          <Button className="w-full" onClick={onNext}>
             <Wrench className="h-4 w-4 mr-2" />
             Inizio intervento
           </Button>
-          <Button variant="outline" className="w-full" disabled>
-            <Phone className="h-4 w-4 mr-2" />
-            Chiama cliente
-          </Button>
         </CardContent>
       </Card>
-
-      <p className="text-xs text-center text-muted-foreground">
-        ⬆️ Il tecnico aggiorna lo stato e il cliente vede il tracking
-      </p>
     </div>
   );
 }

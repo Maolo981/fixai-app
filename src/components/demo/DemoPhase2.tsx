@@ -49,7 +49,11 @@ const DEMO_TECHNICIANS = [
   },
 ];
 
-export function DemoPhase2() {
+interface DemoPhaseProps {
+  onNext?: () => void;
+}
+
+export function DemoPhase2({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
       {/* Filter Info */}
@@ -165,9 +169,11 @@ export function DemoPhase2() {
         </CardContent>
       </Card>
 
-      <p className="text-xs text-center text-muted-foreground">
-        ⬆️ Il cliente confronta i tecnici e ne sceglie uno
-      </p>
+      {/* CTA */}
+      <Button className="w-full" size="lg" onClick={onNext}>
+        <CheckCircle className="h-4 w-4 mr-2" />
+        Procedi con la selezione orari
+      </Button>
     </div>
   );
 }

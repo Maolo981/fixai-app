@@ -12,7 +12,11 @@ import {
   ThumbsUp
 } from "lucide-react";
 
-export function DemoPhase10() {
+interface DemoPhaseProps {
+  onNext?: () => void;
+}
+
+export function DemoPhase10({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
       {/* Payment Card */}
@@ -165,7 +169,7 @@ export function DemoPhase10() {
         </CardContent>
       </Card>
 
-      <p className="text-xs text-center text-muted-foreground">
+      <p className="text-sm text-center text-green-600 font-medium">
         🎉 Fine della demo! Hai visto l'intero flusso FIXO.
       </p>
     </div>

@@ -11,7 +11,11 @@ import {
 } from "lucide-react";
 import caldaiaImage from "@/assets/caldaia-demo.webp";
 
-export function DemoPhase1() {
+interface DemoPhaseProps {
+  onNext?: () => void;
+}
+
+export function DemoPhase1({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
       {/* Upload Section */}
@@ -109,14 +113,10 @@ export function DemoPhase1() {
       </Card>
 
       {/* CTA (Demo) */}
-      <Button className="w-full" size="lg" disabled>
+      <Button className="w-full" size="lg" onClick={onNext}>
         <CheckCircle className="h-4 w-4 mr-2" />
         Trova tecnici disponibili
       </Button>
-
-      <p className="text-xs text-center text-muted-foreground">
-        ⬆️ Nella demo questo pulsante porta alla fase successiva
-      </p>
     </div>
   );
 }

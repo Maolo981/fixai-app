@@ -34,7 +34,11 @@ const DEMO_MESSAGES = [
   },
 ];
 
-export function DemoPhase5() {
+interface DemoPhaseProps {
+  onNext?: () => void;
+}
+
+export function DemoPhase5({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
       {/* Security Banner */}
@@ -137,21 +141,10 @@ export function DemoPhase5() {
       </Card>
 
       {/* CTA */}
-      <Button className="w-full" size="lg" disabled>
+      <Button className="w-full" size="lg" onClick={onNext}>
         <CheckCircle className="h-4 w-4 mr-2" />
         Conferma e scegli orario
       </Button>
-
-      <div className="flex gap-2">
-        <Button variant="outline" className="flex-1" disabled>
-          <Calendar className="h-4 w-4 mr-2" />
-          Proponi altro orario
-        </Button>
-      </div>
-
-      <p className="text-xs text-center text-muted-foreground">
-        ⬆️ La chat permette chiarimenti ma blocca i contatti
-      </p>
     </div>
   );
 }

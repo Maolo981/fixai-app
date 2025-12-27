@@ -20,7 +20,11 @@ const DEMO_SLOTS = [
   { date: "Ven 28 Dic", time: "10:00 - 12:00", selected: false },
 ];
 
-export function DemoPhase3() {
+interface DemoPhaseProps {
+  onNext?: () => void;
+}
+
+export function DemoPhase3({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
       {/* Calendar */}
@@ -114,14 +118,10 @@ export function DemoPhase3() {
       </Card>
 
       {/* CTA */}
-      <Button className="w-full" size="lg" disabled>
+      <Button className="w-full" size="lg" onClick={onNext}>
         <Send className="h-4 w-4 mr-2" />
         Invia richiesta
       </Button>
-
-      <p className="text-xs text-center text-muted-foreground">
-        ⬆️ Il cliente invia la richiesta con le sue preferenze
-      </p>
     </div>
   );
 }
