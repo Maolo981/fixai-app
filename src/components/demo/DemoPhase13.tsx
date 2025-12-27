@@ -2,179 +2,114 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
-  TrendingUp,
   Euro,
   CheckCircle,
-  Home,
-  Users,
-  Wrench,
   BadgeCheck,
-  Handshake,
-  Shield
+  Shield,
+  Sparkles
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 interface DemoPhaseProps {
   onNext?: () => void;
 }
 
 export function DemoPhase13({ onNext }: DemoPhaseProps) {
-  const navigate = useNavigate();
-
   return (
     <div className="space-y-4">
       {/* Demo Label */}
       <div className="bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-2">
         <p className="text-xs text-amber-800 dark:text-amber-200 text-center font-medium">
-          🎭 DEMO – informativa sul modello di business
+          🎭 DEMO – spiegazione modello di guadagno
         </p>
       </div>
 
       {/* Title Card */}
       <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
         <CardContent className="py-6 text-center">
-          <TrendingUp className="h-12 w-12 text-primary mx-auto mb-3" />
-          <h2 className="text-xl font-bold mb-2">Come guadagna FIXO</h2>
+          <Euro className="h-12 w-12 text-primary mx-auto mb-3" />
+          <h2 className="text-xl font-bold mb-2">Fee di servizio FIXO</h2>
           <p className="text-sm text-muted-foreground">
-            Un modello semplice e trasparente
+            Come funziona la conferma dell'appuntamento
           </p>
         </CardContent>
       </Card>
 
-      {/* Key Points */}
+      {/* Explanation */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Come funziona</CardTitle>
+          <CardTitle className="text-base">Alla conferma dell'appuntamento</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Euro className="h-4 w-4 text-primary" />
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            FIXO applica una piccola fee di servizio fissa per l'organizzazione dell'intervento.
+          </p>
+
+          {/* Example */}
+          <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium">Fee di servizio FIXO</span>
+              <span className="font-bold text-lg text-primary">€5 - €10</span>
             </div>
-            <div>
-              <p className="font-medium text-sm">Commissione su intervento</p>
-              <p className="text-xs text-muted-foreground">
-                FIXO trattiene una commissione su ogni intervento completato
-              </p>
+            <div className="space-y-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-3 w-3 text-green-500" />
+                <span>Utilizzo della piattaforma</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-3 w-3 text-green-500" />
+                <span>Gestione richiesta</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-3 w-3 text-green-500" />
+                <span>Organizzazione dell'intervento</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <BadgeCheck className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-sm">Applicata automaticamente</p>
-              <p className="text-xs text-muted-foreground">
-                La commissione viene applicata automaticamente al pagamento finale
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Wrench className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-sm">Compenso netto al tecnico</p>
-              <p className="text-xs text-muted-foreground">
-                Il tecnico riceve il compenso netto direttamente sul suo conto
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Users className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-sm">Nessun costo nascosto</p>
-              <p className="text-xs text-muted-foreground">
-                Il cliente non paga costi aggiuntivi nascosti
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Example Calculation */}
-      <Card className="border-2 border-primary/30">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Esempio illustrativo</CardTitle>
-            <Badge variant="outline">Demo</Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center py-2 border-b">
-              <span className="text-sm text-muted-foreground">Costo intervento</span>
-              <span className="font-bold text-lg">€100</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b">
-              <span className="text-sm text-muted-foreground">Commissione FIXO (12%)</span>
-              <span className="font-medium text-primary">-€12</span>
-            </div>
-            <div className="flex justify-between items-center py-2 bg-green-50 dark:bg-green-950/30 rounded-lg px-3">
-              <span className="text-sm font-medium">Tecnico riceve</span>
-              <span className="font-bold text-lg text-green-600">€88</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Closing Statement */}
-      <Card className="bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/30 dark:to-blue-950/30 border-green-200">
-        <CardContent className="py-5">
-          <div className="text-center space-y-3">
-            <Handshake className="h-10 w-10 text-green-600 mx-auto" />
-            <p className="text-sm font-medium">
-              FIXO guadagna solo quando il lavoro è completato con successo.
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              <Badge variant="outline" className="text-xs border-green-300 text-green-700 dark:text-green-300">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Nessun abbonamento
-              </Badge>
-              <Badge variant="outline" className="text-xs border-green-300 text-green-700 dark:text-green-300">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Nessun costo iniziale
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Nessun costo per cliente o tecnico prima dell'intervento completato
+          {/* Important Note */}
+          <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              <strong>Nota:</strong> La fee è indipendente dal metodo di pagamento finale scelto per l'intervento.
             </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Trust */}
-      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <Shield className="h-4 w-4" />
-        <span>Modello trasparente e sostenibile</span>
+      {/* Badges */}
+      <div className="flex flex-wrap justify-center gap-2">
+        <Badge variant="outline" className="text-xs border-green-300 text-green-700 dark:text-green-300">
+          <BadgeCheck className="h-3 w-3 mr-1" />
+          Fee fissa
+        </Badge>
+        <Badge variant="outline" className="text-xs border-green-300 text-green-700 dark:text-green-300">
+          <Shield className="h-3 w-3 mr-1" />
+          Trasparente
+        </Badge>
+        <Badge variant="outline" className="text-xs border-green-300 text-green-700 dark:text-green-300">
+          <Sparkles className="h-3 w-3 mr-1" />
+          Una tantum
+        </Badge>
       </div>
 
-      {/* Final CTAs */}
-      <div className="space-y-2">
-        <Button 
-          className="w-full bg-green-600 hover:bg-green-700" 
-          size="lg" 
-          onClick={() => navigate("/")}
-        >
-          <Home className="h-4 w-4 mr-2" />
-          Fine demo - Torna alla home
-        </Button>
-      </div>
+      {/* Value Explanation */}
+      <Card className="bg-muted/30">
+        <CardContent className="py-4">
+          <p className="text-sm text-center text-muted-foreground">
+            FIXO guadagna per aver organizzato correttamente l'intervento: 
+            far incontrare cliente e tecnico, gestire disponibilità e chat, 
+            ridurre perdite di tempo.
+          </p>
+        </CardContent>
+      </Card>
 
-      {/* Completion Message */}
-      <div className="text-center py-4">
-        <p className="text-sm text-green-600 font-medium">
-          🎉 Hai completato la demo completa di FIXO!
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Ora conosci l'intero flusso dalla diagnosi al pagamento
-        </p>
-      </div>
+      {/* CTA */}
+      <Button className="w-full" size="lg" onClick={onNext}>
+        Continua demo
+      </Button>
+
+      <p className="text-sm text-center text-muted-foreground">
+        Scopri le opzioni di pagamento dell'intervento
+      </p>
     </div>
   );
 }
