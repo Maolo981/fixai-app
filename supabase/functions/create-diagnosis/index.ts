@@ -193,7 +193,7 @@ Per ai_probability, stima quanto sei sicuro della diagnosi (0-100).`;
         ai_steps: diagnosisData.ai_steps || ['Controllo iniziale', 'Diagnosi', 'Riparazione'],
         estimated_cost_min: diagnosisData.estimated_cost_min || null,
         estimated_cost_max: diagnosisData.estimated_cost_max || null,
-        estimated_time_hours: diagnosisData.estimated_time_hours || null,
+        estimated_time_hours: diagnosisData.estimated_time_hours ? Math.round(diagnosisData.estimated_time_hours) : null,
         input_text: inputText,
         input_images: inputImages,
         image_url: inputImages[0] || '',
