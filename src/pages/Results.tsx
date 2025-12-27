@@ -19,18 +19,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { TechnicianReviewsDialog } from "@/components/TechnicianReviewsDialog";
+import { AIDiagnosisCard } from "@/components/AIDiagnosisCard";
 
 interface Diagnosis {
   id: string;
   problem_type: string;
   urgency_level: string;
-  possible_cause: string;
-  estimated_cost_min: number;
-  estimated_cost_max: number;
-  estimated_time_hours: number;
+  possible_cause: string | null;
+  estimated_cost_min: number | null;
+  estimated_cost_max: number | null;
+  estimated_time_hours: number | null;
   recommended_specialty: string;
   ai_analysis: string;
   image_url: string;
+  input_text?: string | null;
+  input_images?: string[] | null;
+  ai_probability?: number | null;
+  ai_risk?: string | null;
+  ai_steps?: string[] | null;
 }
 
 interface Technician {
@@ -593,25 +599,11 @@ const Results = () => {
           </Card>
         </div>
 
-        {/* Analysis */}
-        <Card className="shadow-medium">
-          <CardHeader>
-            <CardTitle className="flex items-center text-base sm:text-lg">
-              <AlertCircle className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-              Analisi AI
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 sm:space-y-4">
-            <div>
-              <h3 className="font-semibold mb-2 text-sm sm:text-base">Possibile Causa:</h3>
-              <p className="text-sm sm:text-base text-muted-foreground">{diagnosis.possible_cause}</p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2 text-sm sm:text-base">Analisi Dettagliata:</h3>
-              <p className="text-sm sm:text-base text-muted-foreground whitespace-pre-line">{diagnosis.ai_analysis}</p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* AI Diagnosis Card */}
+        <AIDiagnosisCard 
+          diagnosis={diagnosis}
+          showActions={false}
+        />
 
         {/* Matched Technicians */}
         <Card className="shadow-medium">
