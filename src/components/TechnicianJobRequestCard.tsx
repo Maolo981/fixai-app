@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { format, addDays, isBefore, startOfDay } from "date-fns";
+import { format, addDays, isBefore, startOfDay, formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -29,12 +31,14 @@ import {
   Calendar as CalendarIcon, 
   Clock, 
   User, 
-  AlertCircle, 
   Euro, 
   CheckCircle,
   XCircle,
   MessageCircle,
-  Zap
+  Zap,
+  CalendarCheck,
+  CalendarClock,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -73,8 +77,10 @@ interface Job {
 
 interface TechnicianJobRequestCardProps {
   job: Job;
+  technicianHourlyRate?: number;
   onJobUpdated: () => void;
   onStartChat: () => void;
+  onOpenCalendar?: () => void;
 }
 
 const TIME_SLOTS = [
@@ -88,54 +94,23 @@ const TIME_SLOTS = [
   { start: "17:00", end: "19:00", label: "17:00 - 19:00" },
 ];
 
-export function TechnicianJobRequestCard({ job, onJobUpdated, onStartChat }: TechnicianJobRequestCardProps) {
+export function TechnicianJobRequestCard({ 
+  job, 
+  technicianHourlyRate = 35,
+  onJobUpdated, 
+  onStartChat,
+  onOpenCalendar 
+}: TechnicianJobRequestCardProps) {
   const { toast } = useToast();
   const [proposeDialogOpen, setProposeDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(addDays(new Date(), 1));
   const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string; label: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const preferredSlots = job.preferred_slots || [];
-
-  const handleAcceptSlot = async (slot: TimeSlot) => {
-    try {
-      // Aggiorna il job con lo slot confermato
-      const { error } = await supabase
-        .from('jobs')
-        .update({
-          status: 'confirmed',
-          slot_status: 'confirmed',
-          confirmed_slot: JSON.parse(JSON.stringify(slot)),
-          scheduled_date: `${slot.date}T${slot.start_time}:00`
-        } as any)
-        .eq('id', job.id);
-
-      if (error) throw error;
-
-      // Notifica l'utente
-      await supabase
-        .from('notification_logs')
-        .insert({
-          user_id: job.user_id,
-          notification_type: 'slot_confirmed',
-          reference_id: job.id
-        });
-
-      toast({
-        title: "Appuntamento confermato",
-        description: `Hai accettato l'orario: ${slot.label}`,
-      });
-
-      onJobUpdated();
-    } catch (error) {
-      console.error('Error accepting slot:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile confermare l'orario",
-        variant: "destructive",
-      });
-    }
-  };
+  const estimatedDuration = job.estimated_duration || job.diagnoses?.estimated_time_hours || 2;
+  const estimatedCompensation = technicianHourlyRate * estimatedDuration;
 
   const handleProposeNewSlot = async () => {
     if (!selectedDate || !selectedSlot) {
@@ -166,7 +141,6 @@ export function TechnicianJobRequestCard({ job, onJobUpdated, onStartChat }: Tec
 
       if (error) throw error;
 
-      // Notifica l'utente
       await supabase
         .from('notification_logs')
         .insert({
@@ -198,13 +172,13 @@ export function TechnicianJobRequestCard({ job, onJobUpdated, onStartChat }: Tec
         .from('jobs')
         .update({
           status: 'rejected',
-          slot_status: 'rejected'
+          slot_status: 'rejected',
+          cancellation_reason: rejectReason || null
         })
         .eq('id', job.id);
 
       if (error) throw error;
 
-      // Notifica l'utente
       await supabase
         .from('notification_logs')
         .insert({
@@ -219,6 +193,7 @@ export function TechnicianJobRequestCard({ job, onJobUpdated, onStartChat }: Tec
       });
 
       setRejectDialogOpen(false);
+      setRejectReason("");
       onJobUpdated();
     } catch (error) {
       console.error('Error rejecting request:', error);
@@ -232,133 +207,131 @@ export function TechnicianJobRequestCard({ job, onJobUpdated, onStartChat }: Tec
 
   return (
     <>
-      <Card className={job.is_urgent ? 'border-red-500 border-2 bg-red-500/5' : 'border-primary/30'}>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-lg">{job.diagnoses?.problem_type}</CardTitle>
+      <Card className={cn(
+        "overflow-hidden transition-all",
+        job.is_urgent 
+          ? "border-red-500 border-2 bg-gradient-to-br from-red-500/5 to-transparent" 
+          : "border-border hover:border-primary/50"
+      )}>
+        <CardContent className="p-4 space-y-4">
+          {/* Header con tipo intervento e urgenza */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-base truncate">
+                  {job.diagnoses?.problem_type}
+                </h3>
                 {job.is_urgent && (
-                  <Badge variant="destructive" className="bg-red-500 text-white animate-pulse">
+                  <Badge variant="destructive" className="bg-red-500 text-white animate-pulse shrink-0">
                     <Zap className="h-3 w-3 mr-1" />
                     URGENTE
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                <User className="h-3 w-3 inline mr-1" />
-                {job.profiles?.full_name}
-              </p>
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+                <User className="h-3.5 w-3.5" />
+                <span>{job.profiles?.full_name}</span>
+              </div>
             </div>
-            <Badge variant="secondary">
-              <Clock className="h-3 w-3 mr-1" />
-              In attesa
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Dettagli problema */}
-          <div className="space-y-2 text-sm">
-            <p className="text-muted-foreground">{job.diagnoses?.ai_analysis}</p>
-            
-            <div className="flex flex-wrap gap-2">
-              {job.diagnoses?.urgency_level && (
-                <Badge 
-                  variant={
-                    job.diagnoses.urgency_level === 'high' ? 'destructive' : 
-                    job.diagnoses.urgency_level === 'medium' ? 'default' : 'secondary'
-                  }
-                >
-                  Urgenza: {job.diagnoses.urgency_level === 'high' ? 'Alta' : job.diagnoses.urgency_level === 'medium' ? 'Media' : 'Bassa'}
-                </Badge>
-              )}
-              {job.diagnoses?.estimated_time_hours && (
-                <Badge variant="outline">
-                  <Clock className="h-3 w-3 mr-1" />
-                  ~{job.diagnoses.estimated_time_hours}h
-                </Badge>
-              )}
-              {job.diagnoses?.estimated_cost_min && job.diagnoses?.estimated_cost_max && (
-                <Badge variant="outline">
-                  <Euro className="h-3 w-3 mr-1" />
-                  €{job.diagnoses.estimated_cost_min}-€{job.diagnoses.estimated_cost_max}
-                </Badge>
-              )}
+            <div className="text-right shrink-0">
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(job.created_at), { addSuffix: true, locale: it })}
+              </p>
             </div>
           </div>
 
-          {/* Orari proposti dall'utente */}
-          <div className="border rounded-lg p-3 bg-muted/30">
-            <Label className="text-sm font-medium">Fasce orarie richieste</Label>
+          {/* Info sintetiche in griglia */}
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">Durata</p>
+                <p className="font-medium">{estimatedDuration}h</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+              <Euro className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">Compenso</p>
+                <p className="font-medium">~€{estimatedCompensation}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Disponibilità richiesta */}
+          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="flex items-center gap-2 mb-2">
+              <CalendarIcon className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Disponibilità richiesta</span>
+            </div>
             {job.flexible ? (
-              <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
-                <AlertCircle className="h-4 w-4 inline mr-1" />
-                L'utente è flessibile - contattalo per qualsiasi orario
-              </p>
+              <div className="flex items-center gap-2 text-sm text-primary">
+                <Sparkles className="h-4 w-4" />
+                <span>Cliente flessibile - qualsiasi orario</span>
+              </div>
             ) : preferredSlots.length > 0 ? (
-              <div className="space-y-2 mt-2">
-                {preferredSlots.map((slot, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-2 bg-background rounded border"
-                  >
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm capitalize">{slot.label}</span>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleAcceptSlot(slot)}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Accetta
-                    </Button>
-                  </div>
+              <div className="space-y-1.5">
+                {preferredSlots.slice(0, 3).map((slot, index) => (
+                  <p key={index} className="text-sm text-muted-foreground capitalize">
+                    • {slot.label}
+                  </p>
                 ))}
+                {preferredSlots.length > 3 && (
+                  <p className="text-xs text-muted-foreground">
+                    +{preferredSlots.length - 3} altri orari
+                  </p>
+                )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground mt-2">Nessun orario specifico indicato</p>
+              <p className="text-sm text-muted-foreground">Nessun orario specifico</p>
             )}
           </div>
 
-          {/* Note utente */}
+          {/* Note utente (compatte) */}
           {job.user_notes && (
-            <div className="border rounded-lg p-3 bg-amber-50 dark:bg-amber-950/20">
-              <Label className="text-sm font-medium">Note del cliente</Label>
-              <p className="text-sm mt-1">{job.user_notes}</p>
-            </div>
+            <p className="text-sm text-muted-foreground italic border-l-2 border-amber-400 pl-3">
+              "{job.user_notes}"
+            </p>
           )}
 
-          {/* Azioni */}
-          <div className="space-y-2">
-            <div className="flex gap-2">
+          {/* Azioni primarie */}
+          <div className="space-y-2 pt-2">
+            <Button
+              onClick={onOpenCalendar}
+              className="w-full"
+              size="lg"
+            >
+              <CalendarCheck className="h-4 w-4 mr-2" />
+              Accetta e scegli orario
+            </Button>
+            
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="outline"
-                size="sm"
-                onClick={onStartChat}
-                className="flex-1"
+                onClick={() => setProposeDialogOpen(true)}
               >
-                <MessageCircle className="h-4 w-4 mr-1" />
-                Chat
+                <CalendarClock className="h-4 w-4 mr-2" />
+                Proponi orario
               </Button>
               <Button
                 variant="outline"
-                size="sm"
-                onClick={() => setProposeDialogOpen(true)}
-                className="flex-1"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setRejectDialogOpen(true)}
               >
-                <CalendarIcon className="h-4 w-4 mr-1" />
-                Proponi altro orario
+                <XCircle className="h-4 w-4 mr-2" />
+                Rifiuta
               </Button>
             </div>
+
+            {/* Azione secondaria - Chat */}
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setRejectDialogOpen(true)}
-              className="w-full text-destructive hover:text-destructive"
+              onClick={onStartChat}
+              className="w-full text-muted-foreground hover:text-foreground"
             >
-              <XCircle className="h-4 w-4 mr-1" />
-              Rifiuta richiesta
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Avvia chat con il cliente
             </Button>
           </div>
         </CardContent>
@@ -366,11 +339,11 @@ export function TechnicianJobRequestCard({ job, onJobUpdated, onStartChat }: Tec
 
       {/* Dialog per proporre nuovo orario */}
       <Dialog open={proposeDialogOpen} onOpenChange={setProposeDialogOpen}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Proponi un nuovo orario</DialogTitle>
             <DialogDescription>
-              Gli orari proposti dal cliente non sono disponibili. Proponi un'alternativa.
+              Seleziona data e orario da proporre al cliente.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -402,18 +375,23 @@ export function TechnicianJobRequestCard({ job, onJobUpdated, onStartChat }: Tec
                 </div>
               </div>
             )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProposeDialogOpen(false)}>
+              Annulla
+            </Button>
             <Button
               onClick={handleProposeNewSlot}
               disabled={!selectedDate || !selectedSlot}
-              className="w-full"
             >
+              <CheckCircle className="h-4 w-4 mr-2" />
               Invia proposta
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog conferma rifiuto */}
+      {/* Dialog conferma rifiuto con motivazione */}
       <AlertDialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -422,6 +400,17 @@ export function TechnicianJobRequestCard({ job, onJobUpdated, onStartChat }: Tec
               Sei sicuro di voler rifiutare questa richiesta? L'utente potrà selezionare un altro tecnico.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="reject-reason">Motivazione (opzionale)</Label>
+            <Textarea
+              id="reject-reason"
+              placeholder="Es: Non disponibile in questa zona, troppo impegnato questa settimana..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="mt-2"
+              rows={3}
+            />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Annulla</AlertDialogCancel>
             <AlertDialogAction

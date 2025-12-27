@@ -496,6 +496,7 @@ export default function TechnicianDashboard() {
                 key={job.id}
                 job={job}
                 onStartChat={() => navigate(`/jobs/${job.id}?startChat=true`)}
+                onJobUpdated={loadJobs}
               />
             ))}
 
