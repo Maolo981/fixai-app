@@ -35,7 +35,6 @@ export function DemoModePanel() {
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Play className="h-4 w-4 text-primary" />
               <Label htmlFor="demo-mode" className="text-sm font-medium">
                 Modalità Demo
               </Label>
@@ -59,7 +58,6 @@ export function DemoModePanel() {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Play className="h-4 w-4 text-primary animate-pulse" />
             Modalità Demo Attiva
           </CardTitle>
           <Switch
