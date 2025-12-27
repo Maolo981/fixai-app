@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SupportChatBot } from "@/components/SupportChatBot";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
 import { DemoModeProvider } from "@/components/DemoModeProvider";
-import { DemoModePanel } from "@/components/DemoModePanel";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Diagnose from "./pages/Diagnose";
@@ -50,7 +49,6 @@ const App = () => (
           </Routes>
           <SupportChatBot />
           <PWAInstallBanner />
-          <DemoModePanel />
         </BrowserRouter>
       </TooltipProvider>
     </DemoModeProvider>
