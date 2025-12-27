@@ -496,6 +496,7 @@ const JobDetails = () => {
           onOpenChange={setChatDialogOpen}
           jobId={job.id}
           technicianName={job.technicians?.full_name || ''}
+          isTechnician={isTechnician}
           technicianId={job.technician_id}
           userId={job.user_id}
         />
@@ -1388,6 +1389,7 @@ const JobDetails = () => {
           onOpenChange={setChatDialogOpen}
           jobId={job.id}
           technicianName={job.technicians?.full_name || ''}
+          isTechnician={isTechnician}
           technicianId={job.technician_id}
           userId={job.user_id}
         />
