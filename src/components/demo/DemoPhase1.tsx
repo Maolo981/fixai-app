@@ -9,6 +9,7 @@ import {
   Zap,
   Euro
 } from "lucide-react";
+import caldaiaImage from "@/assets/caldaia-demo.webp";
 
 export function DemoPhase1() {
   return (
@@ -25,7 +26,7 @@ export function DemoPhase1() {
           <div className="border-2 border-dashed border-primary/30 rounded-lg p-6 text-center bg-primary/5">
             <div className="mb-3">
               <img 
-                src="https://images.unsplash.com/photo-1607400201889-565b1ee75f8e?w=400&h=300&fit=crop"
+                src={caldaiaImage}
                 alt="Problema caldaia"
                 className="w-full h-40 object-cover rounded-lg"
               />
