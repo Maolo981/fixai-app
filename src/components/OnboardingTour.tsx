@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Camera, Briefcase, User, X, ChevronRight, ChevronLeft } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TourStep {
   target: string;
@@ -43,17 +44,47 @@ const tourSteps: TourStep[] = [
   },
 ];
 
-export const OnboardingTour = () => {
+interface OnboardingTourProps {
+  userId?: string;
+}
+
+export const OnboardingTour = ({ userId }: OnboardingTourProps) => {
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const hasSeenTour = localStorage.getItem("hasSeenOnboardingTour");
-    if (!hasSeenTour) {
-      // Aspetta un po' prima di mostrare il tour per dare tempo alla pagina di caricare
-      setTimeout(() => setIsActive(true), 1000);
+    if (userId) {
+      checkOnboardingStatus();
+    } else {
+      setIsLoading(false);
     }
-  }, []);
+  }, [userId]);
+
+  const checkOnboardingStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('has_seen_onboarding')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error checking onboarding status:', error);
+        setIsLoading(false);
+        return;
+      }
+
+      // Show tour only if user hasn't seen it
+      if (!data?.has_seen_onboarding) {
+        setTimeout(() => setIsActive(true), 1000);
+      }
+    } catch (error) {
+      console.error('Error checking onboarding:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleNext = () => {
     if (currentStep < tourSteps.length - 1) {
@@ -69,16 +100,30 @@ export const OnboardingTour = () => {
     }
   };
 
-  const completeTour = () => {
-    localStorage.setItem("hasSeenOnboardingTour", "true");
+  const completeTour = async () => {
     setIsActive(false);
+    
+    // Save to database that user has seen the tour
+    if (userId) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ has_seen_onboarding: true })
+          .eq('id', userId);
+      } catch (error) {
+        console.error('Error saving onboarding status:', error);
+      }
+    }
+    
+    // Also save to localStorage as fallback
+    localStorage.setItem("hasSeenOnboardingTour", "true");
   };
 
   const skipTour = () => {
     completeTour();
   };
 
-  if (!isActive) return null;
+  if (isLoading || !isActive) return null;
 
   const step = tourSteps[currentStep];
   const Icon = step.icon;

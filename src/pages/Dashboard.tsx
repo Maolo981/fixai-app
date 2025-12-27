@@ -334,7 +334,7 @@ const Dashboard = () => {
 
   return (
     <MobileLayout>
-      <OnboardingTour />
+      <OnboardingTour userId={user?.id} />
       <PullToRefresh onRefresh={handleRefresh}>
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
