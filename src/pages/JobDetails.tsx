@@ -45,6 +45,8 @@ import { TechnicianLiveTracker } from "@/components/TechnicianLiveTracker";
 import { usePayments } from "@/hooks/usePayments";
 import { BookingDialog } from "@/components/BookingDialog";
 import { BookingSlotsDialog } from "@/components/BookingSlotsDialog";
+import { TechnicianActionsCard } from "@/components/TechnicianActionsCard";
+import { TechnicianProposeDialog } from "@/components/TechnicianProposeDialog";
 
 interface Quote {
   id: string;
@@ -129,6 +131,7 @@ const JobDetails = () => {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [bookingSlotsDialogOpen, setBookingSlotsDialogOpen] = useState(false);
+  const [technicianProposeDialogOpen, setTechnicianProposeDialogOpen] = useState(false);
   const [urgencyFee, setUrgencyFee] = useState(30);
 
   const {
@@ -987,6 +990,79 @@ const JobDetails = () => {
             </Card>
           )}
 
+          {/* Technician Actions - Azioni operative per il tecnico */}
+          {isTechnician && (job.status === 'requested' || job.status === 'pending_technician_confirmation') && (
+            <TechnicianActionsCard
+              job={job}
+              onJobUpdated={loadJobDetails}
+            />
+          )}
+
+          {/* Technician Actions - Stato reschedule_proposed */}
+          {isTechnician && job.status === 'reschedule_proposed' && (
+            <Card className="border-2 border-orange-300 bg-orange-50 dark:bg-orange-950/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-orange-800 dark:text-orange-200">
+                  <Clock className="h-5 w-5" />
+                  Proposta in attesa
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-orange-700 dark:text-orange-300">
+                  Hai proposto un nuovo orario. In attesa che il cliente accetti o rifiuti.
+                </p>
+                {job.proposed_slot && (
+                  <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                    <p className="text-sm font-medium capitalize">{job.proposed_slot.label}</p>
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setTechnicianProposeDialogOpen(true)}
+                    className="flex-1"
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Modifica proposta
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase
+                          .from('jobs')
+                          .update({
+                            status: 'requested',
+                            slot_status: 'pending',
+                            proposed_slot: null
+                          })
+                          .eq('id', job.id);
+
+                        if (error) throw error;
+
+                        toast({
+                          title: "Proposta annullata",
+                          description: "Puoi ora scegliere uno degli slot proposti dal cliente.",
+                        });
+                        loadJobDetails();
+                      } catch (error) {
+                        toast({
+                          title: "Errore",
+                          description: "Impossibile annullare la proposta.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    className="flex-1 text-destructive hover:text-destructive"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Annulla proposta
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Appointment Details */}
           {job.scheduled_date && (
             <Card>
@@ -1426,6 +1502,15 @@ const JobDetails = () => {
             estimatedTimeHours={job.diagnoses.estimated_time_hours}
           />
         )}
+
+        {/* Technician Propose Dialog (for modifying existing proposal) */}
+        <TechnicianProposeDialog
+          open={technicianProposeDialogOpen}
+          onOpenChange={setTechnicianProposeDialogOpen}
+          jobId={job.id}
+          userId={job.user_id}
+          onProposed={loadJobDetails}
+        />
       </div>
     </MobileLayout>
   );
