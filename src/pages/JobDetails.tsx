@@ -44,6 +44,7 @@ import { NavigationButton } from "@/components/NavigationButton";
 import { TechnicianLiveTracker } from "@/components/TechnicianLiveTracker";
 import { usePayments } from "@/hooks/usePayments";
 import { BookingDialog } from "@/components/BookingDialog";
+import { BookingSlotsDialog } from "@/components/BookingSlotsDialog";
 
 interface Quote {
   id: string;
@@ -61,6 +62,13 @@ interface Quote {
   } | null;
 }
 
+interface TimeSlot {
+  date: string;
+  start_time: string;
+  end_time: string;
+  label: string;
+}
+
 interface Job {
   id: string;
   user_id: string;
@@ -75,6 +83,13 @@ interface Job {
   final_cost: number | null;
   is_urgent?: boolean;
   urgency_surcharge?: number;
+  preferred_slots?: TimeSlot[];
+  flexible?: boolean;
+  estimated_duration?: number;
+  user_notes?: string;
+  confirmed_slot?: TimeSlot;
+  proposed_slot?: TimeSlot;
+  slot_status?: string;
   diagnoses?: {
     problem_type: string;
     urgency_level: string;
@@ -113,6 +128,7 @@ const JobDetails = () => {
   const [isTechnician, setIsTechnician] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [bookingSlotsDialogOpen, setBookingSlotsDialogOpen] = useState(false);
   const [urgencyFee, setUrgencyFee] = useState(30);
 
   const {
@@ -688,53 +704,7 @@ const JobDetails = () => {
                   Invia la richiesta al tecnico per verificare la disponibilità e confermare l'intervento. Nessun pagamento verrà effettuato in questa fase.
                 </p>
                 <Button
-                  onClick={async () => {
-                    try {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) return;
-
-                      const { data: userProfile } = await supabase
-                        .from('profiles')
-                        .select('full_name')
-                        .eq('id', user.id)
-                        .single();
-
-                      // Aggiorna lo stato del job a "requested"
-                      const { error } = await supabase
-                        .from('jobs')
-                        .update({ status: 'requested' })
-                        .eq('id', job.id);
-
-                      if (error) throw error;
-
-                      // Invia notifica al tecnico
-                      await supabase
-                        .from('technician_notifications')
-                        .insert({
-                          technician_id: job.technician_id,
-                          job_id: job.id,
-                          type: 'booking_request',
-                          title: 'Nuova Richiesta di Intervento',
-                          message: `${userProfile?.full_name || 'Un cliente'} ha inviato una richiesta per "${job.diagnoses?.problem_type}". Verifica la disponibilità e rispondi.`
-                        });
-
-                      toast({
-                        title: "Richiesta inviata",
-                        description: "Ti avviseremo non appena il tecnico risponde.",
-                      });
-
-                      fireMultipleConfetti();
-                      setShowConfirmation(true);
-                      loadJobDetails();
-                    } catch (error: any) {
-                      console.error('Error sending request:', error);
-                      toast({
-                        title: "Errore",
-                        description: "Impossibile inviare la richiesta. Riprova.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
+                  onClick={() => setBookingSlotsDialogOpen(true)}
                   size="lg"
                   className="w-full"
                 >
@@ -744,6 +714,160 @@ const JobDetails = () => {
                 <p className="text-xs text-center text-muted-foreground">
                   La conferma dell'intervento avverrà solo dopo l'accettazione del tecnico.
                 </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Orari Proposti Section - quando la richiesta è stata inviata con slot */}
+          {job.status === 'requested' && (job.preferred_slots?.length || job.flexible) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-primary" />
+                  Orari proposti
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {job.flexible ? (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      <strong>Prima disponibilità:</strong> Hai indicato flessibilità sugli orari. Il tecnico ti proporrà un orario disponibile.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Fasce orarie proposte:</p>
+                    {job.preferred_slots?.map((slot, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg"
+                      >
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm capitalize">{slot.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {job.user_notes && (
+                  <div className="pt-3 border-t">
+                    <p className="text-xs text-muted-foreground mb-1">Note per il tecnico:</p>
+                    <p className="text-sm">{job.user_notes}</p>
+                  </div>
+                )}
+
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    <strong>In attesa di conferma.</strong> Il tecnico confermerà uno degli orari o proporrà un'alternativa.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Slot Confermato dal Tecnico */}
+          {job.confirmed_slot && (
+            <Card className="border-2 border-green-500 bg-green-50 dark:bg-green-950/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                  <CheckCircle className="h-5 w-5" />
+                  Appuntamento Confermato
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <Calendar className="h-5 w-5 text-green-600" />
+                  <span className="font-medium capitalize">{job.confirmed_slot.label}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Slot Proposto dal Tecnico - da accettare/rifiutare */}
+          {job.proposed_slot && job.slot_status === 'proposed' && (
+            <Card className="border-2 border-orange-500 bg-orange-50 dark:bg-orange-950/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                  <AlertCircle className="h-5 w-5" />
+                  Nuovo Orario Proposto dal Tecnico
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2 p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <Calendar className="h-5 w-5 text-orange-600" />
+                  <span className="font-medium capitalize">{job.proposed_slot.label}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Il tecnico non è disponibile negli orari proposti e ha suggerito questo nuovo orario.
+                </p>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase
+                          .from('jobs')
+                          .update({
+                            confirmed_slot: JSON.parse(JSON.stringify(job.proposed_slot)),
+                            proposed_slot: null,
+                            slot_status: 'confirmed',
+                            status: 'confirmed'
+                          } as any)
+                          .eq('id', job.id);
+
+                        if (error) throw error;
+
+                        toast({
+                          title: "Orario accettato",
+                          description: "L'appuntamento è stato confermato.",
+                        });
+                        fireMultipleConfetti();
+                        loadJobDetails();
+                      } catch (error) {
+                        toast({
+                          title: "Errore",
+                          description: "Impossibile accettare l'orario.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    className="flex-1"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Accetta
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase
+                          .from('jobs')
+                          .update({
+                            proposed_slot: null,
+                            slot_status: 'rejected'
+                          })
+                          .eq('id', job.id);
+
+                        if (error) throw error;
+
+                        toast({
+                          title: "Orario rifiutato",
+                          description: "Il tecnico verrà informato. Potrai proporre nuovi orari.",
+                        });
+                        loadJobDetails();
+                      } catch (error) {
+                        toast({
+                          title: "Errore",
+                          description: "Impossibile rifiutare l'orario.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    className="flex-1"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Rifiuta
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -1110,6 +1234,83 @@ const JobDetails = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Booking Slots Dialog */}
+        {job && job.technicians && job.diagnoses && (
+          <BookingSlotsDialog
+            open={bookingSlotsDialogOpen}
+            onOpenChange={setBookingSlotsDialogOpen}
+            onConfirm={async (data) => {
+              try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                const { data: userProfile } = await supabase
+                  .from('profiles')
+                  .select('full_name')
+                  .eq('id', user.id)
+                  .single();
+
+                // Aggiorna il job con gli slot e cambia lo stato
+                const { error } = await supabase
+                  .from('jobs')
+                  .update({
+                    status: 'requested',
+                    preferred_slots: data.preferred_slots as any,
+                    flexible: data.flexible,
+                    estimated_duration: data.estimated_duration,
+                    user_notes: data.user_notes,
+                    slot_status: 'pending'
+                  } as any)
+                  .eq('id', job.id);
+
+                if (error) throw error;
+
+                // Costruisci messaggio per notifica
+                let slotsMessage = '';
+                if (data.flexible) {
+                  slotsMessage = 'Ha indicato flessibilità sugli orari (prima disponibilità).';
+                } else {
+                  slotsMessage = `Orari proposti: ${data.preferred_slots.map(s => s.label).join(', ')}.`;
+                }
+
+                // Invia notifica al tecnico
+                await supabase
+                  .from('technician_notifications')
+                  .insert({
+                    technician_id: job.technician_id,
+                    job_id: job.id,
+                    type: 'booking_request',
+                    title: 'Nuova Richiesta di Intervento',
+                    message: `${userProfile?.full_name || 'Un cliente'} ha inviato una richiesta per "${job.diagnoses?.problem_type}". ${slotsMessage} Durata stimata: ${data.estimated_duration}h.${data.user_notes ? ` Note: ${data.user_notes}` : ''}`
+                  });
+
+                setBookingSlotsDialogOpen(false);
+                toast({
+                  title: "Richiesta inviata",
+                  description: "Il tecnico confermerà uno degli orari o proporrà un'alternativa.",
+                });
+
+                fireMultipleConfetti();
+                setShowConfirmation(true);
+                loadJobDetails();
+              } catch (error: any) {
+                console.error('Error sending request:', error);
+                toast({
+                  title: "Errore",
+                  description: "Impossibile inviare la richiesta. Riprova.",
+                  variant: "destructive",
+                });
+              }
+            }}
+            technicianName={job.technicians.full_name}
+            problemType={job.diagnoses.problem_type}
+            urgencyLevel={job.diagnoses.urgency_level}
+            estimatedCostMin={job.diagnoses.estimated_cost_min}
+            estimatedCostMax={job.diagnoses.estimated_cost_max}
+            estimatedTimeHours={job.diagnoses.estimated_time_hours}
+          />
+        )}
       </div>
     </MobileLayout>
   );
