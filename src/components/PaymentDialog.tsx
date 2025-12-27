@@ -8,7 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CreditCard } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+// Stripe publishable key - inizializza solo se presente
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 interface PaymentDialogProps {
   open: boolean;
@@ -163,7 +165,13 @@ export function PaymentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {!clientSecret ? (
+        {!stripePromise ? (
+          <Alert variant="destructive">
+            <AlertDescription>
+              Il sistema di pagamento non è configurato. Contatta l'assistenza.
+            </AlertDescription>
+          </Alert>
+        ) : !clientSecret ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
