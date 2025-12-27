@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import { MessageCircle, Send, X, Image as ImageIcon, Loader2, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { MessageCircle, Send, X, Image as ImageIcon, Loader2, FileText, Lock, Calendar, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,13 @@ import { Badge } from "@/components/ui/badge";
 import { QuoteInChatCard } from "./QuoteInChatCard";
 import { CreateQuoteDialog } from "./CreateQuoteDialog";
 import { ChatAIAssistant } from "./ChatAIAssistant";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { 
+  detectContactInfo, 
+  getContactWarningMessage,
+  TECHNICIAN_QUICK_REPLIES,
+  CLIENT_QUICK_REPLIES
+} from "@/utils/contactFilter";
 
 interface Message {
   id: string;
@@ -66,9 +74,17 @@ export function ChatDialog({
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
   const [jobData, setJobData] = useState<any>(null);
   const [diagnosisData, setDiagnosisData] = useState<any>(null);
+  const [jobStatus, setJobStatus] = useState<string>("");
+  const [contactWarning, setContactWarning] = useState<string | null>(null);
+  const [clientInfo, setClientInfo] = useState<{ phone?: string; address?: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Check if job is confirmed - only "confirmed" status unlocks full chat
+  const isJobConfirmed = jobStatus === "confirmed";
+  const quickReplies = isTechnician ? TECHNICIAN_QUICK_REPLIES : CLIENT_QUICK_REPLIES;
 
   useEffect(() => {
     if (open) {
@@ -89,16 +105,96 @@ export function ChatDialog({
   const loadJobData = async () => {
     const { data, error } = await supabase
       .from("jobs")
-      .select("id, user_id, diagnosis_id, diagnoses(problem_type, possible_cause, urgency_level, ai_analysis, estimated_cost_min, estimated_cost_max, estimated_time_hours)")
+      .select(`
+        id, 
+        user_id, 
+        status,
+        diagnosis_id, 
+        diagnoses(problem_type, possible_cause, urgency_level, ai_analysis, estimated_cost_min, estimated_cost_max, estimated_time_hours)
+      `)
       .eq("id", jobId)
       .single();
 
     if (!error && data) {
       setJobData(data);
+      setJobStatus(data.status || "");
       if (data.diagnoses) {
         setDiagnosisData(data.diagnoses);
       }
+      
+      // Load client info if job is confirmed and user is technician
+      if (data.status === "confirmed" && isTechnician) {
+        loadClientInfo(data.user_id);
+      }
     }
+  };
+
+  const loadClientInfo = async (clientUserId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("phone, address")
+      .eq("id", clientUserId)
+      .single();
+    
+    if (data) {
+      setClientInfo({ phone: data.phone || undefined, address: data.address || undefined });
+    }
+  };
+
+  // Subscribe to job status changes
+  useEffect(() => {
+    if (!open || !jobId) return;
+    
+    const channel = supabase
+      .channel(`job-status-${jobId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "jobs",
+          filter: `id=eq.${jobId}`,
+        },
+        async (payload) => {
+          const newStatus = (payload.new as any).status;
+          const oldStatus = jobStatus;
+          setJobStatus(newStatus);
+          
+          // If just confirmed, send unlock message and load client info
+          if (newStatus === "confirmed" && oldStatus !== "confirmed") {
+            await sendUnlockMessage();
+            if (isTechnician && (payload.new as any).user_id) {
+              loadClientInfo((payload.new as any).user_id);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [open, jobId, jobStatus, isTechnician]);
+
+  const sendUnlockMessage = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    // Check if unlock message already sent
+    const { data: existingMsg } = await supabase
+      .from("chat_messages")
+      .select("id")
+      .eq("job_id", jobId)
+      .ilike("message", "%Intervento confermato%")
+      .limit(1);
+    
+    if (existingMsg && existingMsg.length > 0) return;
+    
+    await supabase.from("chat_messages").insert({
+      job_id: jobId,
+      sender_id: user.id,
+      message: "✅ Intervento confermato. Ora puoi contattare direttamente il cliente.",
+    });
   };
 
   useEffect(() => {
@@ -307,6 +403,18 @@ export function ChatDialog({
 
     if ((!textToSend.trim() && selectedImages.length === 0) || isSending) return;
 
+    // Contact filtering for pre-confirmation chat
+    if (!isJobConfirmed && textToSend.trim()) {
+      const detection = detectContactInfo(textToSend);
+      if (detection.containsContact) {
+        setContactWarning(getContactWarningMessage());
+        // Clear warning after 5 seconds
+        setTimeout(() => setContactWarning(null), 5000);
+        return; // Block the message
+      }
+    }
+    
+    setContactWarning(null);
     setIsSending(true);
 
     // Upload tutte le immagini se presenti
@@ -371,6 +479,15 @@ export function ChatDialog({
     setIsSending(false);
     setNewMessage("");
     removeAllImages();
+  };
+
+  const handleQuickReply = (reply: string) => {
+    handleSend(undefined, reply);
+  };
+
+  const handleConfirmAndChooseTime = () => {
+    onOpenChange(false);
+    navigate(`/jobs/${jobId}`);
   };
 
 
@@ -508,6 +625,27 @@ export function ChatDialog({
           </div>
         </DialogHeader>
 
+        {/* Pre-confirmation banner */}
+        {!isJobConfirmed && (
+          <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800">
+            <div className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-200">
+              <Lock className="h-4 w-4 flex-shrink-0" />
+              <span>Contatti e indirizzo saranno disponibili dopo la conferma dell'orario.</span>
+            </div>
+          </div>
+        )}
+
+        {/* Client info display when confirmed (for technician) */}
+        {isJobConfirmed && isTechnician && clientInfo && (clientInfo.phone || clientInfo.address) && (
+          <div className="px-4 py-2 bg-green-50 dark:bg-green-950/30 border-b border-green-200 dark:border-green-800">
+            <div className="flex flex-col gap-1 text-sm text-green-800 dark:text-green-200">
+              <span className="font-medium">✅ Contatti sbloccati</span>
+              {clientInfo.phone && <span>📞 {clientInfo.phone}</span>}
+              {clientInfo.address && <span>📍 {clientInfo.address}</span>}
+            </div>
+          </div>
+        )}
+
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           <div className="space-y-4">
             {messages.length === 0 ? (
@@ -575,9 +713,41 @@ export function ChatDialog({
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t">
+        <div className="border-t">
+          {/* Contact warning alert */}
+          {contactWarning && (
+            <Alert variant="destructive" className="m-3 mb-0">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                {contactWarning}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Quick replies for pre-confirmation */}
+          {!isJobConfirmed && (
+            <div className="px-4 pt-3">
+              <p className="text-xs text-muted-foreground mb-2">Risposte rapide:</p>
+              <div className="flex gap-2 flex-wrap">
+                {quickReplies.slice(0, 4).map((reply, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => handleQuickReply(reply)}
+                    disabled={isSending}
+                  >
+                    {reply}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Image previews */}
           {imagePreviews.length > 0 && (
-            <div className="mb-3 flex gap-2 flex-wrap">
+            <div className="px-4 pt-3 flex gap-2 flex-wrap">
               {imagePreviews.map((preview, index) => (
                 <div key={index} className="relative inline-block">
                   <img
@@ -599,7 +769,8 @@ export function ChatDialog({
             </div>
           )}
           
-          <form onSubmit={handleSend} className="flex gap-2 items-center">
+          {/* Message input */}
+          <form onSubmit={handleSend} className="flex gap-2 items-center p-4 pt-3">
             <input
               ref={fileInputRef}
               type="file"
@@ -619,7 +790,7 @@ export function ChatDialog({
               <ImageIcon className="h-4 w-4" />
             </Button>
             <Input
-              placeholder="Scrivi un messaggio..."
+              placeholder={isJobConfirmed ? "Scrivi un messaggio..." : "Scrivi un messaggio (no contatti)..."}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               disabled={isSending}
@@ -637,6 +808,19 @@ export function ChatDialog({
               )}
             </Button>
           </form>
+
+          {/* Persistent CTA for pre-confirmation */}
+          {!isJobConfirmed && isTechnician && (
+            <div className="px-4 pb-4 pt-0">
+              <Button 
+                className="w-full" 
+                onClick={handleConfirmAndChooseTime}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Conferma e scegli orario
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
 
