@@ -1,23 +1,52 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
-  Calendar, 
-  Clock, 
+  Star, 
+  MapPin, 
   CheckCircle,
-  Send
+  Shield,
+  Euro
 } from "lucide-react";
 
-const DEMO_SLOTS = [
-  { date: "Oggi", time: "14:00 - 16:00", selected: false },
-  { date: "Oggi", time: "16:00 - 18:00", selected: true },
-  { date: "Domani", time: "09:00 - 11:00", selected: true },
-  { date: "Domani", time: "11:00 - 13:00", selected: false },
-  { date: "Domani", time: "14:00 - 16:00", selected: true },
-  { date: "Ven 28 Dic", time: "10:00 - 12:00", selected: false },
+const DEMO_TECHNICIANS = [
+  {
+    id: 1,
+    name: "Marco Rossi",
+    avatar: null,
+    rating: 4.9,
+    reviews: 127,
+    distance: "2.3 km",
+    specialties: ["Caldaie", "Idraulica"],
+    hourlyRate: 45,
+    verified: true,
+    selected: true,
+  },
+  {
+    id: 2,
+    name: "Luca Bianchi",
+    avatar: null,
+    rating: 4.7,
+    reviews: 89,
+    distance: "4.1 km",
+    specialties: ["Caldaie", "Climatizzazione"],
+    hourlyRate: 50,
+    verified: true,
+    selected: false,
+  },
+  {
+    id: 3,
+    name: "Giuseppe Verdi",
+    avatar: null,
+    rating: 4.5,
+    reviews: 56,
+    distance: "5.8 km",
+    specialties: ["Caldaie", "Gas"],
+    hourlyRate: 40,
+    verified: false,
+    selected: false,
+  },
 ];
 
 interface DemoPhaseProps {
@@ -27,100 +56,94 @@ interface DemoPhaseProps {
 export function DemoPhase3({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
-      {/* Calendar */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            Seleziona le fasce orarie
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Puoi selezionare più opzioni. Il tecnico confermerà la sua disponibilità.
-          </p>
-
-          {/* Time Slots */}
-          <div className="space-y-2">
-            {DEMO_SLOTS.map((slot, index) => (
-              <div
-                key={index}
-                className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                  slot.selected 
-                    ? "bg-primary/10 border-primary" 
-                    : "bg-muted/30 border-transparent"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Clock className={`h-4 w-4 ${slot.selected ? "text-primary" : "text-muted-foreground"}`} />
-                  <div>
-                    <p className="font-medium text-sm">{slot.date}</p>
-                    <p className="text-xs text-muted-foreground">{slot.time}</p>
-                  </div>
-                </div>
-                {slot.selected && (
-                  <CheckCircle className="h-5 w-5 text-primary" />
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Flexible Option */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="font-medium">Sono flessibile</Label>
-              <p className="text-xs text-muted-foreground">
-                Il tecnico può propormi altri orari
-              </p>
-            </div>
-            <Switch checked={true} disabled />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Notes */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Note aggiuntive (opzionale)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea 
-            placeholder="Es: Citofono 'Rossi', secondo piano..."
-            value="Citofono 'Bianchi', terzo piano. Il cane abbaia ma non morde."
-            disabled
-            className="resize-none"
-          />
-        </CardContent>
-      </Card>
-
-      {/* Summary */}
+      {/* Filter Info */}
       <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
-        <CardContent className="py-4">
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Tecnico:</span>
-              <span className="font-medium">Marco Rossi</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Fasce selezionate:</span>
-              <span className="font-medium">3 opzioni</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Flessibilità:</span>
-              <Badge variant="secondary" className="text-xs">Sì</Badge>
-            </div>
+        <CardContent className="py-3">
+          <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
+            <MapPin className="h-4 w-4" />
+            <span>3 tecnici trovati nel raggio di 10 km</span>
           </div>
         </CardContent>
       </Card>
+
+      {/* Technicians List */}
+      {DEMO_TECHNICIANS.map((tech) => (
+        <Card 
+          key={tech.id} 
+          className={`transition-all ${
+            tech.selected 
+              ? "border-2 border-primary ring-2 ring-primary/20" 
+              : ""
+          }`}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-start gap-4">
+              {/* Avatar */}
+              <Avatar className="h-14 w-14">
+                <AvatarImage src={tech.avatar || undefined} />
+                <AvatarFallback className="text-lg bg-primary/10">
+                  {tech.name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+
+              {/* Info */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold">{tech.name}</span>
+                  {tech.verified && (
+                    <Shield className="h-4 w-4 text-green-500" />
+                  )}
+                </div>
+
+                {/* Rating */}
+                <div className="flex items-center gap-2 text-sm mb-2">
+                  <div className="flex items-center">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-medium ml-1">{tech.rating}</span>
+                  </div>
+                  <span className="text-muted-foreground">
+                    ({tech.reviews} recensioni)
+                  </span>
+                </div>
+
+                {/* Specialties */}
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {tech.specialties.map((spec) => (
+                    <Badge key={spec} variant="secondary" className="text-xs">
+                      {spec}
+                    </Badge>
+                  ))}
+                </div>
+
+                {/* Details */}
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {tech.distance}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Euro className="h-3 w-3" />
+                    €{tech.hourlyRate}/ora
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Selection indicator */}
+            {tech.selected && (
+              <div className="mt-3 flex items-center justify-center gap-2 p-2 bg-primary/10 rounded-lg">
+                <CheckCircle className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-primary">Selezionato</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
 
       {/* CTA */}
       <Button className="w-full" size="lg" onClick={onNext}>
-        <Send className="h-4 w-4 mr-2" />
-        Invia richiesta
+        <CheckCircle className="h-4 w-4 mr-2" />
+        Continua
       </Button>
     </div>
   );

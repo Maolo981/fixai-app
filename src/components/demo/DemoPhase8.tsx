@@ -2,13 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
-  Car, 
-  Wrench, 
+  CheckCircle, 
   Clock, 
-  MapPin,
-  Navigation,
-  Phone,
-  CheckCircle
+  Euro,
+  Wrench,
+  Camera
 } from "lucide-react";
 
 interface DemoPhaseProps {
@@ -18,120 +16,112 @@ interface DemoPhaseProps {
 export function DemoPhase8({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
-      {/* Status Timeline */}
+      {/* Completion Banner */}
+      <Card className="bg-green-50 dark:bg-green-950/20 border-green-300 border-2">
+        <CardContent className="py-4">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-full bg-green-500 flex items-center justify-center">
+              <CheckCircle className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <p className="font-bold text-green-800 dark:text-green-200 text-lg">
+                Intervento Completato!
+              </p>
+              <p className="text-sm text-green-600 dark:text-green-300">
+                Tutto risolto con successo
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Work Summary */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Stato Intervento</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-primary" />
+              Riepilogo lavoro svolto
+            </CardTitle>
+            <Badge className="bg-green-500">Completato</Badge>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="relative">
-            {/* Timeline */}
-            <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-muted" />
-            
-            <div className="space-y-6">
-              {/* Confirmed */}
-              <div className="flex items-center gap-4 relative">
-                <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center z-10">
-                  <CheckCircle className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <p className="font-medium text-green-600">Confermato</p>
-                  <p className="text-xs text-muted-foreground">14:30</p>
-                </div>
-              </div>
-
-              {/* En Route */}
-              <div className="flex items-center gap-4 relative">
-                <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center z-10 animate-pulse">
-                  <Car className="h-4 w-4 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-orange-600">In viaggio</p>
-                  <p className="text-xs text-muted-foreground">14:45 - Partito ora</p>
-                </div>
-                <Badge className="bg-orange-500">Attivo</Badge>
-              </div>
-
-              {/* In Progress */}
-              <div className="flex items-center gap-4 relative opacity-50">
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center z-10">
-                  <Wrench className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium">In corso</p>
-                  <p className="text-xs text-muted-foreground">In attesa</p>
-                </div>
-              </div>
-
-              {/* Completed */}
-              <div className="flex items-center gap-4 relative opacity-50">
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center z-10">
-                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium">Completato</p>
-                  <p className="text-xs text-muted-foreground">In attesa</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tracking Card */}
-      <Card className="bg-orange-50 dark:bg-orange-950/20 border-orange-300 border-2">
-        <CardContent className="py-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-12 w-12 rounded-full bg-orange-500 flex items-center justify-center animate-pulse">
-              <Car className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-orange-800 dark:text-orange-200">
-                Marco è in viaggio
-              </p>
-              <p className="text-sm text-orange-600">
-                Tempo stimato: 12 minuti
-              </p>
-            </div>
+        <CardContent className="space-y-4">
+          {/* Problem */}
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Problema:</span>
+            <span className="font-medium">Guasto caldaia - E01</span>
           </div>
 
-          {/* Map Placeholder */}
-          <div className="bg-background rounded-lg h-32 flex items-center justify-center border mb-4">
-            <div className="text-center text-muted-foreground">
-              <Navigation className="h-8 w-8 mx-auto mb-2 text-orange-500" />
-              <p className="text-sm">Mappa tracking in tempo reale</p>
-            </div>
+          {/* Solution */}
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Lavoro eseguito:</p>
+            <p className="text-sm bg-muted/50 rounded-lg p-3">
+              Sostituita valvola di sicurezza e pulito elettrodo di accensione. 
+              Verificato funzionamento completo. La caldaia ora funziona regolarmente.
+            </p>
           </div>
 
-          {/* Distance */}
+          {/* Duration */}
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-orange-600" />
-              <span>Distanza:</span>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Durata effettiva:</span>
             </div>
-            <span className="font-medium">2.3 km</span>
+            <span className="font-medium">1h 45min</span>
+          </div>
+
+          {/* Photos */}
+          <div>
+            <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+              <Camera className="h-4 w-4" />
+              Foto lavoro completato (demo):
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
+                <Camera className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
+                <Camera className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Technician Actions (Demo) */}
+      {/* Cost Breakdown */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            🔧 Vista Tecnico
+            <Euro className="h-5 w-5 text-primary" />
+            Dettaglio costi
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button className="w-full bg-orange-500 hover:bg-orange-600" disabled>
-            <Car className="h-4 w-4 mr-2" />
-            ✓ Sono in viaggio (cliccato)
-          </Button>
-          <Button className="w-full" onClick={onNext}>
-            <Wrench className="h-4 w-4 mr-2" />
-            Inizio intervento
-          </Button>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Manodopera (1.75h × €45/h):</span>
+            <span>€78,75</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Ricambi:</span>
+            <span>€35,00</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Uscita:</span>
+            <span>€15,00</span>
+          </div>
+          <div className="border-t pt-3 flex justify-between">
+            <span className="font-medium">Totale:</span>
+            <span className="font-bold text-lg">€128,75</span>
+          </div>
         </CardContent>
       </Card>
+
+      {/* CTA */}
+      <Button className="w-full" size="lg" onClick={onNext}>
+        <CheckCircle className="h-4 w-4 mr-2" />
+        Conferma completamento
+      </Button>
     </div>
   );
 }

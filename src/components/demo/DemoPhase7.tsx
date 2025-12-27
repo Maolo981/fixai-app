@@ -1,16 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
-  CheckCircle, 
-  Calendar, 
+  Car, 
+  Wrench, 
   Clock, 
   MapPin,
-  Phone,
-  MessageCircle,
-  Star,
-  Unlock
+  Navigation,
+  CheckCircle
 } from "lucide-react";
 
 interface DemoPhaseProps {
@@ -20,119 +17,107 @@ interface DemoPhaseProps {
 export function DemoPhase7({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
-      {/* Success Banner */}
-      <Card className="bg-green-50 dark:bg-green-950/20 border-green-300 border-2">
+      {/* Status Timeline */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Timeline stato intervento</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative">
+            {/* Timeline */}
+            <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-muted" />
+            
+            <div className="space-y-6">
+              {/* Confirmed */}
+              <div className="flex items-center gap-4 relative">
+                <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center z-10">
+                  <CheckCircle className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium text-green-600">Confermato</p>
+                  <p className="text-xs text-muted-foreground">14:30</p>
+                </div>
+              </div>
+
+              {/* En Route */}
+              <div className="flex items-center gap-4 relative">
+                <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center z-10 animate-pulse">
+                  <Car className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-orange-600">In viaggio</p>
+                  <p className="text-xs text-muted-foreground">14:45 - Partito ora</p>
+                </div>
+                <Badge className="bg-orange-500">Attivo</Badge>
+              </div>
+
+              {/* In Progress */}
+              <div className="flex items-center gap-4 relative opacity-50">
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center z-10">
+                  <Wrench className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium">In corso</p>
+                  <p className="text-xs text-muted-foreground">In attesa</p>
+                </div>
+              </div>
+
+              {/* Completed */}
+              <div className="flex items-center gap-4 relative opacity-50">
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center z-10">
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium">Completato</p>
+                  <p className="text-xs text-muted-foreground">In attesa</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tracking Card */}
+      <Card className="bg-orange-50 dark:bg-orange-950/20 border-orange-300 border-2">
         <CardContent className="py-4">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-green-500 flex items-center justify-center">
-              <CheckCircle className="h-6 w-6 text-white" />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-12 w-12 rounded-full bg-orange-500 flex items-center justify-center animate-pulse">
+              <Car className="h-6 w-6 text-white" />
             </div>
-            <div>
-              <p className="font-bold text-green-800 dark:text-green-200 text-lg">
-                Appuntamento Confermato!
-              </p>
-              <p className="text-sm text-green-600 dark:text-green-300">
-                Il tecnico ha accettato la tua richiesta
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Unlock Notice */}
-      <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
-        <CardContent className="py-3">
-          <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
-            <Unlock className="h-4 w-4" />
-            <p className="text-sm font-medium">
-              Contatti sbloccati! Ora puoi vedere telefono e indirizzo.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Appointment Details */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Dettagli Appuntamento</CardTitle>
-            <Badge className="bg-green-500">Confermato</Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Date & Time */}
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-            <Calendar className="h-5 w-5 text-primary" />
-            <div>
-              <p className="font-medium">Oggi, 27 Dicembre 2024</p>
-              <p className="text-sm text-muted-foreground">15:00 - 17:00</p>
-            </div>
-          </div>
-
-          {/* Duration */}
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Durata stimata:</span>
-            <span className="font-medium">2 ore</span>
-          </div>
-
-          {/* Problem */}
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Problema:</span>
-            <span className="font-medium">Guasto caldaia</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Technician Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Tecnico Assegnato</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-14 w-14">
-              <AvatarFallback className="text-lg bg-primary/10">M</AvatarFallback>
-            </Avatar>
             <div className="flex-1">
-              <p className="font-semibold">Marco Rossi</p>
-              <div className="flex items-center gap-2 text-sm">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                <span>4.9 (127 recensioni)</span>
-              </div>
+              <p className="font-bold text-orange-800 dark:text-orange-200">
+                Marco è in viaggio
+              </p>
+              <p className="text-sm text-orange-600">
+                Tempo stimato: 12 minuti
+              </p>
             </div>
           </div>
 
-          {/* Contact Info - NOW VISIBLE */}
-          <div className="border-t pt-4 space-y-3">
-            <div className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
-              <Phone className="h-4 w-4 text-green-600" />
-              <span className="font-medium text-green-800 dark:text-green-200">
-                +39 333 1234567
-              </span>
-              <Button size="sm" variant="outline" className="ml-auto" disabled>
-                Chiama
-              </Button>
+          {/* Map Placeholder */}
+          <div className="bg-background rounded-lg h-32 flex items-center justify-center border mb-4">
+            <div className="text-center text-muted-foreground">
+              <Navigation className="h-8 w-8 mx-auto mb-2 text-orange-500" />
+              <p className="text-sm">Mappa demo con distanza e tempo stimato</p>
             </div>
-            <div className="flex items-start gap-3 p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
-              <MapPin className="h-4 w-4 text-green-600 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-xs text-green-600 dark:text-green-300">Il tecnico verrà a:</p>
-                <p className="font-medium text-green-800 dark:text-green-200">
-                  Via Roma 42, 20100 Milano
-                </p>
-              </div>
+          </div>
+
+          {/* Distance */}
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-orange-600" />
+              <span>Distanza:</span>
             </div>
+            <span className="font-medium">2.3 km</span>
           </div>
         </CardContent>
       </Card>
 
-      {/* Actions */}
-      <div className="space-y-2">
-        <Button className="w-full" onClick={onNext}>
-          <MessageCircle className="h-4 w-4 mr-2" />
-          Procedi all'intervento
-        </Button>
-      </div>
+      {/* CTA */}
+      <Button className="w-full" size="lg" onClick={onNext}>
+        <Wrench className="h-4 w-4 mr-2" />
+        Simula intervento completato
+      </Button>
     </div>
   );
 }
