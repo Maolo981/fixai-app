@@ -271,8 +271,13 @@ const JobDetails = () => {
     switch (status.toLowerCase()) {
       case 'technician_selected':
         return { label: 'Tecnico Selezionato', icon: User, color: 'text-blue-500' };
+      case 'pending_technician_confirmation':
       case 'requested':
-        return { label: 'Richiesto', icon: Clock, color: 'text-blue-500' };
+        return { label: 'In attesa di conferma', icon: Clock, color: 'text-blue-500' };
+      case 'reschedule_proposed':
+        return { label: 'Nuovo orario proposto', icon: Calendar, color: 'text-orange-500' };
+      case 'rejected':
+        return { label: 'Richiesta rifiutata', icon: XCircle, color: 'text-red-500' };
       case 'pending':
         return { label: 'In Attesa', icon: Clock, color: 'text-yellow-600' };
       case 'confirmed':
@@ -484,27 +489,137 @@ const JobDetails = () => {
         </header>
 
         <div className="container mx-auto px-4 py-6 space-y-6 max-w-3xl">
-          {/* Confirmation Banner */}
-          {showConfirmation && job.status === 'requested' && (
-            <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <Clock className="h-8 w-8 text-blue-600" />
-                  <div>
-                    <h3 className="font-semibold text-blue-900 dark:text-blue-100">
-                      Richiesta Inviata!
-                    </h3>
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      Il tecnico ha ricevuto la tua richiesta e ti contatterà presto in chat.
-                    </p>
+          {/* Schermata Richiesta Inviata - pending_technician_confirmation or requested */}
+          {(job.status === 'requested' || job.status === 'pending_technician_confirmation') && (job.preferred_slots?.length || job.flexible) && (
+            <Card className="border-2 border-blue-300 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                  <Clock className="h-6 w-6" />
+                  Richiesta inviata
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  Il tecnico sta valutando la disponibilità per gli orari che hai indicato. Ti avviseremo non appena risponde.
+                </p>
+
+                {/* Riepilogo */}
+                <div className="bg-background rounded-lg p-4 space-y-3 border">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Problema:</span>
+                    <span className="font-medium">{job.diagnoses?.problem_type}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Tecnico:</span>
+                    <span className="font-medium">{job.technicians?.full_name}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Fasce orarie:</span>
+                    <span className="font-medium text-right">
+                      {job.flexible ? 'Prima disponibilità' : `${job.preferred_slots?.length} proposte`}
+                    </span>
+                  </div>
+                  {job.estimated_duration && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Durata stimata:</span>
+                      <span className="font-medium">{job.estimated_duration}h</span>
+                    </div>
+                  )}
+                  {job.diagnoses?.estimated_cost_min && job.diagnoses?.estimated_cost_max && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Costo stimato:</span>
+                      <span className="font-medium">€{job.diagnoses.estimated_cost_min} - €{job.diagnoses.estimated_cost_max}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Stato */}
+                <div className="p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
+                  <p className="text-sm text-amber-800 dark:text-amber-200 font-medium flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    In attesa di conferma dal tecnico
+                  </p>
+                </div>
+
+                {/* Azioni */}
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setBookingSlotsDialogOpen(true)}
+                    className="flex-1"
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Modifica orari
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setCancelDialogOpen(true)}
+                    className="flex-1 text-destructive hover:text-destructive"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Annulla richiesta
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Intervento Confermato Banner */}
+          {job.status === 'confirmed' && job.confirmed_slot && (
+            <Card className="border-2 border-green-300 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-900 dark:text-green-100">
+                  <CheckCircle className="h-6 w-6" />
+                  Intervento confermato
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-green-800 dark:text-green-200">
+                  Il tecnico ha confermato l'appuntamento per l'intervento.
+                </p>
+                <div className="p-4 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-6 w-6 text-green-700 dark:text-green-300" />
+                    <div>
+                      <p className="font-semibold text-green-900 dark:text-green-100 capitalize">
+                        {job.confirmed_slot.label}
+                      </p>
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        Data e ora definitiva
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Confirmed Banner */}
-          {job.status === 'confirmed' && (
+          {/* Richiesta Rifiutata */}
+          {job.status === 'rejected' && (
+            <Card className="border-2 border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-red-900 dark:text-red-100">
+                  <XCircle className="h-6 w-6" />
+                  Richiesta rifiutata
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-red-800 dark:text-red-200">
+                  Il tecnico non è disponibile per questo intervento. Puoi selezionare un altro professionista.
+                </p>
+                <Button
+                  onClick={() => navigate(`/results/${job.diagnosis_id}`)}
+                  className="w-full"
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Seleziona altro tecnico
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Confirmed Banner (fallback senza confirmed_slot) */}
+          {job.status === 'confirmed' && !job.confirmed_slot && (
             <Card className="bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
