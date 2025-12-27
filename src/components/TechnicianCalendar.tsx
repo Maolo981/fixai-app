@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { format, startOfWeek, addDays, isSameDay, parseISO, addWeeks, subWeeks, startOfDay, endOfDay } from "date-fns";
+import { format, startOfWeek, addDays, isSameDay, parseISO, addWeeks, subWeeks, startOfDay } from "date-fns";
 import { it } from "date-fns/locale";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, User, Wrench, Plus, X, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, User, Wrench, X, MapPin, AlertCircle, CheckCircle, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,25 +28,42 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface Schedule {
-  id: string;
-  technician_id: string;
-  job_id: string | null;
+interface TimeSlot {
+  date: string;
   start_time: string;
   end_time: string;
-  status: string;
-  created_at: string;
+  label: string;
 }
 
-interface JobDetails {
+interface CalendarSlot {
   id: string;
-  diagnoses: {
-    problem_type: string;
-  } | null;
-  profiles: {
-    full_name: string;
-    address: string | null;
-  } | null;
+  type: 'job' | 'blocked';
+  status: 'proposed' | 'confirmed' | 'busy' | 'blocked';
+  start_time: string;
+  end_time: string;
+  job_id?: string;
+  job?: {
+    id: string;
+    status: string;
+    user_id: string;
+    problem_type?: string;
+    client_name?: string;
+    address?: string;
+    urgency_level?: string;
+    estimated_duration?: number;
+  };
+}
+
+interface PendingRequest {
+  id: string;
+  user_id: string;
+  status: string;
+  problem_type: string;
+  client_name: string;
+  urgency_level?: string;
+  estimated_duration?: number;
+  preferred_slots?: TimeSlot[];
+  flexible?: boolean;
 }
 
 interface TechnicianCalendarProps {
@@ -55,76 +73,213 @@ interface TechnicianCalendarProps {
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8:00 - 19:00
 
 export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
+  const navigate = useNavigate();
   const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [jobDetails, setJobDetails] = useState<Record<string, JobDetails>>({});
+  const [calendarSlots, setCalendarSlots] = useState<CalendarSlot[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date; hour: number } | null>(null);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [freeSlotDialogOpen, setFreeSlotDialogOpen] = useState(false);
   const [blockDuration, setBlockDuration] = useState("1");
   const [blockReason, setBlockReason] = useState("");
-  const [selectedEvent, setSelectedEvent] = useState<Schedule | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarSlot | null>(null);
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
 
   useEffect(() => {
-    loadSchedules();
+    loadCalendarData();
+    loadPendingRequests();
   }, [technicianId, currentWeekStart]);
 
-  const loadSchedules = async () => {
+  const loadCalendarData = async () => {
     setLoading(true);
     const weekEnd = addDays(currentWeekStart, 7);
+    const slots: CalendarSlot[] = [];
 
-    const { data, error } = await supabase
+    // 1. Load blocked time from technician_schedules
+    const { data: blockedData } = await supabase
       .from("technician_schedules")
       .select("*")
       .eq("technician_id", technicianId)
       .gte("start_time", currentWeekStart.toISOString())
-      .lt("start_time", weekEnd.toISOString())
-      .order("start_time");
+      .lt("start_time", weekEnd.toISOString());
 
-    if (error) {
-      console.error("Error loading schedules:", error);
-    } else {
-      setSchedules(data || []);
-      
-      // Load job details for each schedule with a job_id
-      const jobIds = (data || []).filter(s => s.job_id).map(s => s.job_id!);
-      if (jobIds.length > 0) {
-        const uniqueJobIds = [...new Set(jobIds)];
-        const details: Record<string, JobDetails> = {};
-        
-        for (const jobId of uniqueJobIds) {
-          const { data: jobData } = await supabase
-            .from("jobs")
-            .select("id, diagnoses(problem_type)")
-            .eq("id", jobId)
-            .single();
-          
-          if (jobData) {
-            const { data: profileData } = await supabase
-              .from("profiles")
-              .select("full_name, address")
-              .eq("id", (await supabase.from("jobs").select("user_id").eq("id", jobId).single()).data?.user_id)
-              .single();
-            
-            details[jobId] = {
-              ...jobData,
-              profiles: profileData,
-            } as JobDetails;
+    (blockedData || []).forEach(block => {
+      if (block.status === 'blocked') {
+        slots.push({
+          id: block.id,
+          type: 'blocked',
+          status: 'blocked',
+          start_time: block.start_time,
+          end_time: block.end_time,
+        });
+      }
+    });
+
+    // 2. Load jobs with proposed_slot (reschedule_proposed status)
+    const { data: proposedJobs } = await supabase
+      .from("jobs")
+      .select(`
+        id, status, user_id, proposed_slot, estimated_duration,
+        diagnoses (problem_type, urgency_level)
+      `)
+      .eq("technician_id", technicianId)
+      .eq("status", "reschedule_proposed");
+
+    for (const job of proposedJobs || []) {
+      if (job.proposed_slot) {
+        const proposedSlot = job.proposed_slot as unknown as TimeSlot;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, address")
+          .eq("id", job.user_id)
+          .single();
+
+        slots.push({
+          id: `proposed-${job.id}`,
+          type: 'job',
+          status: 'proposed',
+          start_time: `${proposedSlot.date}T${proposedSlot.start_time}:00`,
+          end_time: `${proposedSlot.date}T${proposedSlot.end_time}:00`,
+          job_id: job.id,
+          job: {
+            id: job.id,
+            status: job.status,
+            user_id: job.user_id,
+            problem_type: job.diagnoses?.problem_type,
+            client_name: profile?.full_name || 'Cliente',
+            address: profile?.address,
+            urgency_level: job.diagnoses?.urgency_level,
+            estimated_duration: job.estimated_duration,
           }
-        }
-        setJobDetails(details);
+        });
       }
     }
+
+    // 3. Load jobs with confirmed_slot (confirmed status)
+    const { data: confirmedJobs } = await supabase
+      .from("jobs")
+      .select(`
+        id, status, user_id, confirmed_slot, scheduled_date, estimated_duration,
+        diagnoses (problem_type, urgency_level)
+      `)
+      .eq("technician_id", technicianId)
+      .eq("status", "confirmed");
+
+    for (const job of confirmedJobs || []) {
+      if (job.confirmed_slot) {
+        const confirmedSlot = job.confirmed_slot as unknown as TimeSlot;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, address")
+          .eq("id", job.user_id)
+          .single();
+
+        slots.push({
+          id: `confirmed-${job.id}`,
+          type: 'job',
+          status: 'confirmed',
+          start_time: `${confirmedSlot.date}T${confirmedSlot.start_time}:00`,
+          end_time: `${confirmedSlot.date}T${confirmedSlot.end_time}:00`,
+          job_id: job.id,
+          job: {
+            id: job.id,
+            status: job.status,
+            user_id: job.user_id,
+            problem_type: job.diagnoses?.problem_type,
+            client_name: profile?.full_name || 'Cliente',
+            address: profile?.address,
+            urgency_level: job.diagnoses?.urgency_level,
+            estimated_duration: job.estimated_duration,
+          }
+        });
+      }
+    }
+
+    // 4. Load in-progress jobs (busy)
+    const { data: busyJobs } = await supabase
+      .from("jobs")
+      .select(`
+        id, status, user_id, confirmed_slot, scheduled_date, estimated_duration,
+        diagnoses (problem_type, urgency_level)
+      `)
+      .eq("technician_id", technicianId)
+      .eq("status", "in_progress");
+
+    for (const job of busyJobs || []) {
+      if (job.confirmed_slot) {
+        const confirmedSlot = job.confirmed_slot as unknown as TimeSlot;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, address")
+          .eq("id", job.user_id)
+          .single();
+
+        slots.push({
+          id: `busy-${job.id}`,
+          type: 'job',
+          status: 'busy',
+          start_time: `${confirmedSlot.date}T${confirmedSlot.start_time}:00`,
+          end_time: `${confirmedSlot.date}T${confirmedSlot.end_time}:00`,
+          job_id: job.id,
+          job: {
+            id: job.id,
+            status: job.status,
+            user_id: job.user_id,
+            problem_type: job.diagnoses?.problem_type,
+            client_name: profile?.full_name || 'Cliente',
+            address: profile?.address,
+            urgency_level: job.diagnoses?.urgency_level,
+            estimated_duration: job.estimated_duration,
+          }
+        });
+      }
+    }
+
+    setCalendarSlots(slots);
     setLoading(false);
   };
 
-  const getSchedulesForSlot = (date: Date, hour: number) => {
-    return schedules.filter(schedule => {
-      const start = parseISO(schedule.start_time);
-      const end = parseISO(schedule.end_time);
+  const loadPendingRequests = async () => {
+    const { data } = await supabase
+      .from("jobs")
+      .select(`
+        id, status, user_id, preferred_slots, flexible, estimated_duration,
+        diagnoses (problem_type, urgency_level)
+      `)
+      .eq("technician_id", technicianId)
+      .in("status", ["requested", "pending_technician_confirmation"]);
+
+    const requests: PendingRequest[] = [];
+    for (const job of data || []) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", job.user_id)
+        .single();
+
+      requests.push({
+        id: job.id,
+        user_id: job.user_id,
+        status: job.status,
+        problem_type: job.diagnoses?.problem_type || 'Intervento',
+        client_name: profile?.full_name || 'Cliente',
+        urgency_level: job.diagnoses?.urgency_level,
+        estimated_duration: job.estimated_duration,
+        preferred_slots: job.preferred_slots as unknown as TimeSlot[] | undefined,
+        flexible: job.flexible,
+      });
+    }
+    setPendingRequests(requests);
+  };
+
+  const getSlotsForHour = (date: Date, hour: number) => {
+    return calendarSlots.filter(slot => {
+      const start = parseISO(slot.start_time);
+      const end = parseISO(slot.end_time);
       const slotStart = new Date(date);
       slotStart.setHours(hour, 0, 0, 0);
       const slotEnd = new Date(date);
@@ -135,12 +290,16 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
   };
 
   const handleSlotClick = (date: Date, hour: number) => {
-    const existingSchedules = getSchedulesForSlot(date, hour);
-    if (existingSchedules.length > 0) {
-      setSelectedEvent(existingSchedules[0]);
+    const existingSlots = getSlotsForHour(date, hour);
+    if (existingSlots.length > 0) {
+      setSelectedEvent(existingSlots[0]);
     } else {
       setSelectedSlot({ date, hour });
-      setBlockDialogOpen(true);
+      if (pendingRequests.length > 0) {
+        setFreeSlotDialogOpen(true);
+      } else {
+        setBlockDialogOpen(true);
+      }
     }
   };
 
@@ -173,7 +332,7 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
         title: "Slot bloccato",
         description: `Hai bloccato ${blockDuration} ora/e`,
       });
-      loadSchedules();
+      loadCalendarData();
     }
 
     setBlockDialogOpen(false);
@@ -182,11 +341,11 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
     setBlockReason("");
   };
 
-  const handleDeleteBlock = async (scheduleId: string) => {
+  const handleDeleteBlock = async (slotId: string) => {
     const { error } = await supabase
       .from("technician_schedules")
       .delete()
-      .eq("id", scheduleId);
+      .eq("id", slotId);
 
     if (error) {
       toast({
@@ -199,26 +358,105 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
         title: "Blocco eliminato",
         description: "Lo slot è di nuovo disponibile",
       });
-      loadSchedules();
+      loadCalendarData();
     }
     setSelectedEvent(null);
   };
 
-  const getSlotColor = (schedule: Schedule) => {
-    if (schedule.status === "blocked") return "bg-gray-500/20 border-gray-500/50 text-gray-700 dark:text-gray-300";
-    if (schedule.status === "completed") return "bg-green-500/20 border-green-500/50 text-green-700 dark:text-green-300";
-    if (schedule.status === "cancelled") return "bg-red-500/20 border-red-500/50 text-red-700 dark:text-red-300";
-    return "bg-primary/20 border-primary/50 text-primary";
+  const handleUseSlotForRequest = async () => {
+    if (!selectedSlot || !selectedRequestId) return;
+
+    const request = pendingRequests.find(r => r.id === selectedRequestId);
+    if (!request) return;
+
+    const duration = request.estimated_duration || 2;
+    const slotDate = format(selectedSlot.date, "yyyy-MM-dd");
+    const startHour = String(selectedSlot.hour).padStart(2, '0');
+    const endHour = String(selectedSlot.hour + duration).padStart(2, '0');
+
+    const confirmedSlot: TimeSlot = {
+      date: slotDate,
+      start_time: `${startHour}:00`,
+      end_time: `${endHour}:00`,
+      label: `${format(selectedSlot.date, "EEEE d MMMM", { locale: it })} ${startHour}:00 - ${endHour}:00`,
+    };
+
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .update({
+          status: 'confirmed',
+          slot_status: 'confirmed',
+          confirmed_slot: JSON.parse(JSON.stringify(confirmedSlot)),
+          scheduled_date: `${slotDate}T${startHour}:00:00`
+        } as any)
+        .eq('id', selectedRequestId);
+
+      if (error) throw error;
+
+      await supabase
+        .from('notification_logs')
+        .insert({
+          user_id: request.user_id,
+          notification_type: 'slot_confirmed',
+          reference_id: selectedRequestId
+        });
+
+      toast({
+        title: "Orario confermato",
+        description: `Intervento programmato: ${confirmedSlot.label}`,
+      });
+
+      setFreeSlotDialogOpen(false);
+      setSelectedSlot(null);
+      setSelectedRequestId(null);
+      loadCalendarData();
+      loadPendingRequests();
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: "Impossibile confermare l'orario",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getSlotStyle = (slot: CalendarSlot) => {
+    switch (slot.status) {
+      case 'proposed':
+        return "bg-amber-500/20 border-amber-500/50 text-amber-700 dark:text-amber-300";
+      case 'confirmed':
+        return "bg-primary/20 border-primary/50 text-primary";
+      case 'busy':
+        return "bg-blue-500/20 border-blue-500/50 text-blue-700 dark:text-blue-300";
+      case 'blocked':
+        return "bg-muted/50 border-muted-foreground/30 text-muted-foreground";
+      default:
+        return "bg-muted/30 border-border";
+    }
   };
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      booked: "Prenotato",
+      proposed: "Proposto",
+      confirmed: "Confermato",
+      busy: "Occupato",
       blocked: "Bloccato",
-      completed: "Completato",
-      cancelled: "Annullato",
     };
     return labels[status] || status;
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'proposed':
+        return <Clock className="h-3 w-3" />;
+      case 'confirmed':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'busy':
+        return <Wrench className="h-3 w-3" />;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -277,7 +515,7 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
                   {hour}:00
                 </div>
                 {weekDays.map((day, dayIndex) => {
-                  const daySchedules = getSchedulesForSlot(day, hour);
+                  const daySlots = getSlotsForHour(day, hour);
                   const isPast = new Date(day.setHours(hour)) < new Date();
                   
                   return (
@@ -289,26 +527,28 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
                       onClick={() => !isPast && handleSlotClick(new Date(day), hour)}
                     >
                       <AnimatePresence>
-                        {daySchedules.map((schedule) => (
+                        {daySlots.map((slot) => (
                           <motion.div
-                            key={schedule.id}
+                            key={slot.id}
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            className={`absolute inset-1 rounded-md border p-1 text-xs overflow-hidden ${getSlotColor(schedule)}`}
+                            className={`absolute inset-1 rounded-md border p-1 text-xs overflow-hidden flex flex-col ${getSlotStyle(slot)}`}
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedEvent(schedule);
+                              setSelectedEvent(slot);
                             }}
                           >
-                            {schedule.job_id && jobDetails[schedule.job_id] ? (
-                              <div className="truncate font-medium">
-                                {jobDetails[schedule.job_id].diagnoses?.problem_type || "Lavoro"}
-                              </div>
-                            ) : (
-                              <div className="truncate font-medium">
-                                {schedule.status === "blocked" ? "🚫 Bloccato" : "Appuntamento"}
-                              </div>
+                            <div className="flex items-center gap-1">
+                              {getStatusIcon(slot.status)}
+                              <span className="truncate font-medium">
+                                {slot.job?.problem_type || (slot.status === 'blocked' ? 'Bloccato' : 'Evento')}
+                              </span>
+                            </div>
+                            {slot.job?.client_name && (
+                              <span className="truncate text-[10px] opacity-75">
+                                {slot.job.client_name}
+                              </span>
                             )}
                           </motion.div>
                         ))}
@@ -324,19 +564,90 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
         {/* Legend */}
         <div className="p-3 border-t flex flex-wrap gap-3 text-xs">
           <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded bg-amber-500/20 border border-amber-500/50" />
+            <span>Proposto</span>
+          </div>
+          <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded bg-primary/20 border border-primary/50" />
-            <span>Prenotato</span>
+            <span>Confermato</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-gray-500/20 border border-gray-500/50" />
+            <div className="w-3 h-3 rounded bg-blue-500/20 border border-blue-500/50" />
+            <span>Occupato</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded bg-muted/50 border border-muted-foreground/30" />
             <span>Bloccato</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-green-500/20 border border-green-500/50" />
-            <span>Completato</span>
           </div>
         </div>
       </CardContent>
+
+      {/* Free Slot Dialog - Use for pending request */}
+      <Dialog open={freeSlotDialogOpen} onOpenChange={setFreeSlotDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Usa questo orario</DialogTitle>
+            <DialogDescription>
+              {selectedSlot && (
+                <>
+                  {format(selectedSlot.date, "EEEE d MMMM", { locale: it })} alle {selectedSlot.hour}:00
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {pendingRequests.length > 0 ? (
+              <>
+                <Label>Seleziona una richiesta da confermare:</Label>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {pendingRequests.map(request => (
+                    <button
+                      key={request.id}
+                      onClick={() => setSelectedRequestId(request.id)}
+                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                        selectedRequestId === request.id
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{request.problem_type}</span>
+                        {request.urgency_level === 'alta' && (
+                          <Badge variant="destructive" className="text-xs">Urgente</Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {request.client_name} • {request.estimated_duration || 2}h stimate
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nessuna richiesta in attesa da confermare.
+              </p>
+            )}
+          </div>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setFreeSlotDialogOpen(false);
+                setBlockDialogOpen(true);
+              }}
+            >
+              Blocca invece
+            </Button>
+            <Button
+              onClick={handleUseSlotForRequest}
+              disabled={!selectedRequestId}
+            >
+              Conferma orario
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Block Time Dialog */}
       <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
@@ -391,12 +702,14 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
       <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Dettagli Appuntamento</DialogTitle>
+            <DialogTitle>
+              {selectedEvent?.status === 'blocked' ? 'Slot Bloccato' : 'Dettagli Appuntamento'}
+            </DialogTitle>
           </DialogHeader>
           {selectedEvent && (
             <div className="space-y-4 py-4">
               <div className="flex items-center gap-2">
-                <Badge className={getSlotColor(selectedEvent)}>
+                <Badge className={getSlotStyle(selectedEvent)}>
                   {getStatusLabel(selectedEvent.status)}
                 </Badge>
               </div>
@@ -411,20 +724,27 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
                   </span>
                 </div>
 
-                {selectedEvent.job_id && jobDetails[selectedEvent.job_id] && (
+                {selectedEvent.job && (
                   <>
                     <div className="flex items-center gap-2 text-sm">
                       <Wrench className="h-4 w-4 text-muted-foreground" />
-                      <span>{jobDetails[selectedEvent.job_id].diagnoses?.problem_type}</span>
+                      <span>{selectedEvent.job.problem_type}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      <span>{jobDetails[selectedEvent.job_id].profiles?.full_name}</span>
+                      <span>{selectedEvent.job.client_name}</span>
                     </div>
-                    {jobDetails[selectedEvent.job_id].profiles?.address && (
+                    {selectedEvent.job.address && (
                       <div className="flex items-center gap-2 text-sm">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span>{jobDetails[selectedEvent.job_id].profiles?.address}</span>
+                        <span>{selectedEvent.job.address}</span>
+                      </div>
+                    )}
+
+                    {selectedEvent.status === 'proposed' && (
+                      <div className="flex items-center gap-2 p-3 bg-amber-500/10 rounded-lg text-sm">
+                        <AlertCircle className="h-4 w-4 text-amber-600" />
+                        <span className="text-amber-700 dark:text-amber-300">In attesa di risposta dal cliente</span>
                       </div>
                     )}
                   </>
@@ -432,14 +752,26 @@ export function TechnicianCalendar({ technicianId }: TechnicianCalendarProps) {
               </div>
             </div>
           )}
-          <DialogFooter>
-            {selectedEvent?.status === "blocked" && (
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            {selectedEvent?.status === 'blocked' && (
               <Button
                 variant="destructive"
                 onClick={() => handleDeleteBlock(selectedEvent.id)}
               >
                 <X className="h-4 w-4 mr-2" />
                 Elimina Blocco
+              </Button>
+            )}
+            {selectedEvent?.job_id && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  navigate(`/jobs/${selectedEvent.job_id}`);
+                  setSelectedEvent(null);
+                }}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Apri dettaglio
               </Button>
             )}
             <Button variant="outline" onClick={() => setSelectedEvent(null)}>
