@@ -39,6 +39,9 @@ import { DemoPhase10 } from "@/components/demo/DemoPhase10";
 import { DemoPhase11 } from "@/components/demo/DemoPhase11";
 import { DemoPhase12 } from "@/components/demo/DemoPhase12";
 import { DemoPhase13 } from "@/components/demo/DemoPhase13";
+import { DemoPhase14 } from "@/components/demo/DemoPhase14";
+import { DemoPhase15 } from "@/components/demo/DemoPhase15";
+import { DemoPhase16 } from "@/components/demo/DemoPhase16";
 
 const PHASES = [
   { 
@@ -127,10 +130,31 @@ const PHASES = [
   },
   { 
     id: 13, 
-    title: "Come guadagna FIXO", 
+    title: "Fee di servizio FIXO", 
+    role: "info",
+    icon: Euro,
+    description: "Fee fissa alla conferma"
+  },
+  { 
+    id: 14, 
+    title: "Opzioni di pagamento", 
+    role: "info",
+    icon: CreditCard,
+    description: "Scelta libera cliente/tecnico"
+  },
+  { 
+    id: 15, 
+    title: "Modello ibrido", 
     role: "info",
     icon: TrendingUp,
-    description: "Modello di business trasparente"
+    description: "Un modello equilibrato"
+  },
+  { 
+    id: 16, 
+    title: "Conclusione demo", 
+    role: "info",
+    icon: CheckCircle,
+    description: "Trasparenza, libertà, sostenibilità"
   },
 ];
 
@@ -172,6 +196,9 @@ const DemoFlow = () => {
       case 10: return <DemoPhase10 onNext={goNext} />;
       case 11: return <DemoPhase12 onNext={goNext} />;
       case 12: return <DemoPhase13 onNext={goNext} />;
+      case 13: return <DemoPhase14 onNext={goNext} />;
+      case 14: return <DemoPhase15 onNext={goNext} />;
+      case 15: return <DemoPhase16 />;
       default: return null;
     }
   };
