@@ -1,24 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
+  CheckCircle, 
   Calendar, 
   Clock, 
-  CheckCircle,
-  X
+  MapPin,
+  Phone,
+  Unlock,
+  Star
 } from "lucide-react";
-
-const DEMO_CALENDAR = [
-  { time: "09:00", status: "occupied", label: "Intervento #1244" },
-  { time: "10:00", status: "occupied", label: null },
-  { time: "11:00", status: "free", label: null },
-  { time: "12:00", status: "free", label: null },
-  { time: "13:00", status: "break", label: "Pausa" },
-  { time: "14:00", status: "free", label: null },
-  { time: "15:00", status: "selected", label: "Nuovo appuntamento" },
-  { time: "16:00", status: "selected", label: null },
-  { time: "17:00", status: "free", label: null },
-];
 
 interface DemoPhaseProps {
   onNext?: () => void;
@@ -27,110 +19,117 @@ interface DemoPhaseProps {
 export function DemoPhase6({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
-        <CardContent className="py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="font-medium text-blue-800 dark:text-blue-200">Oggi, 27 Dicembre</p>
-                <p className="text-xs text-blue-600 dark:text-blue-300">
-                  Cliente: Anna Bianchi
-                </p>
-              </div>
-            </div>
-            <Badge variant="outline">Venerdì</Badge>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Calendar View */}
+      {/* Slot Selection */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
-            Seleziona lo slot
+            Il tecnico seleziona lo slot
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-1">
-            {DEMO_CALENDAR.map((slot, index) => (
-              <div
-                key={index}
-                className={`flex items-center p-3 rounded-lg border transition-all ${
-                  slot.status === "selected" 
-                    ? "bg-primary/10 border-primary border-2" 
-                    : slot.status === "occupied"
-                      ? "bg-red-50 dark:bg-red-950/20 border-red-200"
-                      : slot.status === "break"
-                        ? "bg-muted/50 border-transparent"
-                        : "bg-green-50 dark:bg-green-950/20 border-green-200"
-                }`}
-              >
-                <span className="w-14 text-sm font-mono">{slot.time}</span>
-                <div className="flex-1">
-                  {slot.status === "selected" ? (
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">{slot.label}</span>
-                    </div>
-                  ) : slot.status === "occupied" ? (
-                    <div className="flex items-center gap-2">
-                      <X className="h-4 w-4 text-red-500" />
-                      <span className="text-sm text-red-600">
-                        {slot.label || "Occupato"}
-                      </span>
-                    </div>
-                  ) : slot.status === "break" ? (
-                    <span className="text-sm text-muted-foreground">{slot.label}</span>
-                  ) : (
-                    <span className="text-sm text-green-600">Libero</span>
-                  )}
-                </div>
-                {slot.status === "free" && (
-                  <Badge variant="outline" className="text-xs text-green-600 border-green-300">
-                    Disponibile
-                  </Badge>
-                )}
+          <div className="space-y-2">
+            <div className="flex items-center p-3 rounded-lg border-2 border-primary bg-primary/10">
+              <span className="w-20 text-sm font-mono">15:00</span>
+              <div className="flex-1 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Slot selezionato</span>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Legend */}
-      <Card>
-        <CardContent className="py-3">
-          <div className="flex flex-wrap gap-3 text-xs">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded bg-green-500" />
-              <span>Libero</span>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded bg-red-500" />
-              <span>Occupato</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded bg-primary" />
-              <span>Selezionato</span>
+            <div className="flex items-center p-3 rounded-lg bg-muted/30">
+              <span className="w-20 text-sm font-mono">17:00</span>
+              <span className="text-sm text-muted-foreground">Fine prevista</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Summary */}
-      <Card className="bg-green-50 dark:bg-green-950/20 border-green-300">
+      {/* Success Banner */}
+      <Card className="bg-green-50 dark:bg-green-950/20 border-green-300 border-2">
         <CardContent className="py-4">
           <div className="flex items-center gap-3">
-            <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="h-12 w-12 rounded-full bg-green-500 flex items-center justify-center">
+              <CheckCircle className="h-6 w-6 text-white" />
+            </div>
             <div>
-              <p className="font-medium text-green-800 dark:text-green-200">
-                Slot selezionato: 15:00 - 17:00
+              <p className="font-bold text-green-800 dark:text-green-200 text-lg">
+                Appuntamento Confermato!
               </p>
-              <p className="text-xs text-green-600">
-                Durata: 2 ore
+              <p className="text-sm text-green-600 dark:text-green-300">
+                Stato: Confermato
               </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Unlock Notice */}
+      <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
+        <CardContent className="py-3">
+          <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+            <Unlock className="h-4 w-4" />
+            <p className="text-sm font-medium">
+              Contatti e indirizzo ora visibili (demo)
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Appointment Details */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Dettagli Appuntamento</CardTitle>
+            <Badge className="bg-green-500">Confermato</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Date & Time */}
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+            <Calendar className="h-5 w-5 text-primary" />
+            <div>
+              <p className="font-medium">Oggi, 27 Dicembre 2024</p>
+              <p className="text-sm text-muted-foreground">15:00 - 17:00</p>
+            </div>
+          </div>
+
+          {/* Contact Info - NOW VISIBLE */}
+          <div className="border-t pt-4 space-y-3">
+            <div className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
+              <Phone className="h-4 w-4 text-green-600" />
+              <span className="font-medium text-green-800 dark:text-green-200">
+                +39 333 1234567
+              </span>
+            </div>
+            <div className="flex items-start gap-3 p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
+              <MapPin className="h-4 w-4 text-green-600 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs text-green-600">Indirizzo:</p>
+                <p className="font-medium text-green-800 dark:text-green-200">
+                  Via Roma 42, 20100 Milano
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Technician Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Tecnico Assegnato</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <Avatar className="h-14 w-14">
+              <AvatarFallback className="text-lg bg-primary/10">M</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <p className="font-semibold">Marco Rossi</p>
+              <div className="flex items-center gap-2 text-sm">
+                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <span>4.9 (127 recensioni)</span>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -139,7 +138,7 @@ export function DemoPhase6({ onNext }: DemoPhaseProps) {
       {/* CTA */}
       <Button className="w-full" size="lg" onClick={onNext}>
         <CheckCircle className="h-4 w-4 mr-2" />
-        Conferma orario
+        Continua
       </Button>
     </div>
   );

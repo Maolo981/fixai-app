@@ -1,19 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
   ArrowLeft, 
   ArrowRight, 
   Home,
   Camera,
+  Zap,
   User,
   Calendar,
   Bell,
-  MessageCircle,
-  Clock,
   CheckCircle,
   Car,
   Wrench,
@@ -21,9 +18,7 @@ import {
   Star,
   Play,
   RotateCcw,
-  Lock,
-  Euro,
-  TrendingUp
+  Euro
 } from "lucide-react";
 import { MobileLayout } from "@/components/MobileLayout";
 import { DemoPhase1 } from "@/components/demo/DemoPhase1";
@@ -38,123 +33,91 @@ import { DemoPhase9 } from "@/components/demo/DemoPhase9";
 import { DemoPhase10 } from "@/components/demo/DemoPhase10";
 import { DemoPhase11 } from "@/components/demo/DemoPhase11";
 import { DemoPhase12 } from "@/components/demo/DemoPhase12";
-import { DemoPhase13 } from "@/components/demo/DemoPhase13";
-import { DemoPhase14 } from "@/components/demo/DemoPhase14";
-import { DemoPhase15 } from "@/components/demo/DemoPhase15";
-import { DemoPhase16 } from "@/components/demo/DemoPhase16";
 
 const PHASES = [
   { 
     id: 1, 
-    title: "Il cliente descrive il problema", 
+    title: "Inserimento problema", 
     role: "cliente",
     icon: Camera,
-    description: "Diagnosi intelligente del problema"
+    description: "Caricamento foto e descrizione"
   },
   { 
     id: 2, 
-    title: "Il cliente sceglie il tecnico", 
-    role: "cliente",
-    icon: User,
-    description: "Selezione del professionista"
+    title: "Diagnosi AI", 
+    role: "sistema",
+    icon: Zap,
+    description: "Analisi intelligente del problema"
   },
   { 
     id: 3, 
-    title: "Il cliente propone data e ora", 
+    title: "Selezione tecnico", 
     role: "cliente",
-    icon: Calendar,
-    description: "Scelta delle fasce orarie"
+    icon: User,
+    description: "Scelta del professionista"
   },
   { 
     id: 4, 
-    title: "Il tecnico riceve la richiesta", 
-    role: "tecnico",
-    icon: Bell,
-    description: "Nuova richiesta in arrivo"
+    title: "Scelta fasce orarie", 
+    role: "cliente",
+    icon: Calendar,
+    description: "Selezione disponibilità"
   },
   { 
     id: 5, 
-    title: "Chiarimenti prima della conferma", 
-    role: "entrambi",
-    icon: MessageCircle,
-    description: "Chat con contatti bloccati"
+    title: "Richiesta ricevuta", 
+    role: "tecnico",
+    icon: Bell,
+    description: "Vista tecnico con chat limitata"
   },
   { 
     id: 6, 
-    title: "Il tecnico conferma l'orario", 
+    title: "Conferma appuntamento", 
     role: "tecnico",
-    icon: Clock,
-    description: "Selezione slot calendario"
+    icon: CheckCircle,
+    description: "Selezione slot e sblocco contatti"
   },
   { 
     id: 7, 
-    title: "Appuntamento confermato", 
+    title: "Tracking intervento", 
     role: "cliente",
-    icon: CheckCircle,
-    description: "Conferma e sblocco contatti"
+    icon: Car,
+    description: "In viaggio → In corso → Completato"
   },
   { 
     id: 8, 
-    title: "Pre-autorizzazione pagamento", 
-    role: "cliente",
-    icon: Lock,
-    description: "Garanzia senza addebito"
-  },
-  { 
-    id: 9, 
-    title: "Intervento in corso", 
-    role: "tecnico",
-    icon: Car,
-    description: "In viaggio → In corso"
-  },
-  { 
-    id: 10, 
     title: "Intervento completato", 
     role: "tecnico",
     icon: Wrench,
-    description: "Fine lavoro e riepilogo"
+    description: "Riepilogo lavoro e costi"
+  },
+  { 
+    id: 9, 
+    title: "Pagamento", 
+    role: "cliente",
+    icon: CreditCard,
+    description: "Pagamento dopo intervento"
+  },
+  { 
+    id: 10, 
+    title: "Recensione", 
+    role: "cliente",
+    icon: Star,
+    description: "Valutazione e commento"
   },
   { 
     id: 11, 
-    title: "Pagamento e valutazione", 
-    role: "cliente",
-    icon: Star,
-    description: "Pagamento e recensione"
+    title: "Processo completato", 
+    role: "sistema",
+    icon: CheckCircle,
+    description: "Riepilogo finale"
   },
   { 
     id: 12, 
-    title: "Conclusione intervento", 
-    role: "sistema",
-    icon: Euro,
-    description: "Costo finale e pagamento automatico"
-  },
-  { 
-    id: 13, 
-    title: "Fee di servizio FIXO", 
+    title: "Come guadagna FIXO", 
     role: "info",
     icon: Euro,
-    description: "Fee fissa alla conferma"
-  },
-  { 
-    id: 14, 
-    title: "Opzioni di pagamento", 
-    role: "info",
-    icon: CreditCard,
-    description: "Scelta libera cliente/tecnico"
-  },
-  { 
-    id: 15, 
-    title: "Modello ibrido", 
-    role: "info",
-    icon: TrendingUp,
-    description: "Un modello equilibrato"
-  },
-  { 
-    id: 16, 
-    title: "Conclusione demo", 
-    role: "info",
-    icon: CheckCircle,
-    description: "Trasparenza, libertà, sostenibilità"
+    description: "Modello ibrido e sostenibile"
   },
 ];
 
@@ -190,15 +153,11 @@ const DemoFlow = () => {
       case 4: return <DemoPhase5 onNext={goNext} />;
       case 5: return <DemoPhase6 onNext={goNext} />;
       case 6: return <DemoPhase7 onNext={goNext} />;
-      case 7: return <DemoPhase11 onNext={goNext} />;
-      case 8: return <DemoPhase8 onNext={goNext} />;
-      case 9: return <DemoPhase9 onNext={goNext} />;
-      case 10: return <DemoPhase10 onNext={goNext} />;
-      case 11: return <DemoPhase12 onNext={goNext} />;
-      case 12: return <DemoPhase13 onNext={goNext} />;
-      case 13: return <DemoPhase14 onNext={goNext} />;
-      case 14: return <DemoPhase15 onNext={goNext} />;
-      case 15: return <DemoPhase16 />;
+      case 7: return <DemoPhase8 onNext={goNext} />;
+      case 8: return <DemoPhase9 onNext={goNext} />;
+      case 9: return <DemoPhase10 onNext={goNext} />;
+      case 10: return <DemoPhase11 onNext={goNext} />;
+      case 11: return <DemoPhase12 onNext={() => navigate("/")} />;
       default: return null;
     }
   };
@@ -206,15 +165,13 @@ const DemoFlow = () => {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case "cliente":
-        return <Badge className="bg-blue-500">👤 Cliente</Badge>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">👤 Cliente</span>;
       case "tecnico":
-        return <Badge className="bg-orange-500">🔧 Tecnico</Badge>;
-      case "entrambi":
-        return <Badge className="bg-purple-500">👥 Entrambi</Badge>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">🔧 Tecnico</span>;
       case "sistema":
-        return <Badge className="bg-green-500">⚡ Sistema</Badge>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">⚡ Sistema</span>;
       case "info":
-        return <Badge className="bg-primary">ℹ️ Info</Badge>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">ℹ️ Info</span>;
       default:
         return null;
     }
@@ -291,7 +248,7 @@ const DemoFlow = () => {
         {/* Demo Notice */}
         <div className="bg-amber-100 dark:bg-amber-900/30 border-b border-amber-300 dark:border-amber-700 px-4 py-2">
           <p className="text-xs text-amber-800 dark:text-amber-200 text-center font-medium">
-            🎭 Questa è una DEMO - I dati sono fittizi, nessuna azione è reale
+            🎭 DEMO – dati fittizi, nessuna azione reale
           </p>
         </div>
 

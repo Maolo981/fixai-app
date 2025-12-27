@@ -3,34 +3,30 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
-  MessageCircle, 
-  AlertTriangle, 
-  Send,
-  Lock,
+  Bell, 
+  Clock, 
+  Euro,
+  User,
+  Calendar,
+  MessageCircle,
   CheckCircle,
-  Calendar
+  Lock,
+  AlertTriangle,
+  Send
 } from "lucide-react";
 
 const DEMO_MESSAGES = [
   {
     sender: "system",
-    content: "Il cliente ha aperto una chat. L'appuntamento non è ancora confermato.",
+    content: "Chat attiva. L'appuntamento non è ancora confermato.",
   },
   {
     sender: "client",
-    content: "Buongiorno, volevo chiedere se può portare un pezzo di ricambio per la valvola, o devo procurarmelo io?",
+    content: "Buongiorno, volevo chiedere se può portare un pezzo di ricambio per la valvola?",
   },
   {
     sender: "technician",
-    content: "Buongiorno! Porto sempre i ricambi più comuni per caldaie. Dopo aver visto il modello esatto saprò dirle se ho già il pezzo o se va ordinato.",
-  },
-  {
-    sender: "client",
-    content: "Perfetto, grazie! Preferisco il pomeriggio se possibile.",
-  },
-  {
-    sender: "technician",
-    content: "Posso venire il pomeriggio 👍",
+    content: "Buongiorno! Porto sempre i ricambi più comuni per caldaie. Dopo aver visto il modello esatto saprò dirle se ho già il pezzo.",
   },
 ];
 
@@ -41,19 +37,81 @@ interface DemoPhaseProps {
 export function DemoPhase5({ onNext }: DemoPhaseProps) {
   return (
     <div className="space-y-4">
-      {/* Security Banner */}
-      <Card className="bg-amber-50 dark:bg-amber-950/20 border-amber-300 border-2">
-        <CardContent className="py-3">
-          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-            <Lock className="h-4 w-4" />
-            <p className="text-sm font-medium">
-              Contatti e indirizzo visibili solo dopo la conferma
-            </p>
+      {/* Notification Banner */}
+      <Card className="bg-orange-50 dark:bg-orange-950/20 border-orange-300 border-2">
+        <CardContent className="py-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center animate-pulse">
+              <Bell className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-orange-800 dark:text-orange-200">
+                Nuova richiesta di intervento!
+              </p>
+              <p className="text-sm text-orange-600 dark:text-orange-300">
+                Ricevuta 2 minuti fa
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Chat Header */}
+      {/* Request Summary */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Richiesta #1247</CardTitle>
+            <Badge className="bg-blue-500">In attesa</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Client Info */}
+          <div className="flex items-center gap-3 pb-3 border-b">
+            <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+              <User className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="font-medium">Anna Bianchi</p>
+              <p className="text-xs text-muted-foreground">Cliente</p>
+            </div>
+          </div>
+
+          {/* Problem */}
+          <div>
+            <p className="text-sm font-medium mb-1">Problema:</p>
+            <p className="text-sm text-muted-foreground">Guasto caldaia - Errore E01</p>
+          </div>
+
+          {/* Details */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <Clock className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Durata stimata</p>
+              <p className="font-semibold">2 ore</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <Euro className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Compenso stimato</p>
+              <p className="font-semibold">€80 - €150</p>
+            </div>
+          </div>
+
+          {/* Available Slots */}
+          <div>
+            <p className="text-sm font-medium mb-2 flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Fasce orarie proposte:
+            </p>
+            <div className="flex flex-wrap gap-1">
+              <Badge variant="outline">Oggi 16:00-18:00</Badge>
+              <Badge variant="outline">Domani 09:00-11:00</Badge>
+              <Badge variant="outline">Domani 14:00-16:00</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Chat Section */}
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
@@ -61,14 +119,21 @@ export function DemoPhase5({ onNext }: DemoPhaseProps) {
               <MessageCircle className="h-5 w-5 text-primary" />
               Chat con il cliente
             </CardTitle>
-            <Badge variant="outline" className="text-orange-600 border-orange-300">
-              In attesa di conferma
-            </Badge>
           </div>
         </CardHeader>
         <CardContent>
+          {/* Security Notice */}
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-300 rounded-lg p-2 mb-3">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+              <Lock className="h-4 w-4" />
+              <p className="text-xs font-medium">
+                I contatti e l'indirizzo saranno visibili solo dopo la conferma dell'orario.
+              </p>
+            </div>
+          </div>
+
           {/* Messages */}
-          <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
+          <div className="space-y-3 max-h-40 overflow-y-auto mb-3">
             {DEMO_MESSAGES.map((msg, index) => (
               <div
                 key={index}
@@ -96,23 +161,10 @@ export function DemoPhase5({ onNext }: DemoPhaseProps) {
             ))}
           </div>
 
-          {/* Quick Replies */}
-          <div className="flex flex-wrap gap-2 mb-3">
-            <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80 text-xs">
-              Posso venire la mattina
-            </Badge>
-            <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80 text-xs">
-              Posso venire il pomeriggio
-            </Badge>
-            <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80 text-xs">
-              Serve accesso al contatore?
-            </Badge>
-          </div>
-
           {/* Input */}
           <div className="flex gap-2">
             <Input 
-              placeholder="Scrivi un messaggio (contatti non consentiti)"
+              placeholder="Scrivi un messaggio..."
               disabled
               className="flex-1"
             />
@@ -129,22 +181,28 @@ export function DemoPhase5({ onNext }: DemoPhaseProps) {
           <div className="flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
             <div className="text-sm text-red-800 dark:text-red-200">
-              <p className="font-medium mb-1">Azioni non consentite:</p>
-              <ul className="text-xs space-y-1">
-                <li>• Scambio di numeri di telefono</li>
-                <li>• Condivisione di indirizzi email</li>
-                <li>• Accordi di pagamento esterni</li>
+              <p className="font-medium mb-1">Limitazioni chat:</p>
+              <ul className="text-xs space-y-0.5">
+                <li>• Nessuna condivisione di numeri di telefono</li>
+                <li>• Nessuna email</li>
+                <li>• Nessun accordo esterno</li>
               </ul>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* CTA */}
-      <Button className="w-full" size="lg" onClick={onNext}>
-        <CheckCircle className="h-4 w-4 mr-2" />
-        Conferma e scegli orario
-      </Button>
+      {/* Actions */}
+      <div className="space-y-2">
+        <Button className="w-full" size="lg" onClick={onNext}>
+          <CheckCircle className="h-4 w-4 mr-2" />
+          Accetta e scegli orario
+        </Button>
+        <Button variant="outline" className="w-full" disabled>
+          <Calendar className="h-4 w-4 mr-2" />
+          Proponi altro orario
+        </Button>
+      </div>
     </div>
   );
 }
