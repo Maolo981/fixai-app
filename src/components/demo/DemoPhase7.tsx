@@ -9,18 +9,22 @@ import {
   Navigation,
   CheckCircle
 } from "lucide-react";
+import { useDemoLanguage } from "@/contexts/DemoLanguageContext";
 
 interface DemoPhaseProps {
   onNext?: () => void;
 }
 
 export function DemoPhase7({ onNext }: DemoPhaseProps) {
+  const { t } = useDemoLanguage();
+  const p = t.phase7;
+
   return (
     <div className="space-y-4">
       {/* Status Timeline */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Timeline stato intervento</CardTitle>
+          <CardTitle className="text-base">{p.statusTimeline}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="relative">
@@ -34,7 +38,7 @@ export function DemoPhase7({ onNext }: DemoPhaseProps) {
                   <CheckCircle className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="font-medium text-green-600">Confermato</p>
+                  <p className="font-medium text-green-600">{p.confirmedStatus}</p>
                   <p className="text-xs text-muted-foreground">14:30</p>
                 </div>
               </div>
@@ -45,10 +49,10 @@ export function DemoPhase7({ onNext }: DemoPhaseProps) {
                   <Car className="h-4 w-4 text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-orange-600">In viaggio</p>
-                  <p className="text-xs text-muted-foreground">14:45 - Partito ora</p>
+                  <p className="font-medium text-orange-600">{p.enRoute}</p>
+                  <p className="text-xs text-muted-foreground">14:45 - {p.departedNow}</p>
                 </div>
-                <Badge className="bg-orange-500">Attivo</Badge>
+                <Badge className="bg-orange-500">{p.active}</Badge>
               </div>
 
               {/* In Progress */}
@@ -57,8 +61,8 @@ export function DemoPhase7({ onNext }: DemoPhaseProps) {
                   <Wrench className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="font-medium">In corso</p>
-                  <p className="text-xs text-muted-foreground">In attesa</p>
+                  <p className="font-medium">{p.inProgress}</p>
+                  <p className="text-xs text-muted-foreground">{p.waiting}</p>
                 </div>
               </div>
 
@@ -68,8 +72,8 @@ export function DemoPhase7({ onNext }: DemoPhaseProps) {
                   <CheckCircle className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="font-medium">Completato</p>
-                  <p className="text-xs text-muted-foreground">In attesa</p>
+                  <p className="font-medium">{p.completed}</p>
+                  <p className="text-xs text-muted-foreground">{p.waiting}</p>
                 </div>
               </div>
             </div>
@@ -86,10 +90,10 @@ export function DemoPhase7({ onNext }: DemoPhaseProps) {
             </div>
             <div className="flex-1">
               <p className="font-bold text-orange-800 dark:text-orange-200">
-                Marco è in viaggio
+                {p.technicianEnRoute}
               </p>
               <p className="text-sm text-orange-600">
-                Tempo stimato: 12 minuti
+                {p.estimatedTime}
               </p>
             </div>
           </div>
@@ -98,7 +102,7 @@ export function DemoPhase7({ onNext }: DemoPhaseProps) {
           <div className="bg-background rounded-lg h-32 flex items-center justify-center border mb-4">
             <div className="text-center text-muted-foreground">
               <Navigation className="h-8 w-8 mx-auto mb-2 text-orange-500" />
-              <p className="text-sm">Mappa demo con distanza e tempo stimato</p>
+              <p className="text-sm">{p.mapDemo}</p>
             </div>
           </div>
 
@@ -106,7 +110,7 @@ export function DemoPhase7({ onNext }: DemoPhaseProps) {
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-orange-600" />
-              <span>Distanza:</span>
+              <span>{p.distance}</span>
             </div>
             <span className="font-medium">2.3 km</span>
           </div>
@@ -116,7 +120,7 @@ export function DemoPhase7({ onNext }: DemoPhaseProps) {
       {/* CTA */}
       <Button className="w-full" size="lg" onClick={onNext}>
         <Wrench className="h-4 w-4 mr-2" />
-        Simula intervento completato
+        {p.simulateComplete}
       </Button>
     </div>
   );

@@ -8,12 +8,16 @@ import {
   ThumbsUp,
   Send
 } from "lucide-react";
+import { useDemoLanguage } from "@/contexts/DemoLanguageContext";
 
 interface DemoPhaseProps {
   onNext?: () => void;
 }
 
 export function DemoPhase10({ onNext }: DemoPhaseProps) {
+  const { t } = useDemoLanguage();
+  const p = t.phase10;
+
   return (
     <div className="space-y-4">
       {/* Review Card */}
@@ -21,7 +25,7 @@ export function DemoPhase10({ onNext }: DemoPhaseProps) {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Star className="h-5 w-5 text-yellow-500" />
-            Lascia una recensione
+            {p.leaveReview}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -32,14 +36,14 @@ export function DemoPhase10({ onNext }: DemoPhaseProps) {
             </Avatar>
             <div>
               <p className="font-medium">Marco Rossi</p>
-              <p className="text-sm text-muted-foreground">Tecnico caldaie</p>
+              <p className="text-sm text-muted-foreground">{p.technicianType}</p>
             </div>
           </div>
 
           {/* Stars */}
           <div className="text-center py-4">
             <p className="text-sm text-muted-foreground mb-2">
-              Valutazione a stelle
+              {p.starRating}
             </p>
             <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -53,15 +57,15 @@ export function DemoPhase10({ onNext }: DemoPhaseProps) {
                 />
               ))}
             </div>
-            <p className="text-sm font-medium mt-2">5 stelle - Eccellente!</p>
+            <p className="text-sm font-medium mt-2">{p.stars5}</p>
           </div>
 
           {/* Review Text */}
           <div>
-            <p className="text-sm text-muted-foreground mb-2">Commento testuale:</p>
+            <p className="text-sm text-muted-foreground mb-2">{p.reviewText}</p>
             <Textarea 
-              placeholder="Scrivi la tua recensione..."
-              value="Tecnico molto professionale e puntuale. Ha risolto il problema velocemente e mi ha spiegato cosa è successo. Consigliatissimo!"
+              placeholder={p.reviewPlaceholder}
+              value={p.reviewValue}
               disabled
               className="resize-none bg-muted/50"
             />
@@ -70,7 +74,7 @@ export function DemoPhase10({ onNext }: DemoPhaseProps) {
           {/* Submit */}
           <Button className="w-full" disabled>
             <Send className="h-4 w-4 mr-2" />
-            Invia recensione
+            {p.submitReview}
           </Button>
         </CardContent>
       </Card>
@@ -81,7 +85,7 @@ export function DemoPhase10({ onNext }: DemoPhaseProps) {
           <div className="flex items-center gap-3">
             <ThumbsUp className="h-6 w-6 text-green-600" />
             <p className="text-sm font-medium text-green-800 dark:text-green-200">
-              Recensione inviata (demo)
+              {p.reviewSent}
             </p>
           </div>
         </CardContent>
@@ -90,7 +94,7 @@ export function DemoPhase10({ onNext }: DemoPhaseProps) {
       {/* CTA */}
       <Button className="w-full" size="lg" onClick={onNext}>
         <CheckCircle className="h-4 w-4 mr-2" />
-        Continua
+        {t.phase3.continue}
       </Button>
     </div>
   );

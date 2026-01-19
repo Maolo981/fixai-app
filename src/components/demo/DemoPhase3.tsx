@@ -9,6 +9,7 @@ import {
   Shield,
   Euro
 } from "lucide-react";
+import { useDemoLanguage } from "@/contexts/DemoLanguageContext";
 
 const DEMO_TECHNICIANS = [
   {
@@ -19,6 +20,7 @@ const DEMO_TECHNICIANS = [
     reviews: 127,
     distance: "2.3 km",
     specialties: ["Caldaie", "Idraulica"],
+    specialtiesEn: ["Boilers", "Plumbing"],
     hourlyRate: 45,
     verified: true,
     selected: true,
@@ -31,6 +33,7 @@ const DEMO_TECHNICIANS = [
     reviews: 89,
     distance: "4.1 km",
     specialties: ["Caldaie", "Climatizzazione"],
+    specialtiesEn: ["Boilers", "HVAC"],
     hourlyRate: 50,
     verified: true,
     selected: false,
@@ -43,6 +46,7 @@ const DEMO_TECHNICIANS = [
     reviews: 56,
     distance: "5.8 km",
     specialties: ["Caldaie", "Gas"],
+    specialtiesEn: ["Boilers", "Gas"],
     hourlyRate: 40,
     verified: false,
     selected: false,
@@ -54,6 +58,9 @@ interface DemoPhaseProps {
 }
 
 export function DemoPhase3({ onNext }: DemoPhaseProps) {
+  const { lang, t } = useDemoLanguage();
+  const p = t.phase3;
+
   return (
     <div className="space-y-4">
       {/* Filter Info */}
@@ -61,7 +68,7 @@ export function DemoPhase3({ onNext }: DemoPhaseProps) {
         <CardContent className="py-3">
           <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
             <MapPin className="h-4 w-4" />
-            <span>3 tecnici trovati nel raggio di 10 km</span>
+            <span>3 {p.techniciansFound}</span>
           </div>
         </CardContent>
       </Card>
@@ -102,13 +109,13 @@ export function DemoPhase3({ onNext }: DemoPhaseProps) {
                     <span className="font-medium ml-1">{tech.rating}</span>
                   </div>
                   <span className="text-muted-foreground">
-                    ({tech.reviews} recensioni)
+                    ({tech.reviews} {p.reviews})
                   </span>
                 </div>
 
                 {/* Specialties */}
                 <div className="flex flex-wrap gap-1 mb-2">
-                  {tech.specialties.map((spec) => (
+                  {(lang === "en" ? tech.specialtiesEn : tech.specialties).map((spec) => (
                     <Badge key={spec} variant="secondary" className="text-xs">
                       {spec}
                     </Badge>
@@ -123,7 +130,7 @@ export function DemoPhase3({ onNext }: DemoPhaseProps) {
                   </span>
                   <span className="flex items-center gap-1">
                     <Euro className="h-3 w-3" />
-                    €{tech.hourlyRate}/ora
+                    €{tech.hourlyRate}{p.perHour}
                   </span>
                 </div>
               </div>
@@ -133,7 +140,7 @@ export function DemoPhase3({ onNext }: DemoPhaseProps) {
             {tech.selected && (
               <div className="mt-3 flex items-center justify-center gap-2 p-2 bg-primary/10 rounded-lg">
                 <CheckCircle className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-primary">Selezionato</span>
+                <span className="text-sm font-medium text-primary">{p.selected}</span>
               </div>
             )}
           </CardContent>
@@ -143,7 +150,7 @@ export function DemoPhase3({ onNext }: DemoPhaseProps) {
       {/* CTA */}
       <Button className="w-full" size="lg" onClick={onNext}>
         <CheckCircle className="h-4 w-4 mr-2" />
-        Continua
+        {p.continue}
       </Button>
     </div>
   );

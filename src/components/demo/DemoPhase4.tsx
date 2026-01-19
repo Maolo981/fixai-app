@@ -10,21 +10,25 @@ import {
   CheckCircle,
   Send
 } from "lucide-react";
-
-const DEMO_SLOTS = [
-  { date: "Oggi", time: "14:00 - 16:00", selected: false },
-  { date: "Oggi", time: "16:00 - 18:00", selected: true },
-  { date: "Domani", time: "09:00 - 11:00", selected: true },
-  { date: "Domani", time: "11:00 - 13:00", selected: false },
-  { date: "Domani", time: "14:00 - 16:00", selected: true },
-  { date: "Ven 28 Dic", time: "10:00 - 12:00", selected: false },
-];
+import { useDemoLanguage } from "@/contexts/DemoLanguageContext";
 
 interface DemoPhaseProps {
   onNext?: () => void;
 }
 
 export function DemoPhase4({ onNext }: DemoPhaseProps) {
+  const { t } = useDemoLanguage();
+  const p = t.phase4;
+
+  const DEMO_SLOTS = [
+    { date: p.today, time: "14:00 - 16:00", selected: false },
+    { date: p.today, time: "16:00 - 18:00", selected: true },
+    { date: p.tomorrow, time: "09:00 - 11:00", selected: true },
+    { date: p.tomorrow, time: "11:00 - 13:00", selected: false },
+    { date: p.tomorrow, time: "14:00 - 16:00", selected: true },
+    { date: "Fri 28 Dec", time: "10:00 - 12:00", selected: false },
+  ];
+
   return (
     <div className="space-y-4">
       {/* Calendar */}
@@ -32,12 +36,12 @@ export function DemoPhase4({ onNext }: DemoPhaseProps) {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
-            Seleziona più fasce orarie
+            {p.selectSlots}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            Puoi selezionare più opzioni. Il tecnico confermerà la sua disponibilità.
+            {p.slotsDescription}
           </p>
 
           {/* Time Slots */}
@@ -72,9 +76,9 @@ export function DemoPhase4({ onNext }: DemoPhaseProps) {
         <CardContent className="py-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label className="font-medium">Sono flessibile</Label>
+              <Label className="font-medium">{p.flexible}</Label>
               <p className="text-xs text-muted-foreground">
-                Il tecnico può propormi altri orari
+                {p.flexibleDescription}
               </p>
             </div>
             <Switch checked={true} disabled />
@@ -85,12 +89,12 @@ export function DemoPhase4({ onNext }: DemoPhaseProps) {
       {/* Notes */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Note aggiuntive</CardTitle>
+          <CardTitle className="text-base">{p.additionalNotes}</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea 
-            placeholder="Es: Citofono 'Rossi', secondo piano..."
-            value="Citofono 'Bianchi', terzo piano. Il cane abbaia ma non morde."
+            placeholder={p.notesPlaceholder}
+            value={p.notesValue}
             disabled
             className="resize-none bg-muted/50"
           />
@@ -100,19 +104,19 @@ export function DemoPhase4({ onNext }: DemoPhaseProps) {
       {/* Summary */}
       <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
         <CardContent className="py-4">
-          <p className="text-sm font-medium mb-2">Riepilogo richiesta:</p>
+          <p className="text-sm font-medium mb-2">{p.summary}</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Tecnico:</span>
+              <span className="text-muted-foreground">{p.technician}</span>
               <span className="font-medium">Marco Rossi</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Fasce selezionate:</span>
-              <span className="font-medium">3 opzioni</span>
+              <span className="text-muted-foreground">{p.selectedSlots}</span>
+              <span className="font-medium">3 {p.options}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Flessibilità:</span>
-              <Badge variant="secondary" className="text-xs">Sì</Badge>
+              <span className="text-muted-foreground">{p.flexibility}</span>
+              <Badge variant="secondary" className="text-xs">{p.yes}</Badge>
             </div>
           </div>
         </CardContent>
@@ -121,7 +125,7 @@ export function DemoPhase4({ onNext }: DemoPhaseProps) {
       {/* CTA */}
       <Button className="w-full" size="lg" onClick={onNext}>
         <Send className="h-4 w-4 mr-2" />
-        Invia richiesta
+        {p.sendRequest}
       </Button>
     </div>
   );
