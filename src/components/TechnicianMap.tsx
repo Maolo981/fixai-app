@@ -4,6 +4,14 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Security: HTML escape function to prevent XSS attacks
+function escapeHtml(text: string | number | undefined | null): string {
+  if (text === undefined || text === null) return '';
+  const str = String(text);
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
 interface TechnicianForMap {
   id: string;
   full_name: string;
@@ -114,26 +122,33 @@ export function TechnicianMap({
         </div>
       `;
 
+      // Security: Escape all user-controlled data to prevent XSS
+      const escapedName = escapeHtml(tech.full_name);
+      const escapedRating = escapeHtml(tech.rating?.toFixed(1) ?? '0');
+      const escapedDistance = escapeHtml(tech.distance_km?.toFixed(1) ?? '0');
+      const escapedRate = escapeHtml(tech.hourly_rate);
+      const escapedSpecialties = tech.specialties?.map(s => escapeHtml(s)).join(", ") ?? '';
+
       const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
         <div class="p-3 min-w-[200px]">
-          <h3 class="font-semibold text-base mb-2">${tech.full_name}</h3>
+          <h3 class="font-semibold text-base mb-2">${escapedName}</h3>
           <div class="space-y-1 text-sm">
             <div class="flex items-center gap-1">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
               </svg>
-              <span>${tech.rating.toFixed(1)} stelle</span>
+              <span>${escapedRating} stelle</span>
             </div>
             <div class="flex items-center gap-1">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
                 <circle cx="12" cy="10" r="3"/>
               </svg>
-              <span>${tech.distance_km.toFixed(1)} km di distanza</span>
+              <span>${escapedDistance} km di distanza</span>
             </div>
-            <div class="text-primary font-semibold">€${tech.hourly_rate}/ora</div>
+            <div class="text-primary font-semibold">€${escapedRate}/ora</div>
             <div class="text-xs text-muted-foreground mt-2">
-              ${tech.specialties.join(", ")}
+              ${escapedSpecialties}
             </div>
           </div>
         </div>
