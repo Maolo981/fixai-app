@@ -19,6 +19,7 @@ import CompanyDashboard from "./pages/CompanyDashboard";
 import DiagnosisDetail from "./pages/DiagnosisDetail";
 import DemoFlow from "./pages/DemoFlow";
 import NotFound from "./pages/NotFound";
+import LandingEN from "./pages/LandingEN";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/install" element={<Install />} />
           <Route path="/demo" element={<DemoFlow />} />
+          <Route path="/en" element={<LandingEN />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
