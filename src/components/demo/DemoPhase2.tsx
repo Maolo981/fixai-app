@@ -8,12 +8,16 @@ import {
   Euro,
   User
 } from "lucide-react";
+import { useDemoLanguage } from "@/contexts/DemoLanguageContext";
 
 interface DemoPhaseProps {
   onNext?: () => void;
 }
 
 export function DemoPhase2({ onNext }: DemoPhaseProps) {
+  const { t } = useDemoLanguage();
+  const p = t.phase2;
+
   return (
     <div className="space-y-4">
       {/* AI Diagnosis Result */}
@@ -22,40 +26,40 @@ export function DemoPhase2({ onNext }: DemoPhaseProps) {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <Zap className="h-5 w-5 text-green-600" />
-              Diagnosi AI
+              {p.aiDiagnosis}
             </CardTitle>
-            <Badge className="bg-green-500">Analisi completata</Badge>
+            <Badge className="bg-green-500">{p.analysisComplete}</Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Problem Type */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Problema rilevato:</span>
-            <span className="font-semibold">Guasto caldaia - Errore E01</span>
+            <span className="text-sm text-muted-foreground">{p.problemDetected}</span>
+            <span className="font-semibold">{p.problemType}</span>
           </div>
 
           {/* Possible Cause */}
           <div className="bg-background rounded-lg p-3">
-            <p className="text-sm font-medium mb-1">Possibili cause:</p>
+            <p className="text-sm font-medium mb-1">{p.possibleCauses}</p>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Problema di accensione (valvola del gas)</li>
-              <li>• Elettrodo di accensione danneggiato</li>
-              <li>• Pressostato difettoso</li>
+              <li>• {p.cause1}</li>
+              <li>• {p.cause2}</li>
+              <li>• {p.cause3}</li>
             </ul>
           </div>
 
           {/* Urgency */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Livello di urgenza:</span>
+            <span className="text-sm text-muted-foreground">{p.urgencyLevel}</span>
             <Badge variant="outline" className="border-orange-500 text-orange-600">
               <AlertTriangle className="h-3 w-3 mr-1" />
-              Media
+              {p.urgencyMedium}
             </Badge>
           </div>
 
           {/* Cost Estimate */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Costo stimato (range indicativo):</span>
+            <span className="text-sm text-muted-foreground">{p.estimatedCost}</span>
             <div className="flex items-center gap-1 font-semibold text-primary">
               <Euro className="h-4 w-4" />
               80 - 150
@@ -64,10 +68,10 @@ export function DemoPhase2({ onNext }: DemoPhaseProps) {
 
           {/* Recommended Specialty */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Tipologia tecnico consigliata:</span>
+            <span className="text-sm text-muted-foreground">{p.recommendedSpecialty}</span>
             <Badge className="bg-primary">
               <User className="h-3 w-3 mr-1" />
-              Tecnico caldaie
+              {p.technicianType}
             </Badge>
           </div>
         </CardContent>
@@ -76,7 +80,7 @@ export function DemoPhase2({ onNext }: DemoPhaseProps) {
       {/* CTA */}
       <Button className="w-full" size="lg" onClick={onNext}>
         <CheckCircle className="h-4 w-4 mr-2" />
-        Trova tecnici disponibili
+        {p.findTechnicians}
       </Button>
     </div>
   );

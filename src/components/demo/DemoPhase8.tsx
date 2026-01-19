@@ -8,12 +8,16 @@ import {
   Wrench,
   Camera
 } from "lucide-react";
+import { useDemoLanguage } from "@/contexts/DemoLanguageContext";
 
 interface DemoPhaseProps {
   onNext?: () => void;
 }
 
 export function DemoPhase8({ onNext }: DemoPhaseProps) {
+  const { t } = useDemoLanguage();
+  const p = t.phase8;
+
   return (
     <div className="space-y-4">
       {/* Completion Banner */}
@@ -25,10 +29,10 @@ export function DemoPhase8({ onNext }: DemoPhaseProps) {
             </div>
             <div>
               <p className="font-bold text-green-800 dark:text-green-200 text-lg">
-                Intervento Completato!
+                {p.interventionCompleted}
               </p>
               <p className="text-sm text-green-600 dark:text-green-300">
-                Tutto risolto con successo
+                {p.allResolved}
               </p>
             </div>
           </div>
@@ -41,24 +45,23 @@ export function DemoPhase8({ onNext }: DemoPhaseProps) {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <Wrench className="h-5 w-5 text-primary" />
-              Riepilogo lavoro svolto
+              {p.workSummary}
             </CardTitle>
-            <Badge className="bg-green-500">Completato</Badge>
+            <Badge className="bg-green-500">{t.phase7.completed}</Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Problem */}
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Problema:</span>
+            <span className="text-muted-foreground">{p.problem}</span>
             <span className="font-medium">Guasto caldaia - E01</span>
           </div>
 
           {/* Solution */}
           <div>
-            <p className="text-sm text-muted-foreground mb-1">Lavoro eseguito:</p>
+            <p className="text-sm text-muted-foreground mb-1">{p.workPerformed}</p>
             <p className="text-sm bg-muted/50 rounded-lg p-3">
-              Sostituita valvola di sicurezza e pulito elettrodo di accensione. 
-              Verificato funzionamento completo. La caldaia ora funziona regolarmente.
+              {p.workDescription}
             </p>
           </div>
 
@@ -66,7 +69,7 @@ export function DemoPhase8({ onNext }: DemoPhaseProps) {
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Durata effettiva:</span>
+              <span className="text-muted-foreground">{p.actualDuration}</span>
             </div>
             <span className="font-medium">1h 45min</span>
           </div>
@@ -75,7 +78,7 @@ export function DemoPhase8({ onNext }: DemoPhaseProps) {
           <div>
             <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
               <Camera className="h-4 w-4" />
-              Foto lavoro completato (demo):
+              {p.completedPhotos}
             </p>
             <div className="grid grid-cols-2 gap-2">
               <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
@@ -94,24 +97,24 @@ export function DemoPhase8({ onNext }: DemoPhaseProps) {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Euro className="h-5 w-5 text-primary" />
-            Dettaglio costi
+            {p.costDetails}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Manodopera (1.75h × €45/h):</span>
+            <span className="text-muted-foreground">{p.labor} (1.75h × €45/h):</span>
             <span>€78,75</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Ricambi:</span>
+            <span className="text-muted-foreground">{p.parts}</span>
             <span>€35,00</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Uscita:</span>
+            <span className="text-muted-foreground">{p.callOut}</span>
             <span>€15,00</span>
           </div>
           <div className="border-t pt-3 flex justify-between">
-            <span className="font-medium">Totale:</span>
+            <span className="font-medium">{p.total}</span>
             <span className="font-bold text-lg">€128,75</span>
           </div>
         </CardContent>
@@ -120,7 +123,7 @@ export function DemoPhase8({ onNext }: DemoPhaseProps) {
       {/* CTA */}
       <Button className="w-full" size="lg" onClick={onNext}>
         <CheckCircle className="h-4 w-4 mr-2" />
-        Conferma completamento
+        {p.confirmCompletion}
       </Button>
     </div>
   );

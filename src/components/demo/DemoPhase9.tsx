@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   CreditCard, 
@@ -9,19 +8,23 @@ import {
   Banknote,
   Smartphone
 } from "lucide-react";
+import { useDemoLanguage } from "@/contexts/DemoLanguageContext";
 
 interface DemoPhaseProps {
   onNext?: () => void;
 }
 
 export function DemoPhase9({ onNext }: DemoPhaseProps) {
+  const { t } = useDemoLanguage();
+  const p = t.phase9;
+
   return (
     <div className="space-y-4">
       {/* Payment Notice */}
       <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
         <CardContent className="py-3">
           <p className="text-sm text-blue-800 dark:text-blue-200 text-center font-medium">
-            Il pagamento avviene solo dopo il completamento del lavoro.
+            {p.paymentNotice}
           </p>
         </CardContent>
       </Card>
@@ -32,14 +35,14 @@ export function DemoPhase9({ onNext }: DemoPhaseProps) {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-primary" />
-              Pagamento
+              {p.payment}
             </CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Amount */}
           <div className="text-center py-4 bg-muted/50 rounded-lg">
-            <p className="text-sm text-muted-foreground mb-1">Totale da pagare</p>
+            <p className="text-sm text-muted-foreground mb-1">{p.totalToPay}</p>
             <div className="flex items-center justify-center gap-1">
               <Euro className="h-6 w-6 text-primary" />
               <span className="text-3xl font-bold text-primary">128,75</span>
@@ -48,14 +51,14 @@ export function DemoPhase9({ onNext }: DemoPhaseProps) {
 
           {/* Payment Methods */}
           <div>
-            <p className="text-sm font-medium mb-3">Metodi di pagamento disponibili:</p>
+            <p className="text-sm font-medium mb-3">{p.paymentMethods}</p>
             <div className="space-y-2">
               {/* Card */}
               <div className="flex items-center gap-3 p-3 border-2 border-primary rounded-lg bg-primary/5">
                 <CreditCard className="h-5 w-5 text-primary" />
                 <div className="flex-1">
-                  <p className="font-medium">Carta di credito / debito</p>
-                  <p className="text-xs text-muted-foreground">Pagamento tracciato in app</p>
+                  <p className="font-medium">{p.creditDebit}</p>
+                  <p className="text-xs text-muted-foreground">{p.trackedInApp}</p>
                 </div>
                 <CheckCircle className="h-5 w-5 text-primary" />
               </div>
@@ -64,8 +67,8 @@ export function DemoPhase9({ onNext }: DemoPhaseProps) {
               <div className="flex items-center gap-3 p-3 border rounded-lg">
                 <Smartphone className="h-5 w-5 text-blue-600" />
                 <div className="flex-1">
-                  <p className="font-medium">PayPal</p>
-                  <p className="text-xs text-muted-foreground">Pagamento tracciato in app</p>
+                  <p className="font-medium">{p.paypal}</p>
+                  <p className="text-xs text-muted-foreground">{p.trackedInApp}</p>
                 </div>
               </div>
 
@@ -73,8 +76,8 @@ export function DemoPhase9({ onNext }: DemoPhaseProps) {
               <div className="flex items-center gap-3 p-3 border rounded-lg">
                 <Banknote className="h-5 w-5 text-green-600" />
                 <div className="flex-1">
-                  <p className="font-medium">Contanti</p>
-                  <p className="text-xs text-muted-foreground">Pagamento diretto al tecnico</p>
+                  <p className="font-medium">{p.cash}</p>
+                  <p className="text-xs text-muted-foreground">{p.directToTechnician}</p>
                 </div>
               </div>
             </div>
@@ -84,10 +87,10 @@ export function DemoPhase9({ onNext }: DemoPhaseProps) {
           <Card className="bg-muted/30">
             <CardContent className="py-3">
               <p className="text-sm text-muted-foreground">
-                Il metodo di pagamento dipende dalle preferenze del cliente e del tecnico.
+                {p.paymentMethodNote}
               </p>
               <p className="text-xs text-muted-foreground mt-2">
-                Per contanti: nessuna gestione del contante da parte di FIXO.
+                {p.cashNote}
               </p>
             </CardContent>
           </Card>
@@ -95,7 +98,7 @@ export function DemoPhase9({ onNext }: DemoPhaseProps) {
           {/* Security */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Shield className="h-4 w-4" />
-            <span>Pagamento sicuro e tracciato</span>
+            <span>{p.securePayment}</span>
           </div>
         </CardContent>
       </Card>
@@ -109,10 +112,10 @@ export function DemoPhase9({ onNext }: DemoPhaseProps) {
             </div>
             <div>
               <p className="font-semibold text-green-800 dark:text-green-200">
-                Pagamento completato (demo)
+                {p.paymentCompleted}
               </p>
               <p className="text-sm text-green-600 dark:text-green-300">
-                Carta •••• 4242
+                {p.card} •••• 4242
               </p>
             </div>
           </div>
@@ -122,7 +125,7 @@ export function DemoPhase9({ onNext }: DemoPhaseProps) {
       {/* CTA */}
       <Button className="w-full" size="lg" onClick={onNext}>
         <CheckCircle className="h-4 w-4 mr-2" />
-        Continua
+        {t.phase3.continue}
       </Button>
     </div>
   );

@@ -11,12 +11,16 @@ import {
   Unlock,
   Star
 } from "lucide-react";
+import { useDemoLanguage } from "@/contexts/DemoLanguageContext";
 
 interface DemoPhaseProps {
   onNext?: () => void;
 }
 
 export function DemoPhase6({ onNext }: DemoPhaseProps) {
+  const { t } = useDemoLanguage();
+  const p = t.phase6;
+
   return (
     <div className="space-y-4">
       {/* Slot Selection */}
@@ -24,7 +28,7 @@ export function DemoPhase6({ onNext }: DemoPhaseProps) {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
-            Il tecnico seleziona lo slot
+            {p.technicianSelectsSlot}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -33,12 +37,12 @@ export function DemoPhase6({ onNext }: DemoPhaseProps) {
               <span className="w-20 text-sm font-mono">15:00</span>
               <div className="flex-1 flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Slot selezionato</span>
+                <span className="text-sm font-medium">{p.slotSelected}</span>
               </div>
             </div>
             <div className="flex items-center p-3 rounded-lg bg-muted/30">
               <span className="w-20 text-sm font-mono">17:00</span>
-              <span className="text-sm text-muted-foreground">Fine prevista</span>
+              <span className="text-sm text-muted-foreground">{p.expectedEnd}</span>
             </div>
           </div>
         </CardContent>
@@ -53,10 +57,10 @@ export function DemoPhase6({ onNext }: DemoPhaseProps) {
             </div>
             <div>
               <p className="font-bold text-green-800 dark:text-green-200 text-lg">
-                Appuntamento Confermato!
+                {p.appointmentConfirmed}
               </p>
               <p className="text-sm text-green-600 dark:text-green-300">
-                Stato: Confermato
+                {p.statusConfirmed}
               </p>
             </div>
           </div>
@@ -69,7 +73,7 @@ export function DemoPhase6({ onNext }: DemoPhaseProps) {
           <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
             <Unlock className="h-4 w-4" />
             <p className="text-sm font-medium">
-              Contatti e indirizzo ora visibili (demo)
+              {p.contactsUnlocked}
             </p>
           </div>
         </CardContent>
@@ -79,8 +83,8 @@ export function DemoPhase6({ onNext }: DemoPhaseProps) {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Dettagli Appuntamento</CardTitle>
-            <Badge className="bg-green-500">Confermato</Badge>
+            <CardTitle className="text-base">{p.appointmentDetails}</CardTitle>
+            <Badge className="bg-green-500">{p.confirmed}</Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -88,7 +92,7 @@ export function DemoPhase6({ onNext }: DemoPhaseProps) {
           <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
             <Calendar className="h-5 w-5 text-primary" />
             <div>
-              <p className="font-medium">Oggi, 27 Dicembre 2024</p>
+              <p className="font-medium">Today, December 27, 2024</p>
               <p className="text-sm text-muted-foreground">15:00 - 17:00</p>
             </div>
           </div>
@@ -104,7 +108,7 @@ export function DemoPhase6({ onNext }: DemoPhaseProps) {
             <div className="flex items-start gap-3 p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
               <MapPin className="h-4 w-4 text-green-600 mt-0.5" />
               <div className="flex-1">
-                <p className="text-xs text-green-600">Indirizzo:</p>
+                <p className="text-xs text-green-600">{p.address}</p>
                 <p className="font-medium text-green-800 dark:text-green-200">
                   Via Roma 42, 20100 Milano
                 </p>
@@ -117,7 +121,7 @@ export function DemoPhase6({ onNext }: DemoPhaseProps) {
       {/* Technician Card */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Tecnico Assegnato</CardTitle>
+          <CardTitle className="text-base">{p.assignedTechnician}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">
@@ -128,7 +132,7 @@ export function DemoPhase6({ onNext }: DemoPhaseProps) {
               <p className="font-semibold">Marco Rossi</p>
               <div className="flex items-center gap-2 text-sm">
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                <span>4.9 (127 recensioni)</span>
+                <span>4.9 (127 reviews)</span>
               </div>
             </div>
           </div>
@@ -138,7 +142,7 @@ export function DemoPhase6({ onNext }: DemoPhaseProps) {
       {/* CTA */}
       <Button className="w-full" size="lg" onClick={onNext}>
         <CheckCircle className="h-4 w-4 mr-2" />
-        Continua
+        {t.phase3.continue}
       </Button>
     </div>
   );

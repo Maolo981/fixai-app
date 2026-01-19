@@ -4,12 +4,16 @@ import { Button } from "@/components/ui/button";
 import { 
   CheckCircle
 } from "lucide-react";
+import { useDemoLanguage } from "@/contexts/DemoLanguageContext";
 
 interface DemoPhaseProps {
   onNext?: () => void;
 }
 
 export function DemoPhase11({ onNext }: DemoPhaseProps) {
+  const { t } = useDemoLanguage();
+  const p = t.phase11;
+
   return (
     <div className="space-y-4">
       {/* Final Summary */}
@@ -17,10 +21,10 @@ export function DemoPhase11({ onNext }: DemoPhaseProps) {
         <CardContent className="py-6 text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-green-800 dark:text-green-200 mb-2">
-            Processo Completato!
+            {p.processCompleted}
           </h3>
           <p className="text-sm text-green-600 dark:text-green-300 mb-4">
-            Dalla diagnosi al pagamento, tutto tracciato e sicuro.
+            {p.fromDiagnosisToPayment}
           </p>
         </CardContent>
       </Card>
@@ -32,19 +36,19 @@ export function DemoPhase11({ onNext }: DemoPhaseProps) {
             <div className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
               <CheckCircle className="h-5 w-5 text-green-600" />
               <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                Intervento completato
+                {p.interventionCompleted}
               </span>
             </div>
             <div className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
               <CheckCircle className="h-5 w-5 text-green-600" />
               <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                Recensione registrata
+                {p.reviewRecorded}
               </span>
             </div>
             <div className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
               <CheckCircle className="h-5 w-5 text-green-600" />
               <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                Processo concluso
+                {p.processEnded}
               </span>
             </div>
           </div>
@@ -55,20 +59,20 @@ export function DemoPhase11({ onNext }: DemoPhaseProps) {
       <Card>
         <CardContent className="py-4">
           <p className="text-sm font-medium text-center mb-3">
-            Con FIXO hai ottenuto:
+            {p.withFixoYouGot}
           </p>
           <div className="flex justify-center gap-2 flex-wrap">
             <Badge variant="outline" className="text-green-600 border-green-300">
-              ✓ Tecnico verificato
+              {p.verifiedTechnician}
             </Badge>
             <Badge variant="outline" className="text-green-600 border-green-300">
-              ✓ Prezzi trasparenti
+              {p.transparentPrices}
             </Badge>
             <Badge variant="outline" className="text-green-600 border-green-300">
-              ✓ Pagamento tracciato
+              {p.trackedPayment}
             </Badge>
             <Badge variant="outline" className="text-green-600 border-green-300">
-              ✓ Recensione verificata
+              {p.verifiedReview}
             </Badge>
           </div>
         </CardContent>
@@ -77,7 +81,7 @@ export function DemoPhase11({ onNext }: DemoPhaseProps) {
       {/* CTA */}
       <Button className="w-full" size="lg" onClick={onNext}>
         <CheckCircle className="h-4 w-4 mr-2" />
-        Scopri come guadagna FIXO
+        {p.discoverRevenue}
       </Button>
     </div>
   );

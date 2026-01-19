@@ -14,19 +14,23 @@ import {
   Lock,
   Sparkles
 } from "lucide-react";
+import { useDemoLanguage } from "@/contexts/DemoLanguageContext";
 
 interface DemoPhaseProps {
   onNext?: () => void;
 }
 
 export function DemoPhase12({ onNext }: DemoPhaseProps) {
+  const { t } = useDemoLanguage();
+  const p = t.phase12;
+
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="text-center pb-2">
-        <h2 className="text-xl font-bold mb-1">Come guadagna FIXO</h2>
+        <h2 className="text-xl font-bold mb-1">{p.howFixoEarns}</h2>
         <p className="text-sm text-muted-foreground">
-          Modello ibrido, semplice e trasparente
+          {p.hybridModel}
         </p>
       </div>
 
@@ -39,14 +43,14 @@ export function DemoPhase12({ onNext }: DemoPhaseProps) {
             </div>
             <div>
               <h3 className="font-bold mb-2">
-                FIXO non fa pagare l'uso dell'app
+                {p.noAppFee}
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                FIXO mette in contatto clienti e tecnici.
+                {p.appFreeDescription}
                 <br />
-                L'uso dell'app è <strong>gratuito</strong> per entrambi.
+                {p.forBoth} <strong>{p.appFree}</strong>.
                 <br />
-                Nessun abbonamento, nessun costo per registrarsi.
+                {p.noSubscription}
               </p>
             </div>
           </div>
@@ -56,29 +60,29 @@ export function DemoPhase12({ onNext }: DemoPhaseProps) {
       {/* Blocco 2 - Modello di guadagno */}
       <Card>
         <CardContent className="py-5 space-y-4">
-          <h3 className="font-bold text-center">FIXO guadagna in due modi</h3>
+          <h3 className="font-bold text-center">{p.twoWays}</h3>
           
           {/* Modo 1 */}
           <div className="bg-muted/40 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">1</span>
-              <span className="font-semibold text-sm">Costo fisso di gestione della chiamata</span>
+              <span className="font-semibold text-sm">{p.fixedCost}</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed pl-8">
-              Per ogni intervento confermato, FIXO applica un piccolo costo fisso di servizio.
+              {p.fixedCostDesc}
             </p>
             <div className="flex flex-wrap gap-2 mt-3 pl-8">
               <Badge variant="secondary" className="text-xs font-normal">
                 <Sparkles className="h-3 w-3 mr-1" />
-                Uso AI
+                {p.aiUse}
               </Badge>
               <Badge variant="secondary" className="text-xs font-normal">
                 <CheckCircle className="h-3 w-3 mr-1" />
-                Gestione richiesta
+                {p.requestManagement}
               </Badge>
               <Badge variant="secondary" className="text-xs font-normal">
                 <Eye className="h-3 w-3 mr-1" />
-                Sempre visibile
+                {p.alwaysVisible}
               </Badge>
             </div>
           </div>
@@ -87,13 +91,13 @@ export function DemoPhase12({ onNext }: DemoPhaseProps) {
           <div className="bg-muted/40 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">2</span>
-              <span className="font-semibold text-sm">Commissione opzionale (2–3%)</span>
+              <span className="font-semibold text-sm">{p.optionalCommission}</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed pl-8">
-              Se il cliente paga tramite FIXO (carta o PayPal), la piattaforma trattiene una piccola commissione sul totale.
+              {p.optionalCommissionDesc}
             </p>
             <p className="text-xs text-primary font-medium mt-2 pl-8">
-              Percentuale bassa e indicata prima del pagamento.
+              {p.lowPercentage}
             </p>
           </div>
         </CardContent>
@@ -106,20 +110,20 @@ export function DemoPhase12({ onNext }: DemoPhaseProps) {
           <CardContent className="py-4 px-3">
             <div className="flex items-center gap-2 mb-3">
               <Banknote className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs font-semibold">Pagamento fuori app</span>
+              <span className="text-xs font-semibold">{p.paymentOutsideApp}</span>
             </div>
             <ul className="space-y-2 text-xs text-muted-foreground">
               <li className="flex items-start gap-1.5">
                 <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 shrink-0" />
-                <span>Pagamento diretto al tecnico</span>
+                <span>{p.directToTechnician}</span>
               </li>
               <li className="flex items-start gap-1.5">
                 <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 shrink-0" />
-                <span>Solo costo fisso di gestione</span>
+                <span>{p.onlyFixedCost}</span>
               </li>
               <li className="flex items-start gap-1.5">
                 <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 shrink-0" />
-                <span>Nessuna commissione extra</span>
+                <span>{p.noExtraCommission}</span>
               </li>
             </ul>
           </CardContent>
@@ -130,23 +134,23 @@ export function DemoPhase12({ onNext }: DemoPhaseProps) {
           <CardContent className="py-4 px-3">
             <div className="flex items-center gap-2 mb-3">
               <CreditCard className="h-4 w-4 text-primary" />
-              <span className="text-xs font-semibold">Pagamento in app</span>
+              <span className="text-xs font-semibold">{p.paymentInApp}</span>
             </div>
             <ul className="space-y-2 text-xs text-muted-foreground">
               <li className="flex items-start gap-1.5">
                 <Lock className="h-3 w-3 text-primary mt-0.5 shrink-0" />
-                <span>Pagamento tracciato</span>
+                <span>{p.trackedPayment}</span>
               </li>
               <li className="flex items-start gap-1.5">
                 <Shield className="h-3 w-3 text-primary mt-0.5 shrink-0" />
-                <span>Protezione cliente e tecnico</span>
+                <span>{p.clientTechProtection}</span>
               </li>
               <li className="flex items-start gap-1.5">
                 <Headphones className="h-3 w-3 text-primary mt-0.5 shrink-0" />
-                <span>Assistenza se problemi</span>
+                <span>{p.supportIfProblems}</span>
               </li>
               <li className="flex items-start gap-1.5">
-                <span className="text-xs text-primary font-medium">Commissione 2–3%</span>
+                <span className="text-xs text-primary font-medium">{p.commission}</span>
               </li>
             </ul>
           </CardContent>
@@ -160,14 +164,14 @@ export function DemoPhase12({ onNext }: DemoPhaseProps) {
             <Heart className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-sm text-amber-800 dark:text-amber-200 mb-2">
-                FIXO guadagna solo se il servizio funziona
+                {p.trustMessage}
               </p>
               <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-                FIXO non guadagna sulla semplice richiesta.
+                {p.noRequestFee}
                 <br />
-                Guadagna solo quando l'intervento viene gestito correttamente.
+                {p.earnsOnCompletion}
                 <br />
-                <strong>Nessun costo nascosto. Nessun obbligo di pagamento in app.</strong>
+                <strong>{p.noHiddenCosts}</strong>
               </p>
             </div>
           </div>
@@ -182,15 +186,11 @@ export function DemoPhase12({ onNext }: DemoPhaseProps) {
               <CheckCircle className="h-6 w-6 text-white" />
             </div>
             <h3 className="font-bold text-green-800 dark:text-green-200">
-              Processo trasparente
+              {p.transparentProcess}
             </h3>
           </div>
           <div className="space-y-2">
-            {[
-              "Costi chiari prima della conferma",
-              "Pagamento libero: in app o diretto",
-              "FIXO allineata all'interesse di clienti e tecnici"
-            ].map((item, index) => (
+            {[p.clearCosts, p.freePayment, p.alignedInterests].map((item, index) => (
               <div key={index} className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300">
                 <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
                 <span>{item}</span>
@@ -207,7 +207,7 @@ export function DemoPhase12({ onNext }: DemoPhaseProps) {
         onClick={onNext}
       >
         <Home className="h-4 w-4 mr-2" />
-        Fine demo – Torna alla home
+        {p.endDemoHome}
       </Button>
     </div>
   );
