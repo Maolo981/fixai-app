@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SupportChatBot } from "@/components/SupportChatBot";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
 import Index from "./pages/Index";
@@ -43,7 +43,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/install" element={<Install />} />
           <Route path="/demo" element={<DemoFlow />} />
-          <Route path="/en" element={<LandingEN />} />
+          <Route path="/en" element={<Navigate to="/?lang=en" replace />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

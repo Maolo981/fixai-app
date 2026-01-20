@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Camera, Clock, Shield, Users, Zap, Wrench, CheckCircle, ArrowRight, Building2, BarChart3, TrendingUp, Play, Target, Sparkles, Globe } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { MobileLayout } from "@/components/MobileLayout";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const translations = {
   it: {
@@ -176,7 +176,14 @@ const translations = {
 
 const Index = () => {
   const currentYear = new Date().getFullYear();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [lang, setLang] = useState<'it' | 'en'>('it');
+
+  useEffect(() => {
+    const qp = searchParams.get("lang");
+    if (qp === "en" || qp === "it") setLang(qp);
+  }, [searchParams]);
+
   const t = translations[lang];
 
   return (
@@ -198,7 +205,11 @@ const Index = () => {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={() => setLang(lang === 'it' ? 'en' : 'it')}
+                  onClick={() => {
+                    const next = lang === 'it' ? 'en' : 'it';
+                    setLang(next);
+                    setSearchParams({ lang: next });
+                  }}
                   className="font-medium gap-1"
                 >
                   <Globe className="h-4 w-4" />
