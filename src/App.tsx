@@ -20,6 +20,7 @@ import DiagnosisDetail from "./pages/DiagnosisDetail";
 import DemoFlow from "./pages/DemoFlow";
 import NotFound from "./pages/NotFound";
 import LandingEN from "./pages/LandingEN";
+import TrackTechnician from "./pages/TrackTechnician";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/install" element={<Install />} />
           <Route path="/demo" element={<DemoFlow />} />
+          <Route path="/track/:jobId" element={<TrackTechnician />} />
           <Route path="/en" element={<Navigate to="/?lang=en" replace />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

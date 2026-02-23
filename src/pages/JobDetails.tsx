@@ -875,18 +875,28 @@ const JobDetails = () => {
           {/* Live Tracking - Show when technician is en_route or confirmed and has location */}
           {(job.status === 'en_route' || job.status === 'confirmed' || job.status === 'in_progress') && 
            userLocation && !isTechnician && (
-            <TechnicianLiveTracker
-              jobId={job.id}
-              userLatitude={userLocation.latitude}
-              userLongitude={userLocation.longitude}
-              technicianName={job.technicians?.full_name}
-              onArrival={() => {
-                toast({
-                  title: "🏠 Il Tecnico è Arrivato!",
-                  description: "Apri la porta per farlo entrare",
-                });
-              }}
-            />
+            <>
+              <TechnicianLiveTracker
+                jobId={job.id}
+                userLatitude={userLocation.latitude}
+                userLongitude={userLocation.longitude}
+                technicianName={job.technicians?.full_name}
+                onArrival={() => {
+                  toast({
+                    title: "🏠 Il Tecnico è Arrivato!",
+                    description: "Apri la porta per farlo entrare",
+                  });
+                }}
+              />
+              <Button
+                className="w-full"
+                variant="default"
+                onClick={() => navigate(`/track/${job.id}`)}
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Segui il tecnico sulla mappa
+              </Button>
+            </>
           )}
 
           {/* Status Card */}
