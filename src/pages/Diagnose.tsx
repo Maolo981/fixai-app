@@ -12,6 +12,7 @@ import { MobileLayout } from "@/components/MobileLayout";
 import { cn } from "@/lib/utils";
 import { useDiagnosis } from "@/hooks/useDiagnosis";
 import { DiagnosisResultCard } from "@/components/DiagnosisResultCard";
+import { DiagnosisTour } from "@/components/DiagnosisTour";
 
 interface Message {
   role: "user" | "assistant";
@@ -455,6 +456,7 @@ const Diagnose = () => {
         {/* Quick Diagnosis Mode */}
         {mode === 'quick' && (
           <div className="flex-1 px-4 py-6 overflow-auto">
+            <DiagnosisTour />
             <div className="container max-w-2xl mx-auto space-y-5">
               {!result ? (
                 <>
