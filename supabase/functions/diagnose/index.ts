@@ -124,7 +124,7 @@ serve(async (req) => {
         user_description: description || null,
         // Italian fields
         tipo_problema: diagnosis.tipo_problema || 'non_riconosciuto',
-        categoria: diagnosis.categoria || 'altro',
+        category: diagnosis.categoria || 'altro',
         descrizione_problema: diagnosis.descrizione_problema || '',
         gravita: diagnosis.gravita || 'medio',
         gravita_score: Math.min(10, Math.max(0, parseInt(diagnosis.gravita_score) || 5)),
