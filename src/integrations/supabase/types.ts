@@ -194,20 +194,39 @@ export type Database = {
           ai_probability: number | null
           ai_risk: string | null
           ai_steps: string[] | null
+          azioni_immediate: string | null
           category: string | null
+          completed_at: string | null
+          completion_photo_url: string | null
           created_at: string | null
+          descrizione_problema: string | null
           estimated_cost_max: number | null
           estimated_cost_min: number | null
           estimated_time_hours: number | null
+          final_price: number | null
+          gravita: string | null
+          gravita_score: number | null
           id: string
           image_url: string
           input_images: string[] | null
           input_text: string | null
+          matched_at: string | null
+          note_aggiuntive: string | null
+          payment_method: string | null
+          payment_status: string | null
           possible_cause: string | null
+          preventivo_max: number | null
+          preventivo_min: number | null
           problem_type: string
+          professional_id: string | null
+          professionista_necessario: string | null
           recommended_specialty: string
           status: string | null
+          tempo_stimato: string | null
+          tipo_problema: string | null
+          updated_at: string | null
           urgency_level: string
+          user_description: string | null
           user_id: string
         }
         Insert: {
@@ -215,20 +234,39 @@ export type Database = {
           ai_probability?: number | null
           ai_risk?: string | null
           ai_steps?: string[] | null
+          azioni_immediate?: string | null
           category?: string | null
+          completed_at?: string | null
+          completion_photo_url?: string | null
           created_at?: string | null
+          descrizione_problema?: string | null
           estimated_cost_max?: number | null
           estimated_cost_min?: number | null
           estimated_time_hours?: number | null
+          final_price?: number | null
+          gravita?: string | null
+          gravita_score?: number | null
           id?: string
           image_url: string
           input_images?: string[] | null
           input_text?: string | null
+          matched_at?: string | null
+          note_aggiuntive?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
           possible_cause?: string | null
+          preventivo_max?: number | null
+          preventivo_min?: number | null
           problem_type: string
+          professional_id?: string | null
+          professionista_necessario?: string | null
           recommended_specialty: string
           status?: string | null
+          tempo_stimato?: string | null
+          tipo_problema?: string | null
+          updated_at?: string | null
           urgency_level: string
+          user_description?: string | null
           user_id: string
         }
         Update: {
@@ -236,20 +274,39 @@ export type Database = {
           ai_probability?: number | null
           ai_risk?: string | null
           ai_steps?: string[] | null
+          azioni_immediate?: string | null
           category?: string | null
+          completed_at?: string | null
+          completion_photo_url?: string | null
           created_at?: string | null
+          descrizione_problema?: string | null
           estimated_cost_max?: number | null
           estimated_cost_min?: number | null
           estimated_time_hours?: number | null
+          final_price?: number | null
+          gravita?: string | null
+          gravita_score?: number | null
           id?: string
           image_url?: string
           input_images?: string[] | null
           input_text?: string | null
+          matched_at?: string | null
+          note_aggiuntive?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
           possible_cause?: string | null
+          preventivo_max?: number | null
+          preventivo_min?: number | null
           problem_type?: string
+          professional_id?: string | null
+          professionista_necessario?: string | null
           recommended_specialty?: string
           status?: string | null
+          tempo_stimato?: string | null
+          tipo_problema?: string | null
+          updated_at?: string | null
           urgency_level?: string
+          user_description?: string | null
           user_id?: string
         }
         Relationships: []

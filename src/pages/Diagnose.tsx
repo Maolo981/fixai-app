@@ -3,12 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Send, Image as ImageIcon, Loader2, Wrench, X, Video, Calendar } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Send, Image as ImageIcon, Loader2, Wrench, X, Video, Calendar, Camera, Brain, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { MobileLayout } from "@/components/MobileLayout";
 import { cn } from "@/lib/utils";
+import { useDiagnosis } from "@/hooks/useDiagnosis";
+import { DiagnosisResultCard } from "@/components/DiagnosisResultCard";
 
 interface Message {
   role: "user" | "assistant";
@@ -21,6 +24,7 @@ interface Message {
 }
 
 const Diagnose = () => {
+  const [mode, setMode] = useState<'quick' | 'chat'>('quick');
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -35,6 +39,13 @@ const Diagnose = () => {
   const [videoPreview, setVideoPreview] = useState<string>("");
   const [showQuickReplies, setShowQuickReplies] = useState(true);
   const [isCreatingDiagnosis, setIsCreatingDiagnosis] = useState(false);
+  // Quick diagnosis state
+  const [quickPhoto, setQuickPhoto] = useState<File | null>(null);
+  const [quickPhotoPreview, setQuickPhotoPreview] = useState<string>("");
+  const [quickDescription, setQuickDescription] = useState("");
+  const quickPhotoRef = useRef<HTMLInputElement>(null);
+  const { diagnose, result, diagnosisId, isLoading: isDiagnosing, error: diagError, reset } = useDiagnosis();
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -67,6 +78,40 @@ const Diagnose = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Show diagnosis errors as toast
+  useEffect(() => {
+    if (diagError) {
+      toast({ title: "Errore diagnosi", description: diagError, variant: "destructive" });
+    }
+  }, [diagError]);
+
+  const handleQuickPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast({ title: "File troppo grande", description: "Max 10MB", variant: "destructive" });
+        return;
+      }
+      setQuickPhoto(file);
+      setQuickPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleQuickDiagnose = async () => {
+    if (!quickPhoto) {
+      toast({ title: "Foto necessaria", description: "Carica una foto del problema", variant: "destructive" });
+      return;
+    }
+    await diagnose(quickPhoto, quickDescription || undefined);
+  };
+
+  const handleNewDiagnosis = () => {
+    reset();
+    setQuickPhoto(null);
+    setQuickPhotoPreview("");
+    setQuickDescription("");
+  };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -372,6 +417,9 @@ const Diagnose = () => {
         <div className="border-b bg-card sticky top-0 z-10">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
               <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center">
                 <Wrench className="h-5 w-5 text-white" />
               </div>
@@ -380,9 +428,115 @@ const Diagnose = () => {
                 <p className="text-xs text-muted-foreground">Assistente diagnostico FIXO</p>
               </div>
             </div>
+            {/* Mode tabs */}
+            <div className="flex gap-2 mt-3">
+              <Button
+                variant={mode === 'quick' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setMode('quick')}
+                className="gap-1.5 flex-1"
+              >
+                <Camera className="h-4 w-4" />
+                Diagnosi Rapida
+              </Button>
+              <Button
+                variant={mode === 'chat' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setMode('chat')}
+                className="gap-1.5 flex-1"
+              >
+                <Brain className="h-4 w-4" />
+                Chat AI
+              </Button>
+            </div>
           </div>
         </div>
 
+        {/* Quick Diagnosis Mode */}
+        {mode === 'quick' && (
+          <div className="flex-1 px-4 py-6 overflow-auto">
+            <div className="container max-w-2xl mx-auto space-y-5">
+              {!result ? (
+                <>
+                  {/* Photo upload */}
+                  <input
+                    ref={quickPhotoRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleQuickPhotoSelect}
+                  />
+                  
+                  {!quickPhotoPreview ? (
+                    <Card
+                      className="border-dashed border-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => quickPhotoRef.current?.click()}
+                    >
+                      <div className="py-12 text-center">
+                        <Camera className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                        <p className="font-medium">Scatta o carica una foto</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Fotografa il problema per una diagnosi istantanea
+                        </p>
+                      </div>
+                    </Card>
+                  ) : (
+                    <Card className="overflow-hidden relative">
+                      <img src={quickPhotoPreview} alt="Foto problema" className="w-full h-48 object-cover" />
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full"
+                        onClick={() => { setQuickPhoto(null); setQuickPhotoPreview(""); }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </Card>
+                  )}
+
+                  {/* Optional description */}
+                  <Textarea
+                    value={quickDescription}
+                    onChange={(e) => setQuickDescription(e.target.value)}
+                    placeholder="Descrivi brevemente il problema (facoltativo)..."
+                    rows={3}
+                  />
+
+                  {/* Diagnose button */}
+                  <Button
+                    onClick={handleQuickDiagnose}
+                    disabled={!quickPhoto || isDiagnosing}
+                    className="w-full h-12 text-base gap-2"
+                    size="lg"
+                  >
+                    {isDiagnosing ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        FixoAI sta analizzando il problema...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="h-5 w-5" />
+                        Analizza con FixoAI
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <DiagnosisResultCard
+                  result={result}
+                  onFindProfessional={() => navigate(`/results/${diagnosisId}`)}
+                  onNewDiagnosis={handleNewDiagnosis}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Chat Mode (existing) */}
+        {mode === 'chat' && (
+          <>
         {/* Messages */}
         <ScrollArea className="flex-1 px-4 py-6" ref={scrollRef}>
           <div className="container max-w-3xl mx-auto space-y-4">
@@ -575,6 +729,8 @@ const Diagnose = () => {
             </div>
           </div>
         </div>
+          </>
+        )}
       </div>
     </MobileLayout>
   );
