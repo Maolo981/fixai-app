@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orion HIPPS</title>
+<meta name="description" content="Orion HIPPS — High Integrity Pressure Protection Systems progettati e costruiti a Trieste. L'ultimo, indipendente livello di sicurezza contro la sovrapressione.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --surface-2:#eef1f5;
+  --ink:#0d1726; --ink-2:#435066; --line:#dbe1e9;
+  --navy:#0b1b33; --navy-2:#13294b;
+  --accent:#ff6a13; --accent-ink:#ffffff; --ok:#1f9d6b;
+  --radius:14px; --max:1160px;
+  --shadow:0 1px 2px rgba(13,23,38,.06),0 8px 24px rgba(13,23,38,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#070f1c; --surface:#0d1a2e; --surface-2:#12233d;
+    --ink:#e8eef7; --ink-2:#9fb0c8; --line:#1f3352;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#070f1c; --surface:#0d1a2e; --surface-2:#12233d;
+  --ink:#e8eef7; --ink-2:#9fb0c8; --line:#1f3352;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+img,svg{max-width:100%;display:block}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 16px}
+@media (min-width:720px){.wrap{padding:0 32px}}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace;letter-spacing:.04em}
+.eyebrow{font:500 12px/1 "JetBrains Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1,h2,h3{line-height:1.15;margin:0;letter-spacing:-.02em}
+h2{font-size:clamp(28px,4vw,40px);font-weight:700}
+h3{font-size:18px;font-weight:600}
+p{margin:0}
+.muted{color:var(--ink-2)}
+section{padding:88px 0}
+.section-head{display:grid;gap:14px;max-width:720px;margin-bottom:44px}
+
+/* nav */
+header.nav{position:fixed;inset:0 0 auto 0;z-index:50;transition:background .25s,border-color .25s;border-bottom:1px solid transparent}
+header.nav.scrolled{background:color-mix(in srgb,var(--navy) 92%,transparent);backdrop-filter:blur(10px);border-color:rgba(255,255,255,.08)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:68px;color:#fff}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;letter-spacing:.02em}
+.brand svg{width:30px;height:30px}
+.brand small{display:block;font:500 10px/1 "JetBrains Mono",monospace;letter-spacing:.18em;opacity:.65;margin-top:3px}
+.links{display:none;gap:28px;align-items:center}
+.links a{text-decoration:none;font-size:14px;opacity:.82}
+.links a:hover{opacity:1}
+@media (min-width:900px){.links{display:flex}}
+.nav-tools{display:flex;gap:8px;align-items:center}
+.chip{border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;border-radius:999px;padding:6px 12px;font:500 12px/1 "JetBrains Mono",monospace;cursor:pointer}
+.chip:hover{border-color:#fff}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:10px;font-weight:600;font-size:15px;text-decoration:none;border:1px solid transparent;transition:transform .15s,background .15s}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--accent);color:var(--accent-ink)}
+.btn-primary:hover{background:#ff7d33}
+.btn-ghost{border-color:rgba(255,255,255,.3);color:#fff}
+.btn-ghost:hover{border-color:#fff}
+
+/* hero */
+.hero{position:relative;background:radial-gradient(1200px 600px at 80% 10%,#1b3a6b 0%,transparent 60%),linear-gradient(180deg,var(--navy) 0%,#081428 100%);color:#fff;padding:150px 0 90px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:48px 48px;mask-image:linear-gradient(180deg,#000 40%,transparent)}
+.hero-grid{position:relative;display:grid;gap:48px;align-items:center}
+@media (min-width:960px){.hero-grid{grid-template-columns:1.05fr .95fr}}
+.hero h1{font-size:clamp(38px,6vw,66px);font-weight:700;margin:18px 0 22px}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero p.lead{font-size:clamp(17px,2vw,20px);color:#c4d0e3;max-width:560px}
+.hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
+.badges{display:flex;flex-wrap:wrap;gap:10px;margin-top:40px}
+.badge{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);border-radius:8px;padding:8px 12px;font:500 12px/1 "JetBrains Mono",monospace;letter-spacing:.06em;color:#dbe5f3}
+
+/* gauge */
+.gauge-card{background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.gauge-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font:500 12px/1 "JetBrains Mono",monospace;letter-spacing:.1em;color:#9fb3d1}
+.status{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(31,157,107,.15);color:#5fe0a9;transition:all .3s}
+.status i{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
+.status.trip{background:rgba(255,106,19,.18);color:#ffb38a}
+.gauge-readout{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.ro{background:rgba(0,0,0,.25);border-radius:10px;padding:12px}
+.ro b{display:block;font:600 20px/1.1 "JetBrains Mono",monospace;color:#fff}
+.ro span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8ea3c2}
+
+/* stats */
+.stats{background:var(--navy-2);color:#fff;padding:0}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr)}
+@media (min-width:800px){.stats-grid{grid-template-columns:repeat(4,1fr)}}
+.stat{padding:30px 16px;border-right:1px solid rgba(255,255,255,.08)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font-size:clamp(26px,3.4vw,38px);font-weight:700;letter-spacing:-.02em}
+.stat span{color:#a9badb;font-size:14px}
+
+/* what */
+.split{display:grid;gap:40px;align-items:start}
+@media (min-width:900px){.split{grid-template-columns:1fr 1fr;gap:64px}}
+.prose{display:grid;gap:18px;font-size:17px;color:var(--ink-2)}
+.prose strong{color:var(--ink)}
+.layers{display:grid;gap:8px}
+.layer{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-size:15px}
+.layer .n{font:600 12px/1 "JetBrains Mono",monospace;color:var(--ink-2);width:26px}
+.layer.hi{background:var(--navy);color:#fff;border-color:var(--navy);box-shadow:0 10px 30px rgba(11,27,51,.25)}
+.layer.hi .n{color:var(--accent)}
+.layer .tag{margin-left:auto;font:500 11px/1 "JetBrains Mono",monospace;padding:5px 8px;border-radius:6px;background:var(--accent);color:#fff}
+
+/* loop diagram */
+.loop{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:var(--shadow);overflow-x:auto}
+.loop svg{min-width:640px;width:100%;height:auto}
+.loop text{font-family:Inter,sans-serif}
+.cards{display:grid;gap:16px;margin-top:28px}
+@media (min-width:800px){.cards{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:26px;display:grid;gap:12px;align-content:start}
+.card .ico{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.card ul{margin:4px 0 0;padding-left:18px;color:var(--ink-2);font-size:15px;display:grid;gap:4px}
+
+/* features */
+.alt{background:var(--surface-2)}
+.feat-grid{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+@media (min-width:700px){.feat-grid{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1000px){.feat-grid{grid-template-columns:repeat(3,1fr)}}
+.feat{background:var(--surface);padding:28px;display:grid;gap:10px;align-content:start}
+.feat .k{font:500 12px/1 "JetBrains Mono",monospace;color:var(--accent)}
+
+/* applications */
+.apps{display:grid;gap:16px}
+@media (min-width:700px){.apps{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1000px){.apps{grid-template-columns:repeat(4,1fr)}}
+.app{position:relative;border-radius:var(--radius);overflow:hidden;min-height:220px;padding:22px;display:flex;flex-direction:column;justify-content:flex-end;color:#fff;background:var(--navy)}
+.app svg.bg{position:absolute;inset:0;width:100%;height:100%;opacity:.5}
+.app > *{position:relative}
+.app p{color:#c4d0e3;font-size:14px;margin-top:6px}
+
+/* process */
+.steps{display:grid;gap:0;counter-reset:s}
+@media (min-width:900px){.steps{grid-template-columns:repeat(5,1fr)}}
+.step{padding:24px 20px 24px 0;border-top:2px solid var(--line);position:relative}
+.step::before{counter-increment:s;content:"0" counter(s);font:600 13px/1 "JetBrains Mono",monospace;color:var(--accent);display:block;margin-bottom:14px}
+.step::after{content:"";position:absolute;top:-6px;left:0;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.step p{color:var(--ink-2);font-size:15px;margin-top:8px}
+
+/* about */
+.about{background:var(--navy);color:#fff}
+.about .muted{color:#b4c3da}
+.about-grid{display:grid;gap:40px;align-items:center}
+@media (min-width:900px){.about-grid{grid-template-columns:1.1fr .9fr}}
+.map{border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:20px;background:rgba(255,255,255,.03)}
+
+/* contact */
+.contact-grid{display:grid;gap:32px}
+@media (min-width:900px){.contact-grid{grid-template-columns:.9fr 1.1fr}}
+form{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:28px;display:grid;gap:16px;box-shadow:var(--shadow)}
+.row{display:grid;gap:16px}
+@media (min-width:600px){.row{grid-template-columns:1fr 1fr}}
+label{display:grid;gap:6px;font-size:13px;font-weight:600}
+input,select,textarea{font:inherit;font-weight:400;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+textarea{min-height:120px;resize:vertical}
+.info{display:grid;gap:14px;margin-top:28px}
+.info div{display:flex;gap:14px;align-items:flex-start}
+.info svg{flex:none;color:var(--accent);margin-top:3px}
+.form-ok{display:none;padding:12px 14px;border-radius:10px;background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok);font-weight:600;font-size:14px}
+
+.timeline{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;margin-top:32px;background:rgba(255,255,255,.1);border-radius:12px;overflow:hidden}
+@media (min-width:600px){.timeline{grid-template-columns:repeat(4,1fr)}}
+.timeline div{background:var(--navy);padding:16px}
+.timeline b{display:block;font:600 20px/1 "JetBrains Mono",monospace;color:var(--accent);margin-bottom:8px}
+.timeline span{font-size:13px;color:#b4c3da}
+footer{background:#050c18;color:#8ea3c2;padding:40px 0;font-size:14px}
+.foot{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a href="#top" class="brand" aria-label="Orion HIPPS">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="14.5" stroke="#fff" stroke-width="1.5"/><path d="M16 5v22M5 16h22" stroke="#fff" stroke-opacity=".25"/><path d="M9 21l7-12 7 12z" fill="#ff6a13"/><circle cx="16" cy="16" r="2.5" fill="#fff"/></svg>
+      <span>ORION HIPPS<small>TRIESTE · ITALY</small></span>
+    </a>
+    <nav class="links">
+      <a href="#hipps" data-i18n="nav.hipps">Cos'è HIPPS</a>
+      <a href="#sistema" data-i18n="nav.system">Il sistema</a>
+      <a href="#applicazioni" data-i18n="nav.apps">Applicazioni</a>
+      <a href="#azienda" data-i18n="nav.about">Azienda</a>
+      <a href="#contatti" data-i18n="nav.contact">Contatti</a>
+    </nav>
+    <div class="nav-tools">
+      <button class="chip" id="lang" aria-label="Change language">EN</button>
+      <button class="chip" id="theme" aria-label="Toggle theme">◐</button>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow" data-i18n="hero.eyebrow">High Integrity Pressure Protection Systems</span>
+      <h1 data-i18n-html="hero.title">L'ultimo livello di sicurezza<br>contro la <em>sovrapressione</em>.</h1>
+      <p class="lead" data-i18n="hero.lead">System integrator di sistemi HIPPS completi: dalla progettazione alla produzione, fino alla certificazione SIL e all'assistenza in campo. Proteggiamo linee e impianti a valle isolando la sorgente di pressione prima che diventi un evento critico.</p>
+      <div class="hero-cta">
+        <a href="#contatti" class="btn btn-primary"><span data-i18n="hero.cta1">Richiedi una consulenza</span> →</a>
+        <a href="#sistema" class="btn btn-ghost" data-i18n="hero.cta2">Scopri il sistema</a>
+      </div>
+      <div class="badges">
+        <span class="badge">SIL 3 CAPABLE</span>
+        <span class="badge">IEC 61508 / 61511</span>
+        <span class="badge">MADE IN ITALY</span>
+      </div>
+    </div>
+
+    <div class="gauge-card" aria-label="Simulazione HIPPS">
+      <div class="gauge-top">
+        <span>PT-101 · LINE PRESSURE</span>
+        <span class="status" id="status"><i></i><span id="statusTxt">NORMAL</span></span>
+      </div>
+      <svg viewBox="0 0 300 180" aria-hidden="true">
+        <defs>
+          <linearGradient id="arc" x1="0" x2="1">
+            <stop offset="0" stop-color="#1f9d6b"/><stop offset=".6" stop-color="#f5c542"/><stop offset="1" stop-color="#ff6a13"/>
+          </linearGradient>
+        </defs>
+        <path d="M30 160 A120 120 0 0 1 270 160" stroke="rgba(255,255,255,.08)" stroke-width="18" fill="none" stroke-linecap="round"/>
+        <path id="arcFill" d="M30 160 A120 120 0 0 1 270 160" stroke="url(#arc)" stroke-width="18" fill="none" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="60"/>
+        <!-- trip line at 85% -->
+        <g transform="rotate(63 150 160)"><line x1="150" y1="28" x2="150" y2="52" stroke="#ff6a13" stroke-width="3"/></g>
+        <text x="236" y="40" fill="#ff9a5e" font-size="10" font-family="JetBrains Mono">TRIP</text>
+        <g id="needle" style="transform-origin:150px 160px;transition:transform .5s cubic-bezier(.3,1.4,.5,1)">
+          <line x1="150" y1="160" x2="150" y2="58" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        </g>
+        <circle cx="150" cy="160" r="9" fill="#fff"/>
+      </svg>
+      <div class="gauge-readout">
+        <div class="ro"><b id="pVal">42.0</b><span>bar</span></div>
+        <div class="ro"><b id="vState">OPEN</b><span data-i18n="g.valves">valvole</span></div>
+        <div class="ro"><b id="vote">0oo3</b><span>2oo3 vote</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <div class="wrap stats-grid">
+    <div class="stat"><b>110+</b><span data-i18n="s.1">Sistemi HIPPS consegnati nel mondo</span></div>
+    <div class="stat"><b>SIL 3</b><span data-i18n="s.2">Integrità di sicurezza raggiungibile</span></div>
+    <div class="stat"><b>IEC 61508</b><span data-i18n="s.3">e IEC 61511, piena conformità</span></div>
+    <div class="stat"><b>1950</b><span data-i18n="s.4">Valvole Orion, da Trieste</span></div>
+  </div>
+</section>
+
+<!-- WHAT IS HIPPS -->
+<section id="hipps">
+  <div class="wrap split">
+    <div class="reveal">
+      <div class="section-head">
+        <span class="eyebrow" data-i18n="w.eyebrow">Cos'è un HIPPS</span>
+        <h2 data-i18n="w.title">Una barriera indipendente, quando tutto il resto non basta.</h2>
+      </div>
+      <div class="prose">
+        <p data-i18n-html="w.p1">Un <strong>High Integrity Pressure Protection System</strong> è un sistema meccanico ed elettrico che protegge le linee e le porzioni d'impianto a valle da eventi di sovrapressione, chiudendo la sorgente prima che la pressione superi il limite di progetto.</p>
+        <p data-i18n-html="w.p2">A differenza delle valvole di sicurezza, l'HIPPS <strong>non scarica fluido in atmosfera né in torcia</strong>: isola. Questo riduce le emissioni, elimina il dimensionamento della torcia per il caso peggiore e consente di progettare tubazioni a valle con classi di pressione inferiori.</p>
+        <p data-i18n="w.p3">È l'ultimo e indipendente livello di protezione di un impianto nella prevenzione di eventi drammatici.</p>
+      </div>
+    </div>
+    <div class="reveal">
+      <p class="mono muted" style="font-size:12px;margin-bottom:14px" data-i18n="w.layers">LIVELLI DI PROTEZIONE</p>
+      <div class="layers">
+        <div class="layer"><span class="n">L1</span><span data-i18n="l.1">Progettazione di processo</span></div>
+        <div class="layer"><span class="n">L2</span><span data-i18n="l.2">Sistema di controllo (DCS)</span></div>
+        <div class="layer"><span class="n">L3</span><span data-i18n="l.3">Allarmi e intervento operatore</span></div>
+        <div class="layer hi"><span class="n">L4</span><span data-i18n="l.4">Sistema strumentato di sicurezza — HIPPS</span><span class="tag">ORION</span></div>
+        <div class="layer"><span class="n">L5</span><span data-i18n="l.5">Protezioni fisiche e mitigazione</span></div>
+        <div class="layer"><span class="n">L6</span><span data-i18n="l.6">Piano di emergenza</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SYSTEM -->
+<section id="sistema" class="alt">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow" data-i18n="sys.eyebrow">Il sistema</span>
+      <h2 data-i18n="sys.title">Rilevare. Decidere. Isolare.</h2>
+      <p class="muted" data-i18n="sys.lead">Un HIPPS completo è composto da tre sottosistemi: initiators, logic solver e final elements. Orion li progetta, integra e certifica come un unico anello di sicurezza.</p>
+    </div>
+
+    <div class="loop reveal" aria-label="Schema del loop HIPPS">
+      <svg viewBox="0 0 960 300">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ff6a13"/></marker>
+        </defs>
+        <!-- pipe -->
+        <rect x="20" y="226" width="920" height="22" rx="4" fill="var(--surface-2)" stroke="var(--line)"/>
+        <text x="30" y="276" font-size="12" fill="var(--ink-2)" data-i18n="d.up">◀ MONTE · alta pressione</text>
+        <text x="930" y="276" font-size="12" fill="var(--ink-2)" text-anchor="end" data-i18n="d.down">VALLE · protetto ▶</text>
+        <!-- transmitters -->
+        <g>
+          <rect x="60" y="40" width="200" height="110" rx="12" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="80" y="68" font-size="11" fill="#ff6a13" font-family="JetBrains Mono">01 · SENSE</text>
+          <text x="80" y="92" font-size="16" font-weight="600" fill="var(--ink)" data-i18n="d.t">Initiators</text>
+          <text x="80" y="114" font-size="12" fill="var(--ink-2)" data-i18n="d.t2">Trasmettitori di pressione</text>
+          <g fill="var(--navy-2)" stroke="#ff6a13" stroke-width="1.5">
+            <circle cx="110" cy="200" r="11"/><circle cx="160" cy="200" r="11"/><circle cx="210" cy="200" r="11"/>
+          </g>
+          <path d="M110 211v15M160 211v15M210 211v15" stroke="var(--ink-2)" stroke-width="2"/>
+          <path d="M160 189v-39" stroke="var(--ink-2)" stroke-dasharray="3 3"/>
+        </g>
+        <!-- logic -->
+        <path d="M262 95h116" stroke="#ff6a13" stroke-width="2" marker-end="url(#ah)"/>
+        <g>
+          <rect x="380" y="40" width="200" height="110" rx="12" fill="var(--navy)"/>
+          <text x="400" y="68" font-size="11" fill="#ff6a13" font-family="JetBrains Mono">02 · DECIDE</text>
+          <text x="400" y="92" font-size="16" font-weight="600" fill="#fff" data-i18n="d.l">Logic solver</text>
+          <text x="400" y="114" font-size="12" fill="#b4c3da" data-i18n="d.l2">Elabora e comanda</text>
+        </g>
+        <!-- valves -->
+        <path d="M582 95h116" stroke="#ff6a13" stroke-width="2" marker-end="url(#ah)"/>
+        <g>
+          <rect x="700" y="40" width="200" height="110" rx="12" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="720" y="68" font-size="11" fill="#ff6a13" font-family="JetBrains Mono">03 · ISOLATE</text>
+          <text x="720" y="92" font-size="16" font-weight="600" fill="var(--ink)" data-i18n="d.v">Final elements</text>
+          <text x="720" y="114" font-size="12" fill="var(--ink-2)" data-i18n="d.v2">Valvole on/off attuate</text>
+          <g fill="#ff6a13">
+            <path d="M735 222l20 15-20 15zM775 222l-20 15 20 15z"/>
+            <path d="M835 222l20 15-20 15zM875 222l-20 15 20 15z"/>
+          </g>
+          <rect x="742" y="186" width="26" height="18" rx="3" fill="var(--navy-2)"/>
+          <rect x="842" y="186" width="26" height="18" rx="3" fill="var(--navy-2)"/>
+          <path d="M755 204v18M855 204v18" stroke="var(--ink-2)" stroke-width="2"/>
+          <path d="M800 150v30" stroke="var(--ink-2)" stroke-dasharray="3 3"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card reveal">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 12l4-4"/></svg></div>
+        <h3 data-i18n="c1.t">Initiators</h3>
+        <p class="muted" data-i18n="c1.p">Trasmettitori di pressione dedicati, indipendenti dal sistema di controllo, con logica di voto per eliminare i falsi interventi.</p>
+        <ul><li data-i18n="c1.a">Configurazioni 1oo2 / 2oo3</li><li data-i18n="c1.b">Diagnostica continua</li><li data-i18n="c1.c">Prese d'impulso separate</li></ul>
+      </div>
+      <div class="card reveal">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg></div>
+        <h3 data-i18n="c2.t">Logic solver</h3>
+        <p class="muted" data-i18n="c2.p">Il sistema di sicurezza che riceve i segnali dagli initiators, li elabora e genera le uscite che comandano i final elements per mitigare la condizione pericolosa.</p>
+        <ul><li data-i18n="c2.a">Fail-safe by design</li><li data-i18n="c2.b">Registrazione eventi</li><li data-i18n="c2.c">Interfaccia verso DCS/SCADA</li></ul>
+      </div>
+      <div class="card reveal">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l9 6-9 6zM21 6l-9 6 9 6z"/></svg></div>
+        <h3 data-i18n="c3.t">Final elements</h3>
+        <p class="muted" data-i18n="c3.p">Valvole on/off Orion equipaggiate con attuatori, elettrovalvole e finecorsa, progettate per tenuta stagna e intervento affidabile anche dopo lunghi periodi di inattività.</p>
+        <ul><li data-i18n="c3.a">Partial stroke testing</li><li data-i18n="c3.b">Attuatori ed elettrovalvole</li><li data-i18n="c3.c">Finecorsa di posizione</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section>
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow" data-i18n="f.eyebrow">Perché Orion</span>
+      <h2 data-i18n="f.title">Un unico interlocutore per l'intero anello di sicurezza.</h2>
+    </div>
+    <div class="feat-grid reveal">
+      <div class="feat"><span class="k">/01</span><h3 data-i18n="f1.t">Responsabilità unica</h3><p class="muted" data-i18n="f1.p">Valvole, attuatori, strumentazione e logica progettati e integrati da un solo produttore: nessun anello debole tra fornitori diversi.</p></div>
+      <div class="feat"><span class="k">/02</span><h3 data-i18n="f2.t">Valvole di casa</h3><p class="muted" data-i18n="f2.p">I final elements nascono da oltre 75 anni di esperienza Orion: valvole a saracinesca, globo, ritegno, sfera e farfalla, in acciaio al carbonio, inox, leghe di nichel e titanio.</p></div>
+      <div class="feat"><span class="k">/03</span><h3 data-i18n="f3.t">Calcolo SIL</h3><p class="muted" data-i18n="f3.p">Verifica PFD e architettura secondo il ciclo di vita IEC 61508 / IEC 61511, con documentazione pronta per l'ente certificatore.</p></div>
+      <div class="feat"><span class="k">/04</span><h3 data-i18n="f4.t">Skid compatti</h3><p class="muted" data-i18n="f4.p">Sistemi pre-assemblati su skid, cablati e collaudati in fabbrica per ridurre tempi e rischi d'installazione in sito.</p></div>
+      <div class="feat"><span class="k">/05</span><h3 data-i18n="f5.t">Test in linea</h3><p class="muted" data-i18n="f5.p">Predisposizione per proof test e partial stroke senza fermare l'impianto, per mantenere il livello SIL nel tempo.</p></div>
+      <div class="feat"><span class="k">/06</span><h3 data-i18n="f6.t">Field services</h3><p class="muted" data-i18n="f6.p">Al fianco di operatori ed EPC contractor dalla specifica al commissioning, con assistenza in campo, formazione e post-vendita in tutto il mondo.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- APPLICATIONS -->
+<section id="applicazioni" class="alt">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow" data-i18n="a.eyebrow">Applicazioni</span>
+      <h2 data-i18n="a.title">Dove la pressione non perdona.</h2>
+    </div>
+    <div class="apps">
+      <div class="app reveal">
+        <svg class="bg" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice"><g stroke="#ff6a13" fill="none" stroke-width="1"><path d="M0 150h200M0 130h200"/><circle cx="60" cy="140" r="14"/><circle cx="140" cy="140" r="14"/></g><g stroke="#3a5a8c" fill="none"><path d="M20 120V40h40v80M120 120V60h50v60"/></g></svg>
+        <h3 data-i18n="a1.t">Oil &amp; Gas upstream</h3><p data-i18n="a1.p">Teste pozzo, flowline e manifold ad alta pressione.</p>
+      </div>
+      <div class="app reveal">
+        <svg class="bg" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice"><g stroke="#3a5a8c" fill="none"><path d="M0 100h200M0 110h200"/><path d="M40 100V50M80 100V30M120 100V60"/></g><circle cx="160" cy="70" r="24" stroke="#ff6a13" fill="none"/></svg>
+        <h3 data-i18n="a2.t">Gasdotti e stazioni</h3><p data-i18n="a2.p">Protezione delle linee di trasporto e delle stazioni di riduzione.</p>
+      </div>
+      <div class="app reveal">
+        <svg class="bg" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice"><g stroke="#3a5a8c" fill="none"><rect x="30" y="40" width="30" height="110"/><rect x="80" y="20" width="30" height="130"/><rect x="130" y="60" width="30" height="90"/></g><path d="M0 150h200" stroke="#ff6a13"/></svg>
+        <h3 data-i18n="a3.t">Raffinerie e petrolchimica</h3><p data-i18n="a3.p">Unità di processo, reattori e interconnessioni tra impianti.</p>
+      </div>
+      <div class="app reveal">
+        <svg class="bg" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice"><g stroke="#3a5a8c" fill="none"><ellipse cx="100" cy="90" rx="60" ry="30"/><path d="M40 90v40c0 16 27 30 60 30s60-14 60-30V90"/></g><path d="M0 170h200" stroke="#ff6a13"/></svg>
+        <h3 data-i18n="a4.t">LNG e stoccaggi</h3><p data-i18n="a4.p">Terminali, serbatoi e impianti di rigassificazione.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section>
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow" data-i18n="p.eyebrow">Come lavoriamo</span>
+      <h2 data-i18n="p.title">Dalla specifica al commissioning.</h2>
+    </div>
+    <div class="steps reveal">
+      <div class="step"><h3 data-i18n="p1.t">Analisi</h3><p data-i18n="p1.p">Studio dei dati di processo, HAZOP e target SIL.</p></div>
+      <div class="step"><h3 data-i18n="p2.t">Progettazione</h3><p data-i18n="p2.p">Architettura, dimensionamento valvole e calcolo PFD.</p></div>
+      <div class="step"><h3 data-i18n="p3.t">Produzione</h3><p data-i18n="p3.p">Costruzione e assemblaggio dello skid a Trieste.</p></div>
+      <div class="step"><h3 data-i18n="p4.t">Collaudo</h3><p data-i18n="p4.p">FAT completo alla presenza del cliente e dell'ente terzo.</p></div>
+      <div class="step"><h3 data-i18n="p5.t">Avviamento</h3><p data-i18n="p5.p">Installazione, SAT, formazione e assistenza nel tempo.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="azienda" class="about">
+  <div class="wrap about-grid">
+    <div class="reveal">
+      <span class="eyebrow" data-i18n="ab.eyebrow">L'azienda</span>
+      <h2 style="margin:14px 0 22px" data-i18n="ab.title">Ingegneria italiana per la sicurezza di processo.</h2>
+      <div class="prose">
+        <p class="muted" data-i18n="ab.p1">Orion HIPPS è la società del gruppo Orion dedicata ai sistemi di protezione dalla sovrapressione, con oltre 110 sistemi HIPPS consegnati a operatori ed EPC contractor in tutto il mondo.</p>
+        <p class="muted" data-i18n="ab.p2">Orion nasce a Trieste nel 1950, fondata da due fratelli provenienti dall'industria navale. Nel 1958 avvia per la prima volta il ciclo completo di produzione delle valvole; dal 1996 fa parte del Gruppo Metalfar della famiglia Farina.</p>
+      </div>
+      <div class="timeline">
+        <div><b>1950</b><span data-i18n="tl.1">Fondazione a Trieste</span></div>
+        <div><b>1958</b><span data-i18n="tl.2">Ciclo produttivo completo</span></div>
+        <div><b>1996</b><span data-i18n="tl.3">Gruppo Metalfar</span></div>
+        <div><b>2025</b><span data-i18n="tl.4">Guinness World Record: la più grande valvola a saracinesca mai costruita</span></div>
+      </div>
+    </div>
+    <div class="map reveal" aria-hidden="true">
+      <svg viewBox="0 0 400 260">
+        <g fill="none" stroke="rgba(255,255,255,.12)">
+          <path d="M40 40c40 10 70 0 100 20s40 60 80 70 70-10 100 10 30 60 40 90"/>
+          <path d="M20 120c50-10 80 10 120 0s60-40 100-30 80 40 140 30"/>
+        </g>
+        <g fill="rgba(255,255,255,.06)">
+          <circle cx="80" cy="200" r="2"/><circle cx="320" cy="60" r="2"/><circle cx="200" cy="40" r="2"/><circle cx="360" cy="200" r="2"/>
+        </g>
+        <circle cx="236" cy="128" r="40" fill="rgba(255,106,19,.08)"/>
+        <circle cx="236" cy="128" r="20" fill="rgba(255,106,19,.18)"/>
+        <circle cx="236" cy="128" r="6" fill="#ff6a13"/>
+        <text x="252" y="120" fill="#fff" font-size="16" font-weight="600" font-family="Inter">Trieste</text>
+        <text x="252" y="140" fill="#9fb3d1" font-size="11" font-family="JetBrains Mono">45.65°N · 13.78°E</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contatti">
+  <div class="wrap contact-grid">
+    <div class="reveal">
+      <span class="eyebrow" data-i18n="ct.eyebrow">Contatti</span>
+      <h2 style="margin:14px 0 18px" data-i18n="ct.title">Parliamo del vostro impianto.</h2>
+      <p class="muted" data-i18n="ct.lead">Inviateci i dati di processo: il nostro team tecnico vi risponderà con una proposta di architettura HIPPS.</p>
+      <div class="info">
+        <!-- TODO: sostituire con i recapiti ufficiali -->
+        <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Orion HIPPS S.r.l.<br><span class="muted">Trieste, Italia</span></span></div>
+        <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><a href="mailto:info@example.com" id="mailLink">info@example.com</a></div>
+        <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><span>+39 040 000 0000</span></div>
+      </div>
+    </div>
+    <form class="reveal" id="form">
+      <div class="row">
+        <label><span data-i18n="fm.name">Nome e cognome</span><input name="name" required autocomplete="name"></label>
+        <label><span data-i18n="fm.company">Azienda</span><input name="company" autocomplete="organization"></label>
+      </div>
+      <div class="row">
+        <label>Email<input type="email" name="email" required autocomplete="email"></label>
+        <label><span data-i18n="fm.app">Applicazione</span>
+          <select name="app">
+            <option data-i18n="a1.t">Oil &amp; Gas upstream</option>
+            <option data-i18n="a2.t">Gasdotti e stazioni</option>
+            <option data-i18n="a3.t">Raffinerie e petrolchimica</option>
+            <option data-i18n="a4.t">LNG e stoccaggi</option>
+            <option data-i18n="fm.other">Altro</option>
+          </select>
+        </label>
+      </div>
+      <label><span data-i18n="fm.msg">Messaggio</span><textarea name="msg" data-i18n-ph="fm.ph" placeholder="Pressione di progetto, diametro linea, fluido, target SIL…"></textarea></label>
+      <button class="btn btn-primary" type="submit" style="justify-self:start;border:0;cursor:pointer"><span data-i18n="fm.send">Invia richiesta</span> →</button>
+      <div class="form-ok" id="formOk" data-i18n="fm.ok">Grazie! Si aprirà il vostro client email per completare l'invio.</div>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span>© <span id="yr"></span> Orion HIPPS S.r.l. · Trieste</span>
+    <span class="mono" style="font-size:12px">HIPPS · SIL 3 · IEC 61508 / 61511</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const store = {
+    get(k){ try { return localStorage.getItem(k); } catch { return null; } },
+    set(k,v){ try { localStorage.setItem(k,v); } catch {} }
+  };
+
+  /* nav background on scroll */
+  const nav = $('#nav');
+  const onScroll = () => nav.classList.toggle('scrolled', scrollY > 30);
+  addEventListener('scroll', onScroll, {passive:true}); onScroll();
+
+  /* theme */
+  const root = document.documentElement;
+  const savedTheme = store.get('oh-theme');
+  if (savedTheme) root.dataset.theme = savedTheme;
+  $('#theme').addEventListener('click', () => {
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    store.set('oh-theme', root.dataset.theme);
+  });
+
+  /* reveal on scroll */
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }), {threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  /* live gauge simulation: pressure rises, HIPPS trips at 85%, resets */
+  const needle = $('#needle'), arc = $('#arcFill'), pVal = $('#pVal'), vState = $('#vState'),
+        vote = $('#vote'), status = $('#status'), statusTxt = $('#statusTxt');
+  const MAX = 100, TRIP = 85;
+  let p = 40, phase = 'rise', hold = 0;
+  const render = () => {
+    const pct = Math.min(p / MAX, 1);
+    needle.style.transform = `rotate(${-90 + pct * 180}deg)`;
+    arc.setAttribute('stroke-dashoffset', 100 - pct * 100);
+    pVal.textContent = p.toFixed(1);
+  };
+  const tick = () => {
+    if (phase === 'rise') {
+      p += 2 + Math.random() * 3;
+      vote.textContent = p > TRIP - 6 ? '1oo3' : '0oo3';
+      if (p >= TRIP) { p = TRIP + 2; phase = 'trip'; hold = 0;
+        vote.textContent = '3oo3'; vState.textContent = 'CLOSED';
+        status.classList.add('trip'); statusTxt.textContent = 'TRIP'; }
+    } else if (phase === 'trip') {
+      if (++hold > 3) p = Math.max(p - 9, 18);
+      if (p <= 18) { phase = 'reset'; hold = 0; }
+    } else if (++hold > 4) {
+      phase = 'rise'; p = 40; vote.textContent = '0oo3'; vState.textContent = 'OPEN';
+      status.classList.remove('trip'); statusTxt.textContent = 'NORMAL';
+    }
+    render();
+  };
+  render();
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) setInterval(tick, 700);
+
+  /* i18n */
+  const EN = {
+    'nav.hipps':'What is HIPPS','nav.system':'The system','nav.apps':'Applications','nav.about':'Company','nav.contact':'Contact',
+    'hero.eyebrow':'High Integrity Pressure Protection Systems',
+    'hero.title':'The last line of defence<br>against <em>overpressure</em>.',
+    'hero.lead':'System integrator of complete HIPPS: from design and manufacturing to SIL certification and field services. We protect downstream lines and plants by isolating the pressure source before it becomes a critical event.',
+    'hero.cta1':'Request a consultation','hero.cta2':'Explore the system','g.valves':'valves',
+    's.1':'HIPPS delivered worldwide','s.2':'Achievable safety integrity','s.3':'and IEC 61511, fully compliant','s.4':'Orion valves, from Trieste',
+    'w.eyebrow':'What is HIPPS','w.title':'An independent barrier, when everything else is not enough.',
+    'w.p1':'A <strong>High Integrity Pressure Protection System</strong> is a mechanical and electrical system that protects downstream lines and plant sections from overpressure, shutting off the source before pressure exceeds the design limit.',
+    'w.p2':'Unlike relief valves, HIPPS <strong>does not vent to atmosphere or flare</strong>: it isolates. This cuts emissions, removes worst‑case flare sizing and allows downstream piping to be designed for a lower pressure class.',
+    'w.p3':'It is the ultimate, independent safety layer of a plant for preventing dramatic events.',
+    'w.layers':'LAYERS OF PROTECTION',
+    'l.1':'Process design','l.2':'Basic control system (DCS)','l.3':'Alarms and operator response','l.4':'Safety instrumented system — HIPPS','l.5':'Physical protection and mitigation','l.6':'Emergency response',
+    'sys.eyebrow':'The system','sys.title':'Sense. Decide. Isolate.',
+    'sys.lead':'A complete HIPPS is made of three subsystems: initiators, logic solver and final elements. Orion designs, integrates and certifies them as one safety loop.',
+    'd.up':'◀ UPSTREAM · high pressure','d.down':'DOWNSTREAM · protected ▶','d.t':'Initiators','d.t2':'Pressure transmitters','d.l':'Logic solver','d.l2':'Processes & commands','d.v':'Final elements','d.v2':'Actuated on/off valves',
+    'c1.t':'Initiators','c1.p':'Dedicated pressure transmitters, independent of the control system, with voting logic to eliminate spurious trips.','c1.a':'1oo2 / 2oo3 configurations','c1.b':'Continuous diagnostics','c1.c':'Separate impulse taps',
+    'c2.t':'Logic solver','c2.p':'The safety system that receives the initiators\' signals, processes them and generates the outputs driving the final elements to mitigate the hazardous condition.','c2.a':'Fail-safe by design','c2.b':'Event logging','c2.c':'DCS/SCADA interface',
+    'c3.t':'Final elements','c3.p':'Orion on/off valves fitted with actuators, solenoids and limit switches, designed for tight shut-off and reliable operation even after long idle periods.','c3.a':'Partial stroke testing','c3.b':'Actuators and solenoids','c3.c':'Position limit switches',
+    'f.eyebrow':'Why Orion','f.title':'One partner for the entire safety loop.',
+    'f1.t':'Single responsibility','f1.p':'Valves, actuators, instruments and logic designed and integrated by one manufacturer: no weak link between suppliers.',
+    'f2.t':'In-house valves','f2.p':'Final elements built on 75+ years of Orion experience: gate, globe, check, ball and butterfly valves in carbon steel, stainless steel, nickel alloys and titanium.',
+    'f3.t':'SIL verification','f3.p':'PFD and architecture verification along the IEC 61508 / IEC 61511 lifecycle, with documentation ready for the certifying body.',
+    'f4.t':'Compact skids','f4.p':'Pre-assembled, wired and factory-tested skids to cut installation time and risk on site.',
+    'f5.t':'Online testing','f5.p':'Ready for proof and partial-stroke tests without plant shutdown, keeping the SIL level over time.',
+    'f6.t':'Field services','f6.p':'Supporting operators and EPC contractors from specification to commissioning, with field service, training and after-sales worldwide.',
+    'a.eyebrow':'Applications','a.title':'Where pressure is unforgiving.',
+    'a1.t':'Upstream oil & gas','a1.p':'Wellheads, flowlines and high-pressure manifolds.',
+    'a2.t':'Pipelines & stations','a2.p':'Protection of transmission lines and pressure reduction stations.',
+    'a3.t':'Refining & petrochemical','a3.p':'Process units, reactors and plant interconnections.',
+    'a4.t':'LNG & storage','a4.p':'Terminals, tanks and regasification plants.',
+    'p.eyebrow':'How we work','p.title':'From specification to commissioning.',
+    'p1.t':'Analysis','p1.p':'Process data review, HAZOP and SIL target.','p2.t':'Design','p2.p':'Architecture, valve sizing and PFD calculation.',
+    'p3.t':'Manufacturing','p3.p':'Skid fabrication and assembly in Trieste.','p4.t':'Testing','p4.p':'Full FAT witnessed by client and third party.',
+    'p5.t':'Start-up','p5.p':'Installation, SAT, training and long-term support.',
+    'ab.eyebrow':'The company','ab.title':'Italian engineering for process safety.',
+    'ab.p1':'Orion HIPPS is the Orion group company dedicated to overpressure protection systems, with more than 110 HIPPS delivered to operators and EPC contractors worldwide.',
+    'ab.p2':'Orion was founded in Trieste in 1950 by two brothers from the shipbuilding industry. In 1958 it ran a complete valve production cycle for the first time; since 1996 it has been part of the Farina family\'s Metalfar Group.',
+    'tl.1':'Founded in Trieste','tl.2':'Full production cycle','tl.3':'Metalfar Group','tl.4':'Guinness World Record: largest wedge gate valve ever built',
+    'ct.eyebrow':'Contact','ct.title':'Let\'s talk about your plant.','ct.lead':'Send us your process data: our technical team will reply with a proposed HIPPS architecture.',
+    'fm.name':'Full name','fm.company':'Company','fm.app':'Application','fm.other':'Other','fm.msg':'Message',
+    'fm.ph':'Design pressure, line size, fluid, SIL target…','fm.send':'Send request','fm.ok':'Thank you! Your email client will open to complete the request.'
+  };
+  const IT = {};
+  document.querySelectorAll('[data-i18n]').forEach(el => IT[el.dataset.i18n] = el.textContent);
+  document.querySelectorAll('[data-i18n-html]').forEach(el => IT[el.dataset.i18nHtml] = el.innerHTML);
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => IT[el.dataset.i18nPh] = el.placeholder);
+
+  const setLang = lang => {
+    const d = lang === 'en' ? EN : IT;
+    document.querySelectorAll('[data-i18n]').forEach(el => { const v = d[el.dataset.i18n]; if (v) el.textContent = v; });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => { const v = d[el.dataset.i18nHtml]; if (v) el.innerHTML = v; });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => { const v = d[el.dataset.i18nPh]; if (v) el.placeholder = v; });
+    root.lang = lang;
+    $('#lang').textContent = lang === 'en' ? 'IT' : 'EN';
+    store.set('oh-lang', lang);
+  };
+  $('#lang').addEventListener('click', () => setLang(root.lang === 'en' ? 'it' : 'en'));
+  const savedLang = store.get('oh-lang') || (navigator.language || '').slice(0,2);
+  if (savedLang === 'en') setLang('en');
+
+  /* contact form → mailto */
+  $('#form').addEventListener('submit', e => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const body = `${f.get('name')} — ${f.get('company') || ''}\n${f.get('email')}\n${f.get('app')}\n\n${f.get('msg')}`;
+    $('#formOk').style.display = 'block';
+    location.href = `${$('#mailLink').href}?subject=${encodeURIComponent('Richiesta HIPPS — ' + (f.get('company') || f.get('name')))}&body=${encodeURIComponent(body)}`;
+  });
+
+  $('#yr').textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>
