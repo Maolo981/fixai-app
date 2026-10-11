@@ -1,14 +1,21 @@
 import type { Child } from 'hono/jsx';
 import { raw } from 'hono/html';
+import { dataUri, linen, paperGrain } from '../art';
 import { BRAND, EVENTS } from '../config';
+import { type UiIcon, uiIcon } from '../icons';
 
-export const LOGO_SVG = `<svg viewBox="0 0 40 40" aria-hidden="true" class="logo-mark"><ellipse cx="20" cy="20.5" rx="10.5" ry="14" transform="rotate(-28 20 20.5)" fill="#fff6f2" stroke="#b8475f" stroke-width="2"/><ellipse cx="16" cy="15" rx="2.6" ry="5.2" transform="rotate(-28 16 15)" fill="#f2c6cf"/></svg>`;
+/** The sugared almond ("confetto") drawn in a single gold line. */
+export const LOGO_SVG = `<svg viewBox="0 0 40 40" aria-hidden="true" class="logo-mark"><ellipse cx="20" cy="20.5" rx="9.5" ry="13" transform="rotate(-30 20 20.5)" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M14.6 13.4C16.4 11.2 19 10.2 21.4 10.6" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" transform="rotate(-30 20 20.5)"/></svg>`;
+
+/** Linen and cotton-paper textures shared by every site page (drawn once per isolate). */
+let textures = '';
+const siteTextures = () => (textures ||= `:root{--linen:${dataUri(linen(200, 9, 0.6))};--grain:${dataUri(paperGrain())}}`);
 
 export function Logo() {
   return (
     <a href="/" class="logo" aria-label={`${BRAND.name}, torna alla home`}>
       {raw(LOGO_SVG)}
-      <span>{BRAND.name.toLowerCase()}</span>
+      <span>{BRAND.name}</span>
     </a>
   );
 }
@@ -111,7 +118,7 @@ export function Layout(p: LayoutProps) {
         {p.description && <meta name="description" content={p.description} />}
         {p.canonical && <link rel="canonical" href={p.canonical} />}
         {p.noindex && <meta name="robots" content="noindex, nofollow" />}
-        <meta name="theme-color" content="#fbf6f0" />
+        <meta name="theme-color" content="#f3ede3" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content={BRAND.name} />
         <meta property="og:title" content={p.title} />
@@ -119,10 +126,12 @@ export function Layout(p: LayoutProps) {
         {p.ogImage && <meta property="og:image" content={p.ogImage} />}
         <meta name="twitter:card" content="summary_large_image" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="preload" href="/fonts/dm-serif-display-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+        <link rel="preload" href="/fonts/cormorant-garamond-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+        <link rel="preload" href="/fonts/cinzel-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
         <link rel="preload" href="/fonts/jost-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
         <link rel="stylesheet" href="/css/fonts.css" />
         <link rel="stylesheet" href="/css/app.css" />
+        <style>{raw(siteTextures())}</style>
         {p.jsonLd && <script type="application/ld+json">{raw(JSON.stringify(p.jsonLd).replace(/</g, '\\u003c'))}</script>}
         {(p.scripts ?? []).map((s) => (
           <script src={s} defer></script>
@@ -139,11 +148,11 @@ export function Layout(p: LayoutProps) {
 }
 
 /** Simple centered message page (errors, confirmations). */
-export function MessagePage(p: { title: string; emoji?: string; children?: Child; noindex?: boolean }) {
+export function MessagePage(p: { title: string; icon?: UiIcon; children?: Child; noindex?: boolean }) {
   return (
     <Layout title={`${p.title} · ${BRAND.name}`} noindex={p.noindex ?? true}>
       <main class="container narrow message-page">
-        {p.emoji && <p class="big-emoji">{p.emoji}</p>}
+        {p.icon && <p class="big-icon">{raw(uiIcon(p.icon))}</p>}
         <h1 class="h2">{p.title}</h1>
         {p.children}
       </main>

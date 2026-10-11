@@ -31,3 +31,29 @@ export const iconSvg = (inner: string, cls = 'icon') =>
   `<svg class="${cls}" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${inner}</svg>`;
 
 export const occasionIcon = (id: EventType, cls?: string) => iconSvg(OCCASION_ICONS[id], cls);
+
+/** Interface icons (same 32×32 line style). */
+export const UI_ICONS = {
+  envelope: '<rect x="4.5" y="8" width="23" height="16.5" rx="1"/><path d="M4.5 9L16 18.2L27.5 9"/><circle cx="16" cy="18.2" r="2.2"/>',
+  pin: '<path d="M16 28C16 28 7.5 19.6 7.5 13.4C7.5 8.6 11.3 4.8 16 4.8S24.5 8.6 24.5 13.4C24.5 19.6 16 28 16 28Z"/><circle cx="16" cy="13.2" r="3"/>',
+  hourglass: '<path d="M9.5 4.5H22.5M9.5 27.5H22.5"/><path d="M10.8 4.5C10.8 11 21.2 11.8 21.2 16S10.8 21 10.8 27.5M21.2 4.5C21.2 11 10.8 11.8 10.8 16S21.2 21 21.2 27.5"/><path d="M13.6 25.4H18.4L16 22.8Z"/>',
+  gift: '<rect x="5.5" y="12" width="21" height="5" rx=".8"/><path d="M7.5 17V27H24.5V17M16 12V27"/><path d="M16 12C13.6 7.4 9.2 7.6 9.6 10.2C9.9 12 13.4 12 16 12ZM16 12C18.4 7.4 22.8 7.6 22.4 10.2C22.1 12 18.6 12 16 12Z"/>',
+  calendar: '<rect x="5" y="7.5" width="22" height="19" rx="1.4"/><path d="M5 13H27M10.5 5V9.5M21.5 5V9.5"/><path d="M12.8 19.6L15 21.8L19.4 17.2"/>',
+  phone: '<rect x="9.5" y="3.5" width="13" height="25" rx="2.4"/><path d="M14 25H18"/>',
+  check: '<circle cx="16" cy="16" r="11.5"/><path d="M11 16.4L14.4 19.6L21 12.8"/>',
+  person: '<circle cx="16" cy="11.4" r="5"/><path d="M6.8 27C7.6 21.6 11.4 18.6 16 18.6S24.4 21.6 25.2 27"/>',
+  eye: '<path d="M3.5 16C6.6 10.4 11 7.6 16 7.6S25.4 10.4 28.5 16C25.4 21.6 21 24.4 16 24.4S6.6 21.6 3.5 16Z"/><circle cx="16" cy="16" r="4"/>',
+  bell: '<path d="M8.6 22.4V15C8.6 10.6 11.8 7.4 16 7.4S23.4 10.6 23.4 15V22.4L25.4 24.6H6.6Z"/><path d="M13.6 26.6C14 27.8 14.9 28.4 16 28.4S18 27.8 18.4 26.6M16 4V7.4"/>',
+  table: '<rect x="5" y="6.5" width="22" height="19" rx="1.2"/><path d="M5 12.5H27M5 19H27M13 6.5V25.5"/>',
+  pencil: '<path d="M20.6 6.4L25.6 11.4L12 25L6 26L7 20Z"/><path d="M18 9L23 14"/>',
+  key: '<circle cx="10.6" cy="16" r="4.6"/><circle cx="10.6" cy="16" r="1.6"/><path d="M15.2 16H26.4M22.4 16V19.6M25.4 16V18.6"/>',
+  lock: '<rect x="7.5" y="14" width="17" height="13" rx="1.6"/><path d="M11 14V10.6C11 7.8 13.2 5.6 16 5.6S21 7.8 21 10.6V14"/><circle cx="16" cy="20.4" r="1.6"/>',
+  search: '<circle cx="14" cy="14" r="8"/><path d="M20 20L27 27"/>',
+  trash: '<path d="M6.5 9H25.5M12.5 9V6.4H19.5V9M8.6 9L9.8 27H22.2L23.4 9"/><path d="M13.6 13.4V22.6M18.4 13.4V22.6"/>',
+  sparkle: '<path d="M16 4C16.8 11 21 15.2 28 16C21 16.8 16.8 21 16 28C15.2 21 11 16.8 4 16C11 15.2 15.2 11 16 4Z"/>',
+  warning: '<path d="M16 5L28 26H4Z"/><path d="M16 12.6V19M16 22.4V22.6"/>',
+  compass: '<circle cx="16" cy="16" r="11.5"/><path d="M19.8 12.2L17.6 17.6L12.2 19.8L14.4 14.4Z"/>',
+} as const;
+
+export type UiIcon = keyof typeof UI_ICONS;
+export const uiIcon = (id: UiIcon, cls?: string) => iconSvg(UI_ICONS[id], cls);

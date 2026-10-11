@@ -1,4 +1,6 @@
+import { raw } from 'hono/html';
 import { BRAND, EVENTS, PRICES, RETENTION_DAYS_AFTER_EVENT } from '../config';
+import { type UiIcon, occasionIcon, uiIcon } from '../icons';
 import { THEMES } from '../themes';
 import { euro } from '../util';
 import { Layout } from './layout';
@@ -38,23 +40,23 @@ export const FAQ: { q: string; a: string }[] = [
   },
 ];
 
-const FEATURES_GUESTS = [
-  ['💌', 'Una busta da aprire', 'Il primo tocco è un’emozione: la busta si apre e l’invito esce, con una pioggia di coriandoli.'],
-  ['📍', 'Programma e mappa', 'Chiesa, ristorante, orari: ogni tappa con il tasto «Come arrivare».'],
-  ['⏳', 'Conto alla rovescia', 'Giorni, ore e minuti che mancano al grande giorno.'],
-  ['🎁', 'IBAN con un tocco', 'Lista nozze o IBAN copiabile, senza imbarazzo e senza errori.'],
-  ['📅', 'Dritto in calendario', 'Un tocco e la data è salvata su iPhone, Android e Google Calendar.'],
-  ['📱', 'Nessuna app', 'Si apre ovunque, anche sul telefono della nonna.'],
-] as const;
+const FEATURES_GUESTS: [UiIcon, string, string][] = [
+  ['envelope', 'Una busta da aprire', 'Il primo tocco è un’emozione: si rompe il sigillo di ceralacca, la busta si apre e l’invito esce, tra coriandoli d’oro.'],
+  ['pin', 'Programma e mappa', 'Chiesa, ristorante, orari: ogni tappa con le indicazioni stradali a portata di dito.'],
+  ['hourglass', 'Conto alla rovescia', 'Giorni, ore e minuti che mancano al grande giorno.'],
+  ['gift', 'IBAN con un tocco', 'Lista nozze o IBAN copiabile, senza imbarazzo e senza errori.'],
+  ['calendar', 'Dritto in calendario', 'Un tocco e la data è salvata su iPhone, Android e Google Calendar.'],
+  ['phone', 'Nessuna app', 'Si apre ovunque, anche sul telefono della nonna.'],
+];
 
-const FEATURES_HOSTS = [
-  ['✅', 'Conferme automatiche', 'Chi viene, quanti adulti e bambini, menu e allergie: tutto in una lista che si aggiorna da sola.'],
-  ['👤', 'Un link per ogni invitato', '«Un invito speciale per Zia Carla e Zio Paolo»: ognuno vede il proprio nome e i posti riservati.'],
-  ['👀', 'Sai chi l’ha aperto', 'Vedi chi ha aperto l’invito e chi non ha ancora risposto.'],
-  ['🔔', 'Promemoria su WhatsApp', 'Un tocco e mandi un promemoria gentile solo a chi manca all’appello.'],
-  ['📊', 'Excel per il catering', 'Scarichi l’elenco pronto per ristorante, catering e tableau.'],
-  ['✏️', 'Modifiche illimitate', 'Cambi un orario o un indirizzo? Il link resta lo stesso.'],
-] as const;
+const FEATURES_HOSTS: [UiIcon, string, string][] = [
+  ['check', 'Conferme automatiche', 'Chi viene, quanti adulti e bambini, menu e allergie: tutto in una lista che si aggiorna da sola.'],
+  ['person', 'Un link per ogni invitato', '«Un invito speciale per Zia Carla e Zio Paolo»: ognuno vede il proprio nome e i posti riservati.'],
+  ['eye', 'Sai chi l’ha aperto', 'Vedi chi ha aperto l’invito e chi non ha ancora risposto.'],
+  ['bell', 'Promemoria su WhatsApp', 'Un tocco e mandi un promemoria gentile solo a chi manca all’appello.'],
+  ['table', 'Excel per il catering', 'Scarichi l’elenco pronto per ristorante, catering e tableau.'],
+  ['pencil', 'Modifiche illimitate', 'Cambi un orario o un indirizzo? Il link resta lo stesso.'],
+];
 
 export function LandingPage({ origin }: { origin: string }) {
   return (
@@ -74,7 +76,7 @@ export function LandingPage({ origin }: { origin: string }) {
         <section class="hero">
           <div class="container hero-grid">
             <div class="hero-copy">
-              <p class="kicker">Inviti digitali con conferme automatiche</p>
+              <p class="kicker">Inviti digitali · conferme automatiche</p>
               <h1 class="display">
                 Il tuo invito arriva su WhatsApp. <em>Le conferme arrivano da sole.</em>
               </h1>
@@ -90,13 +92,13 @@ export function LandingPage({ origin }: { origin: string }) {
                   Guarda un esempio
                 </a>
               </div>
-              <p class="hero-note">✓ Provi gratis · ✓ Paghi solo quando lo pubblichi · ✓ Da {euro(PRICES.festa.cents)}, una volta sola</p>
+              <p class="hero-note">Provi gratis · Paghi solo quando lo pubblichi · Da {euro(PRICES.festa.cents)}, una volta sola</p>
             </div>
             <div class="hero-visual">
               <div class="phone" aria-label="Esempio di invito: tocca la busta per aprirla">
                 <iframe src="/demo/ulivo?embed=1" title="Esempio di invito digitale" loading="eager"></iframe>
               </div>
-              <p class="phone-caption">👆 È un invito vero: tocca la busta</p>
+              <p class="phone-caption">È un invito vero: tocca la busta</p>
             </div>
           </div>
         </section>
@@ -105,7 +107,8 @@ export function LandingPage({ origin }: { origin: string }) {
           <div class="container chips">
             {EVENTS.map((e) => (
               <a class="chip" href={`/inviti/${e.slug}`}>
-                <span aria-hidden="true">{e.emoji}</span> {e.label}
+                {raw(occasionIcon(e.id, 'icon chip-icon'))}
+                {e.label}
               </a>
             ))}
           </div>
@@ -116,17 +119,17 @@ export function LandingPage({ origin }: { origin: string }) {
             <h2 class="h2 center">Pronto in 5 minuti, davvero</h2>
             <ol class="steps">
               <li>
-                <span class="step-n">1</span>
+                <span class="step-n">I</span>
                 <h3>Scegli lo stile</h3>
-                <p>Ulivo, limoni di Amalfi, avorio e oro, notte stellata… nove stili pensati per le feste italiane.</p>
+                <p>Avorio e oro, rami d’ulivo, limoni di Amalfi, blu mezzanotte… nove stili su carta di cotone, con dettagli in oro a caldo.</p>
               </li>
               <li>
-                <span class="step-n">2</span>
+                <span class="step-n">II</span>
                 <h3>Scrivi i dettagli</h3>
                 <p>Nomi, data, chiesa e ristorante, una foto. Se non trovi le parole, ti suggeriamo noi la frase giusta.</p>
               </li>
               <li>
-                <span class="step-n">3</span>
+                <span class="step-n">III</span>
                 <h3>Invia e rilassati</h3>
                 <p>Mandi il link su WhatsApp. Le risposte arrivano nella tua lista, e a chi si dimentica ricordi tutto con un tocco.</p>
               </li>
@@ -141,9 +144,7 @@ export function LandingPage({ origin }: { origin: string }) {
               <ul class="features">
                 {FEATURES_GUESTS.map(([icon, t, d]) => (
                   <li>
-                    <span class="f-icon" aria-hidden="true">
-                      {icon}
-                    </span>
+                    <span class="f-icon">{raw(uiIcon(icon))}</span>
                     <div>
                       <h3>{t}</h3>
                       <p>{d}</p>
@@ -157,9 +158,7 @@ export function LandingPage({ origin }: { origin: string }) {
               <ul class="features">
                 {FEATURES_HOSTS.map(([icon, t, d]) => (
                   <li>
-                    <span class="f-icon" aria-hidden="true">
-                      {icon}
-                    </span>
+                    <span class="f-icon">{raw(uiIcon(icon))}</span>
                     <div>
                       <h3>{t}</h3>
                       <p>{d}</p>
@@ -173,7 +172,7 @@ export function LandingPage({ origin }: { origin: string }) {
 
         <section class="section" id="esempi">
           <div class="container">
-            <h2 class="h2 center">Nove stili, tutti made in Italy</h2>
+            <h2 class="h2 center">Nove stili, <em>tutti made in Italy</em></h2>
             <p class="lead center narrow">Tocca uno stile per aprire un invito di esempio, proprio come lo vedranno i tuoi ospiti.</p>
             <div class="themes-grid">
               {THEMES.map((t) => (

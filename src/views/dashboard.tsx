@@ -1,4 +1,6 @@
+import { raw } from 'hono/html';
 import { BRAND, EVENT_BY_ID, RETENTION_DAYS_AFTER_EVENT, priceFor } from '../config';
+import { occasionIcon, uiIcon } from '../icons';
 import type { Stats } from '../db';
 import { displayNames, publicPath, untouchedSampleFields } from '../model';
 import type { GuestRow, Invitation, RsvpRow } from '../types';
@@ -18,18 +20,18 @@ export interface DashboardProps {
 
 export function shareText(inv: Invitation, url: string) {
   const ev = EVENT_BY_ID[inv.event_type];
-  return `Ciao! 💌 Ti invitiamo ${ev.eventPhrase(inv.data)}, ${formatDateLong(inv.data.date)}. Apri l’invito e facci sapere se ci sarai: ${url}`;
+  return `Ciao! Ti invitiamo ${ev.eventPhrase(inv.data)}, ${formatDateLong(inv.data.date)}. Apri l’invito e facci sapere se ci sarai: ${url}`;
 }
 
 export function guestText(inv: Invitation, g: GuestRow, url: string) {
   const ev = EVENT_BY_ID[inv.event_type];
-  return `Ciao ${g.name}! 💌 Ecco il nostro invito ${ev.eventPhrase(inv.data)}, ${formatDateLong(inv.data.date)}. Aprilo qui e facci sapere se ci sarai: ${url}`;
+  return `Ciao ${g.name}! Ecco il nostro invito ${ev.eventPhrase(inv.data)}, ${formatDateLong(inv.data.date)}. Aprilo qui e facci sapere se ci sarai: ${url}`;
 }
 
 export function reminderText(inv: Invitation, g: GuestRow, url: string) {
   const ev = EVENT_BY_ID[inv.event_type];
   const by = inv.data.rsvpDeadline ? ` entro il ${formatDayMonth(inv.data.rsvpDeadline)}` : '';
-  return `Ciao ${g.name}! 😊 Ti ricordiamo l’invito ${ev.eventPhrase(inv.data)} del ${formatDayMonth(inv.data.date)}: ci farebbe piacere sapere se ci sarai${by}. Basta un tocco qui: ${url}`;
+  return `Ciao ${g.name}! Ti ricordiamo l’invito ${ev.eventPhrase(inv.data)} del ${formatDayMonth(inv.data.date)}: ci farebbe piacere sapere se ci sarai${by}. Basta un tocco qui: ${url}`;
 }
 
 function Stat({ n, label, sub }: { n: number | string; label: string; sub?: string }) {
@@ -60,7 +62,7 @@ function PublishCard({ inv, paymentsReady }: { inv: Invitation; paymentsReady: b
           <li>Excel per catering, ristorante e tableau</li>
           <li>Modifiche illimitate, senza pubblicità</li>
         </ul>
-        {untouched.length > 0 && <p class="warn">⚠️ Controlla {untouched.join(', ')}: sono ancora quelli dell’esempio.</p>}
+        {untouched.length > 0 && <p class="warn">Controlla {untouched.join(', ')}: sono ancora quelli dell’esempio.</p>}
       </div>
       <form method="post" action={`${base}/attiva`} class="publish-form">
         <p class="price">
@@ -79,7 +81,10 @@ function PublishCard({ inv, paymentsReady }: { inv: Invitation; paymentsReady: b
         <button class="btn btn-primary btn-lg btn-block" type="submit">
           {paymentsReady ? `Pubblica l’invito · ${euro(price.cents)}` : 'Pubblica l’invito'}
         </button>
-        <p class="small muted center">🔒 Pagamento sicuro con Stripe: carte, Apple Pay e Google Pay. Hai un codice sconto? Lo inserisci al pagamento.</p>
+        <p class="small muted center secure-note">
+          {raw(uiIcon('lock', 'icon inline-icon'))}
+          Pagamento sicuro con Stripe: carte, Apple Pay e Google Pay. Hai un codice sconto? Lo inserisci al pagamento.
+        </p>
       </form>
     </section>
   );
@@ -120,7 +125,7 @@ function GuestStatus({ g, rsvp }: { g: GuestRow; rsvp?: RsvpRow }) {
     ) : (
       <span class="pill pill-no">✗ Non viene</span>
     );
-  if (g.opened_count > 0) return <span class="pill pill-open">👀 Aperto, senza risposta</span>;
+  if (g.opened_count > 0) return <span class="pill pill-open">Aperto, senza risposta</span>;
   if (g.sent_at) return <span class="pill pill-sent">Inviato</span>;
   return <span class="pill">Da inviare</span>;
 }
@@ -150,18 +155,19 @@ export function DashboardPage(p: DashboardProps) {
 
         <div class="dash-head">
           <div>
-            <p class="kicker">
-              {ev.emoji} {ev.label} · {formatDateLong(d.date)}
+            <p class="kicker kicker-icon">
+              {raw(occasionIcon(ev.id))}
+              {ev.label} · {formatDateLong(d.date)}
             </p>
             <h1 class="h2">{displayNames(d)}</h1>
             <p class="muted">
-              {days > 1 ? `Mancano ${days} giorni` : days === 1 ? 'È domani!' : days === 0 ? 'È oggi! 🎉' : 'Evento concluso'}
+              {days > 1 ? `Mancano ${days} giorni` : days === 1 ? 'È domani!' : days === 0 ? 'È oggi!' : 'Evento concluso'}
               {d.rsvpDeadline && days >= 0 ? ` · risposte entro il ${formatDayMonth(d.rsvpDeadline)}` : ''}
             </p>
           </div>
           <div class="dash-actions">
             <a class="btn btn-secondary" href={`${base}/modifica`}>
-              ✏️ Modifica invito
+              Modifica invito
             </a>
           </div>
         </div>
@@ -172,7 +178,7 @@ export function DashboardPage(p: DashboardProps) {
         {!inv.email && (
           <form method="post" action={`${base}/email`} class="card email-nudge">
             <p>
-              <strong>🔑 Non perdere il tuo invito.</strong> Lascia la tua email: ti mandiamo il link di questa pagina e un avviso a ogni nuova risposta.
+              <strong>Non perdere il tuo invito.</strong> Lascia la tua email: ti mandiamo il link di questa pagina e un avviso a ogni nuova risposta.
             </p>
             <div class="inline-form">
               <input type="email" name="email" placeholder="tu@esempio.it" required autocomplete="email" aria-label="La tua email" />
@@ -186,7 +192,7 @@ export function DashboardPage(p: DashboardProps) {
 
         <div class="stats">
           <Stat n={stats.people} label="persone confermate" sub={`${stats.adults} adulti${d.askChildren ? ` · ${stats.children} bambini` : ''}`} />
-          <Stat n={stats.yes} label="risposte «ci sarò»" />
+          <Stat n={stats.yes} label="hanno accettato" />
           <Stat n={stats.no} label="non potranno esserci" />
           {guests.length > 0 ? (
             <Stat n={stats.pendingGroups} label="invitati senza risposta" sub={`${stats.openedGroups} su ${guests.length} hanno aperto`} />
@@ -218,7 +224,7 @@ export function DashboardPage(p: DashboardProps) {
           </div>
           {rsvps.length === 0 ? (
             <div class="empty">
-              <p class="big-emoji">💌</p>
+              <p class="big-icon">{raw(uiIcon('envelope'))}</p>
               <p>
                 <strong>Ancora nessuna risposta.</strong>
               </p>
@@ -248,7 +254,7 @@ export function DashboardPage(p: DashboardProps) {
                         <strong>{r.name}</strong>
                         {r.guest_id && <span class="muted small"> · link personale</span>}
                       </td>
-                      <td data-label="Risposta">{r.attending ? <span class="pill pill-yes">Ci sarà</span> : <span class="pill pill-no">Non viene</span>}</td>
+                      <td data-label="Risposta">{r.attending ? <span class="pill pill-yes">Parteciperà</span> : <span class="pill pill-no">Non viene</span>}</td>
                       <td data-label="Adulti">{r.attending ? r.adults : '—'}</td>
                       {d.askChildren && <td data-label="Bambini">{r.attending ? r.children : '—'}</td>}
                       {d.askDiet && <td data-label="Allergie e menu">{r.diet || '—'}</td>}
@@ -259,7 +265,7 @@ export function DashboardPage(p: DashboardProps) {
                       <td class="actions-cell">
                         <form method="post" action={`${base}/risposte/${r.id}/elimina`} data-confirm={`Eliminare la risposta di ${r.name}?`}>
                           <button class="icon-btn" type="submit" aria-label={`Elimina la risposta di ${r.name}`} title="Elimina">
-                            🗑
+                            {raw(uiIcon('trash'))}
                           </button>
                         </form>
                       </td>
@@ -352,7 +358,7 @@ export function DashboardPage(p: DashboardProps) {
                             rel="noopener"
                             data-sent={`${base}/invitati/${g.id}/inviato`}
                           >
-                            {g.sent_at || g.opened_count ? '🔔 Promemoria' : 'Invia su WhatsApp'}
+                            {g.sent_at || g.opened_count ? 'Promemoria' : 'Invia su WhatsApp'}
                           </a>
                         )}
                         <button type="button" class="btn btn-ghost btn-sm" data-copy={url}>

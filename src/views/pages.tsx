@@ -6,6 +6,7 @@ import { displayNames } from '../model';
 import { THEMES, THEME_BY_ID } from '../themes';
 import type { InviteData } from '../types';
 import { euro, formatDateShort, formatDateTimeIt } from '../util';
+import { occasionIcon } from '../icons';
 import { FAQ } from './landing';
 import { Layout, MessagePage } from './layout';
 
@@ -35,8 +36,9 @@ export function EventLandingPage({ ev, origin }: { ev: EventDef; origin: string 
         <section class="hero hero-sm">
           <div class="container hero-grid">
             <div class="hero-copy">
-              <p class="kicker">
-                {ev.emoji} Inviti digitali · {ev.label}
+              <p class="kicker kicker-icon">
+                {raw(occasionIcon(ev.id))}
+                Inviti digitali · {ev.label}
               </p>
               <h1 class="display">{ev.seoTitle}</h1>
               <p class="lead">{ev.seoIntro}</p>
@@ -49,14 +51,14 @@ export function EventLandingPage({ ev, origin }: { ev: EventDef; origin: string 
                 </a>
               </form>
               <p class="hero-note">
-                ✓ Provi gratis · ✓ {euro(priceFor(ev.id).cents)} una volta sola, solo se lo pubblichi
+                Provi gratis · {euro(priceFor(ev.id).cents)} una volta sola, solo se lo pubblichi
               </p>
             </div>
             <div class="hero-visual">
               <div class="phone">
                 <iframe src={`/demo/${theme.id}?ev=${ev.id}&embed=1`} title={`Esempio di invito per ${ev.label}`} loading="lazy"></iframe>
               </div>
-              <p class="phone-caption">👆 Tocca la busta per aprirla</p>
+              <p class="phone-caption">Tocca la busta per aprirla</p>
             </div>
           </div>
         </section>
@@ -65,17 +67,17 @@ export function EventLandingPage({ ev, origin }: { ev: EventDef; origin: string 
             <h2 class="h2 center">Come funziona</h2>
             <ol class="steps steps-compact">
               <li>
-                <span class="step-n">1</span>
+                <span class="step-n">I</span>
                 <h3>Personalizza</h3>
                 <p>Nomi, data, luoghi, foto e messaggio. Ti suggeriamo anche le frasi più belle.</p>
               </li>
               <li>
-                <span class="step-n">2</span>
+                <span class="step-n">II</span>
                 <h3>Invia su WhatsApp</h3>
                 <p>Un link per tutti, oppure un link personale per ogni invitato con il suo nome.</p>
               </li>
               <li>
-                <span class="step-n">3</span>
+                <span class="step-n">III</span>
                 <h3>Ricevi le conferme</h3>
                 <p>Chi viene, quanti adulti e bambini, allergie: tutto in una lista che scarichi in Excel.</p>
               </li>
@@ -154,7 +156,10 @@ export function PhrasesPage({ ev, origin }: { ev: EventDef; origin: string }) {
       scripts={['/js/site.js']}
     >
       <main class="container narrow prose-page">
-        <p class="kicker">{ev.emoji} Idee e ispirazione</p>
+        <p class="kicker kicker-icon">
+          {raw(occasionIcon(ev.id))}
+          Idee e ispirazione
+        </p>
         <h1 class="h2">{title}</h1>
         <p class="lead">
           Non trovi le parole giuste? Ecco {ev.phrases.length} frasi pronte per il tuo invito. Tocca «Copia» e incollala dove vuoi, oppure usala direttamente nel tuo invito digitale: nell’editor
@@ -187,7 +192,8 @@ export function PhrasesPage({ ev, origin }: { ev: EventDef; origin: string }) {
           {EVENTS.filter((e) => e.id !== ev.id).map((e) => (
             <li>
               <a class="chip" href={`/frasi/${e.slug}`}>
-                {e.emoji} {e.label}
+                {raw(occasionIcon(e.id, 'icon chip-icon'))}
+                {e.label}
               </a>
             </li>
           ))}
@@ -203,7 +209,7 @@ export function PhrasesPage({ ev, origin }: { ev: EventDef; origin: string }) {
 
 export function RecoverPage({ sent, emailEnabled }: { sent: boolean; emailEnabled: boolean }) {
   return (
-    <MessagePage title="Ritrova i tuoi inviti" emoji="🔑" noindex={false}>
+    <MessagePage title="Ritrova i tuoi inviti" icon="key" noindex={false}>
       {sent ? (
         <p class="lead">Se ci sono inviti collegati a quell’indirizzo, ti abbiamo appena mandato una email con i link. Controlla anche nello spam.</p>
       ) : (
@@ -464,7 +470,7 @@ export function AdminPage({ o }: { o: Overview }) {
 
 export function NotFoundPage() {
   return (
-    <MessagePage title="Pagina non trovata" emoji="🔍">
+    <MessagePage title="Pagina non trovata" icon="search">
       <p class="lead">Il link potrebbe essere sbagliato o l’invito potrebbe essere stato eliminato.</p>
       <p>
         <a class="btn btn-primary" href="/">
@@ -477,7 +483,7 @@ export function NotFoundPage() {
 
 export function ErrorPage({ text }: { text: string }) {
   return (
-    <MessagePage title="Ops, qualcosa è andato storto" emoji="😕">
+    <MessagePage title="Ops, qualcosa è andato storto" icon="compass">
       <p class="lead">{text}</p>
       <p>
         <a class="btn btn-secondary" href="/">

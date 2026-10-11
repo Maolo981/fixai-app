@@ -109,10 +109,10 @@ export function EditorPage({ inv, isNew }: { inv: Invitation; isNew: boolean }) 
           {isNew && (
             <div class="notice notice-info">
               <p>
-                <strong>✨ Il tuo invito è pronto da personalizzare.</strong> Abbiamo inserito dei testi di esempio: sostituiscili con i tuoi. Ogni modifica si salva da sola.
+                <strong>Il tuo invito è pronto da personalizzare.</strong> Abbiamo inserito dei testi di esempio: sostituiscili con i tuoi. Ogni modifica si salva da sola.
               </p>
               <p>
-                🔑 <strong>Aggiungi questa pagina ai preferiti</strong> o lascia la tua email in fondo: il link è la chiave del tuo invito.
+                <strong>Aggiungi questa pagina ai preferiti</strong> o lascia la tua email in fondo: il link è la chiave del tuo invito.
               </p>
             </div>
           )}
@@ -172,7 +172,7 @@ export function EditorPage({ inv, isNew }: { inv: Invitation; isNew: boolean }) 
               <Field label="Testo dell’invito" name="message" value={d.message} textarea rows={5} maxlength={LIMITS.message} />
               <div class="row-between">
                 <button type="button" class="btn btn-ghost btn-sm" id="suggest" data-phrases={JSON.stringify(ev.phrases)}>
-                  ✨ Suggeriscimi una frase
+                  Suggeriscimi una frase
                 </button>
                 <a class="small" href={`/frasi/${ev.slug}`} target="_blank" rel="noopener">
                   Altre frasi ↗
@@ -254,10 +254,10 @@ export function EditorPage({ inv, isNew }: { inv: Invitation; isNew: boolean }) 
               Tutto salvato
             </span>
             <button type="button" class="link-btn" id="replay">
-              ↺ Rivedi la busta
+              Rivedi la busta
             </button>
             <button type="button" class="link-btn close-preview" id="close-preview">
-              Chiudi ✕
+              Chiudi
             </button>
           </div>
           <div class="phone">
@@ -267,7 +267,7 @@ export function EditorPage({ inv, isNew }: { inv: Invitation; isNew: boolean }) 
       </main>
       <div class="mobile-bar">
         <button type="button" class="btn btn-secondary" id="open-preview">
-          👁 Anteprima
+          Anteprima
         </button>
         {inv.status === 'draft' ? (
           <a class="btn btn-primary" href={`${base}#pubblica`}>

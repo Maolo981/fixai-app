@@ -52,7 +52,7 @@
       pill.textContent = 'Inviato';
       pill.className = 'pill pill-sent';
       li.dataset.state = 'pending';
-      a.textContent = '🔔 Promemoria';
+      a.textContent = 'Promemoria';
     }
   });
 })();
