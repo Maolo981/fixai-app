@@ -1,0 +1,44 @@
+# Confetto — Cloudflare Workers configuration
+# Guida completa al deploy: vedi README.md, sezione "Mettilo online".
+name = "confetto"
+main = "src/index.tsx"
+compatibility_date = "2026-09-01"
+
+# File statici (CSS, JS, font, immagini) serviti direttamente da Cloudflare.
+[assets]
+directory = "./public"
+
+# Database (Cloudflare D1, SQLite gestito). Dopo `wrangler d1 create confetto`
+# incolla qui il database_id che ti viene restituito.
+[[d1_databases]]
+binding = "DB"
+database_name = "confetto"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+# Foto di copertina degli inviti (Cloudflare R2). Crea il bucket con
+# `wrangler r2 bucket create confetto-media`.
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "confetto-media"
+
+# Pulizia automatica ogni notte: bozze abbandonate e dati degli eventi passati (GDPR).
+[triggers]
+crons = ["17 3 * * *"]
+
+[observability]
+enabled = true
+
+[vars]
+# Dominio pubblico (es. "https://confetto.it"). Se vuoto si usa quello della richiesta.
+PUBLIC_URL = ""
+# Mittente delle email (serve RESEND_API_KEY come secret per inviarle davvero).
+EMAIL_FROM = "Confetto <ciao@example.com>"
+# Facoltativo: token di Cloudflare Web Analytics (statistiche visite gratuite e senza cookie).
+CF_ANALYTICS_TOKEN = ""
+
+# Secret da impostare con `wrangler secret put NOME` (MAI scriverli qui):
+#   STRIPE_SECRET_KEY      chiave segreta Stripe (sk_live_... / sk_test_...)
+#   STRIPE_WEBHOOK_SECRET  segreto del webhook Stripe (whsec_...)
+#   RESEND_API_KEY         opzionale, per le email (resend.com)
+#   ADMIN_PASSWORD         password della tua area /admin (utente: admin)
