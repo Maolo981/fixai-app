@@ -19,6 +19,8 @@ Il prodotto è completo e testato: sito, editor, invito animato, dashboard, paga
 | **Obiettivo "il giusto"** | 3 inviti al giorno ≈ **2.200 € al mese** di incasso |
 | **Lavoro richiesto** | Niente magazzino né spedizioni, nessun servizio da erogare a mano. Il tuo tempo va nel marketing. |
 
+> **Versione di prova da far vedere a tutti:** [Confetto Studio](https://claude.ai/artifact/YLJQyivx9o7tEuhcGyDcBj). Scegli qualsiasi occasione, personalizzi l'invito con l'anteprima dal vivo e ottieni un link da mandare su WhatsApp. Gira tutta nel browser: la risposta degli invitati arriva su WhatsApp a chi organizza, invece che nella dashboard. Sorgenti in `demo/studio/`, si rigenera con `npm run demo:studio`.
+
 ---
 
 ## 1. L'idea, e perché funziona già altrove

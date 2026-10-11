@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node tests/run.mjs",
     "fonts": "node scripts/copy-fonts.mjs",
-    "og": "node scripts/og-images.mjs"
+    "og": "node scripts/og-images.mjs",
+    "demo:studio": "python3 demo/studio/build.py https://claude.ai/artifact/YLJQyivx9o7tEuhcGyDcBj"
   },
   "dependencies": {
     "hono": "^4.13.13"
