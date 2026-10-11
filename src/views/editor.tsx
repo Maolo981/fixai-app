@@ -1,7 +1,10 @@
+import { raw } from 'hono/html';
+import type { AiTone } from '../ai';
 import { BRAND, EVENT_BY_ID } from '../config';
-import { LIMITS, displayNames } from '../model';
+import { uiIcon } from '../icons';
+import { LIMITS, displayNames, parseGallery } from '../model';
 import { THEMES } from '../themes';
-import type { Invitation, ProgramItem } from '../types';
+import type { GiftItem, Invitation, ProgramItem, StayItem, StoryItem } from '../types';
 import { AppHeader } from './app-header';
 import { Layout } from './layout';
 
@@ -43,13 +46,48 @@ function Field(p: FieldProps) {
   );
 }
 
-function Toggle({ name, checked, label }: { name: string; checked: boolean; label: string }) {
+function Toggle({ name, checked, label, hint }: { name: string; checked: boolean; label: string; hint?: string }) {
   return (
     <label class="toggle">
       <input type="checkbox" name={name} checked={checked} />
       <span class="toggle-ui" aria-hidden="true"></span>
-      <span>{label}</span>
+      <span>
+        {label}
+        {hint && <span class="toggle-hint">{hint}</span>}
+      </span>
     </label>
+  );
+}
+
+/** A field of a repeatable row: identified by data-k, never by name (collect() reads rows separately). */
+function RowField({ k, label, value, placeholder, maxlength, type, grow, textarea }: { k: string; label: string; value: string; placeholder?: string; maxlength?: number; type?: string; grow?: boolean; textarea?: boolean }) {
+  return (
+    <label class={`field${grow ? ' grow' : ''}`}>
+      <span class="field-label">{label}</span>
+      {textarea ? (
+        <textarea data-k={k} rows={2} maxlength={maxlength} placeholder={placeholder}>
+          {value}
+        </textarea>
+      ) : (
+        <input type={type ?? 'text'} data-k={k} value={value} maxlength={maxlength} placeholder={placeholder} inputmode={type === 'number' ? 'numeric' : undefined} />
+      )}
+    </label>
+  );
+}
+
+function RowTools() {
+  return (
+    <div class="moment-tools">
+      <button type="button" class="icon-btn" data-move="-1" aria-label="Sposta su">
+        ↑
+      </button>
+      <button type="button" class="icon-btn" data-move="1" aria-label="Sposta giù">
+        ↓
+      </button>
+      <button type="button" class="link-danger" data-remove>
+        Rimuovi
+      </button>
+    </div>
   );
 }
 
@@ -74,27 +112,89 @@ function ProgramRow({ item }: { item: ProgramItem }) {
         <span class="field-label">Indirizzo</span>
         <input type="text" data-k="address" value={item.address} maxlength={LIMITS.programAddress} placeholder="Via, numero, città" />
       </label>
-      <div class="moment-tools">
-        <button type="button" class="icon-btn" data-move="-1" aria-label="Sposta su">
-          ↑
-        </button>
-        <button type="button" class="icon-btn" data-move="1" aria-label="Sposta giù">
-          ↓
-        </button>
-        <button type="button" class="link-danger" data-remove>
-          Rimuovi
-        </button>
-      </div>
+      <label class="check-line">
+        <input type="checkbox" data-k="restricted" checked={Boolean(item.restricted)} />
+        <span>Solo per chi è invitato a tutto (es. il ricevimento)</span>
+      </label>
+      <RowTools />
     </div>
   );
 }
 
-export function EditorPage({ inv, isNew }: { inv: Invitation; isNew: boolean }) {
+function GiftRow({ g }: { g: GiftItem }) {
+  return (
+    <div class="moment-row" data-row data-id={g.id}>
+      <div class="row-kind">
+        <label class="field">
+          <span class="field-label">Tipo</span>
+          <select data-k="kind">
+            <option value="item" selected={g.kind === 'item'}>
+              Regalo da prenotare
+            </option>
+            <option value="fund" selected={g.kind === 'fund'}>
+              Colletta (ognuno mette una quota)
+            </option>
+          </select>
+        </label>
+        <RowField k="price" label="Prezzo o obiettivo (€)" value={g.price ? String(g.price) : ''} type="number" placeholder="Facoltativo" />
+      </div>
+      <RowField k="title" label="Cosa" value={g.title} maxlength={LIMITS.giftTitle} placeholder="Es. Macchina del caffè, Viaggio di nozze" />
+      <RowField k="link" label="Link (facoltativo)" value={g.link} maxlength={LIMITS.giftLink} placeholder="https://…" />
+      <RowField k="note" label="Nota (facoltativa)" value={g.note} maxlength={LIMITS.giftNote} placeholder="Es. colore bianco, la trovi da…" />
+      <RowTools />
+    </div>
+  );
+}
+
+function StayRow({ s }: { s: StayItem }) {
+  return (
+    <div class="moment-row" data-row>
+      <RowField k="name" label="Nome" value={s.name} maxlength={80} placeholder="Es. Hotel Villa Rosa" />
+      <RowField k="address" label="Indirizzo" value={s.address} maxlength={LIMITS.programAddress} placeholder="Via, numero, città" />
+      <div class="row-2">
+        <RowField k="link" label="Sito o prenotazioni (facoltativo)" value={s.link} maxlength={300} placeholder="https://…" />
+        <RowField k="note" label="Nota (facoltativa)" value={s.note} maxlength={160} placeholder="Es. codice sconto SPOSI10" />
+      </div>
+      <RowTools />
+    </div>
+  );
+}
+
+function StoryRow({ s }: { s: StoryItem }) {
+  return (
+    <div class="moment-row" data-row>
+      <div class="row-time">
+        <RowField k="when" label="Quando" value={s.when} maxlength={40} placeholder="Es. 2016" />
+        <RowField k="title" label="Titolo" value={s.title} maxlength={80} placeholder="Es. Il primo incontro" grow />
+      </div>
+      <RowField k="text" label="Racconto (facoltativo)" value={s.text} maxlength={LIMITS.storyText} textarea />
+      <RowTools />
+    </div>
+  );
+}
+
+/** Colours of each theme for the WhatsApp preview image drawn in the browser (paper, names, accent). */
+const OG_COLORS: Record<string, [string, string, string]> = {
+  avorio: ['#fbf7ef', '#2b241d', '#7a5a1e'],
+  ulivo: ['#fafaf4', '#25301f', '#56653a'],
+  limoni: ['#fffefa', '#1d3463', '#1f4e8c'],
+  notte: ['#161c33', '#f6e8c4', '#e4c98b'],
+  alloro: ['#fbf6ee', '#2d2522', '#8f1d22'],
+  cielo: ['#fcfdfe', '#22304a', '#36608f'],
+  cipria: ['#fffaf8', '#45292a', '#93514a'],
+  spiga: ['#fcf8ef', '#352b20', '#7a5a1e'],
+  coriandoli: ['#fbf8f1', '#1f1a17', '#7a5a1e'],
+};
+
+export function EditorPage({ inv, isNew, aiTones }: { inv: Invitation; isNew: boolean; aiTones: Record<AiTone, { label: string }> | null }) {
   const d = inv.data;
   const ev = EVENT_BY_ID[inv.event_type];
   const base = `/gestisci/${inv.admin_token}`;
   const coverUrl = inv.cover_key ? `/media/${inv.cover_key}` : '';
+  const gallery = parseGallery(inv.gallery);
+  const couple = ev.couple || inv.event_type === 'anniversario';
   const whoTitle = inv.event_type === 'matrimonio' ? 'Gli sposi' : ev.couple ? 'La coppia' : inv.event_type === 'festa' ? 'La festa' : 'Chi festeggiamo';
+  const wedding = inv.event_type === 'matrimonio';
   return (
     <Layout
       title={`Modifica · ${displayNames(d)} · ${BRAND.name}`}
@@ -116,7 +216,19 @@ export function EditorPage({ inv, isNew }: { inv: Invitation; isNew: boolean }) 
               </p>
             </div>
           )}
-          <form id="editor" data-save={`${base}/salva`} data-upload={`${base}/foto`} data-unupload={`${base}/foto/rimuovi`} data-preview={`${base}/anteprima`} autocomplete="off">
+          <form
+            id="editor"
+            data-save={`${base}/salva`}
+            data-upload={`${base}/foto`}
+            data-unupload={`${base}/foto/rimuovi`}
+            data-preview={`${base}/anteprima`}
+            data-ai={aiTones ? `${base}/ai` : ''}
+            data-og={`${base}/anteprima-link`}
+            data-og-colors={JSON.stringify(OG_COLORS)}
+            data-has-og={inv.og_key ? '1' : '0'}
+            data-event-label={ev.label}
+            autocomplete="off"
+          >
             <section class="ed-card">
               <h2 class="ed-title">Stile</h2>
               <div class="theme-picker">
@@ -149,11 +261,18 @@ export function EditorPage({ inv, isNew }: { inv: Invitation; isNew: boolean }) 
                 <Field label="Ora" name="time" type="time" value={d.time} />
               </div>
               <Toggle name="showCountdown" checked={d.showCountdown} label="Mostra il conto alla rovescia" />
+              <Toggle name="showWeather" checked={d.showWeather} label="Mostra le previsioni del meteo" hint="Compaiono da sole nei 14 giorni prima dell’evento." />
+              <Toggle
+                name="saveTheDate"
+                checked={d.saveTheDate}
+                label="Per ora è solo un «Save the date»"
+                hint="Mostra solo nomi e data, senza programma e conferme. Toglilo quando vuoi mandare l’invito completo: il link resta lo stesso."
+              />
             </section>
 
             <section class="ed-card">
               <h2 class="ed-title">Programma</h2>
-              <p class="ed-hint">Cerimonia, pranzo, festa: ogni tappa avrà il tasto «Come arrivare» con la mappa.</p>
+              <p class="ed-hint">Cerimonia, pranzo, festa: ogni tappa ha il tasto «Indicazioni stradali». Le tappe «solo per chi è invitato a tutto» le vedono solo gli invitati che scegli nella lista.</p>
               <div id="program" class="program-list">
                 {d.program.map((p) => (
                   <ProgramRow item={p} />
@@ -170,6 +289,24 @@ export function EditorPage({ inv, isNew }: { inv: Invitation; isNew: boolean }) 
             <section class="ed-card">
               <h2 class="ed-title">Il messaggio</h2>
               <Field label="Testo dell’invito" name="message" value={d.message} textarea rows={5} maxlength={LIMITS.message} />
+              {aiTones && (
+                <div class="ai-tools" id="ai-tools">
+                  <span class="ai-label">{raw(uiIcon('sparkle', 'icon inline-icon'))} Riscrivilo:</span>
+                  {(Object.keys(aiTones) as AiTone[])
+                    .filter((t) => t !== 'nuovo')
+                    .map((t) => (
+                      <button type="button" class="chip-btn" data-ai-tone={t}>
+                        {aiTones[t].label}
+                      </button>
+                    ))}
+                  <button type="button" class="chip-btn" data-ai-tone="nuovo">
+                    Scrivine uno nuovo
+                  </button>
+                  <button type="button" class="link-btn" id="ai-undo" hidden>
+                    Annulla
+                  </button>
+                </div>
+              )}
               <div class="row-between">
                 <button type="button" class="btn btn-ghost btn-sm" id="suggest" data-phrases={JSON.stringify(ev.phrases)}>
                   Suggeriscimi una frase
@@ -182,13 +319,13 @@ export function EditorPage({ inv, isNew }: { inv: Invitation; isNew: boolean }) 
             </section>
 
             <section class="ed-card">
-              <h2 class="ed-title">Foto (facoltativa)</h2>
+              <h2 class="ed-title">Foto</h2>
               <div class="cover-ed">
                 <img id="cover-preview" src={coverUrl || undefined} alt="" hidden={!coverUrl} />
                 <div class="cover-actions">
                   <label class="btn btn-secondary btn-sm file-btn">
                     <input type="file" accept="image/jpeg,image/png,image/webp,image/heic" id="cover-input" />
-                    {coverUrl ? 'Cambia foto' : 'Carica una foto'}
+                    {coverUrl ? 'Cambia la foto principale' : 'Carica la foto principale'}
                   </label>
                   <button type="button" class="btn btn-ghost btn-sm" id="cover-remove" hidden={!coverUrl}>
                     Rimuovi
@@ -196,13 +333,43 @@ export function EditorPage({ inv, isNew }: { inv: Invitation; isNew: boolean }) 
                 </div>
               </div>
               <p class="ed-hint">Appare in alto nell’invito e nell’anteprima del link su WhatsApp. Meglio se verticale.</p>
+              <h3 class="ed-subtitle">{couple ? 'Galleria: le vostre foto' : 'Galleria di foto'}</h3>
+              <div class="gallery-ed" id="gallery" data-upload={`${base}/galleria`} data-remove={`${base}/galleria/rimuovi`} data-max={LIMITS.gallery}>
+                {gallery.map((k) => (
+                  <figure data-key={k}>
+                    <img src={`/media/${k}`} alt="" loading="lazy" />
+                    <button type="button" class="gallery-remove" data-gallery-remove aria-label="Rimuovi la foto">
+                      ✕
+                    </button>
+                  </figure>
+                ))}
+              </div>
+              <label class="btn btn-ghost btn-sm file-btn" id="gallery-add" hidden={gallery.length >= LIMITS.gallery}>
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/heic" id="gallery-input" multiple />+ Aggiungi foto alla galleria
+              </label>
+              <p class="ed-hint gallery-hint">Fino a {LIMITS.gallery} foto: nell’invito si ingrandiscono con un tocco.</p>
             </section>
 
             <section class="ed-card">
-              <h2 class="ed-title">Dettagli</h2>
-              <Field label="Dress code (facoltativo)" name="dressCode" value={d.dressCode} maxlength={LIMITS.dressCode} placeholder="Es. Elegante, colori pastello" />
+              <h2 class="ed-title">{couple ? 'La vostra storia' : 'La storia'} (facoltativa)</h2>
+              <p class="ed-hint">{couple ? 'Le tappe più belle: come vi siete conosciuti, il primo viaggio, la proposta.' : 'Qualche tappa importante da raccontare agli invitati.'}</p>
+              <div class="program-list" data-rows="story">
+                {d.story.map((s) => (
+                  <StoryRow s={s} />
+                ))}
+              </div>
+              <template id="tpl-story">
+                <StoryRow s={{ when: '', title: '', text: '' }} />
+              </template>
+              <button type="button" class="btn btn-ghost btn-sm" data-add-row="story" data-max={LIMITS.story}>
+                + Aggiungi un momento
+              </button>
+            </section>
+
+            <section class="ed-card">
+              <h2 class="ed-title">{wedding ? 'Lista nozze' : 'Regali'}</h2>
               <Field
-                label={inv.event_type === 'matrimonio' ? 'Lista nozze: testo (facoltativo)' : 'Regali: testo (facoltativo)'}
+                label="Testo (facoltativo)"
                 name="giftText"
                 value={d.giftText}
                 textarea
@@ -215,19 +382,89 @@ export function EditorPage({ inv, isNew }: { inv: Invitation; isNew: boolean }) 
                 <Field label="Intestato a" name="ibanHolder" value={d.ibanHolder} maxlength={LIMITS.ibanHolder} />
               </div>
               <p class="field-hint" id="iban-hint" aria-live="polite"></p>
-              <Field label="Link alla lista regali (facoltativo)" name="giftLink" value={d.giftLink} maxlength={LIMITS.giftLink} placeholder="https://…" inputmode="url" />
+              <Field label="Link a una lista esterna (facoltativo)" name="giftLink" value={d.giftLink} maxlength={LIMITS.giftLink} placeholder="https://…" inputmode="url" />
+              <h3 class="ed-subtitle">Regali da prenotare e collette</h3>
+              <p class="ed-hint">Gli invitati prenotano un regalo dall’invito (così nessuno lo sceglie due volte) o mettono una quota in una colletta. Tu vedi tutto nel pannello.</p>
+              <div class="program-list" data-rows="gifts">
+                {d.gifts.map((g) => (
+                  <GiftRow g={g} />
+                ))}
+              </div>
+              <template id="tpl-gifts">
+                <GiftRow g={{ id: '', kind: 'item', title: '', note: '', link: '', price: 0 }} />
+              </template>
+              <button type="button" class="btn btn-ghost btn-sm" data-add-row="gifts" data-max={LIMITS.gifts}>
+                + Aggiungi un regalo
+              </button>
+            </section>
+
+            <section class="ed-card">
+              <h2 class="ed-title">Dettagli per gli invitati</h2>
+              <Field label="Dress code (facoltativo)" name="dressCode" value={d.dressCode} maxlength={LIMITS.dressCode} placeholder="Es. Elegante, colori pastello" />
+              <h3 class="ed-subtitle">Dove dormire</h3>
+              <p class="ed-hint">Hotel o B&amp;B consigliati per chi viene da lontano.</p>
+              <div class="program-list" data-rows="stays">
+                {d.stays.map((s) => (
+                  <StayRow s={s} />
+                ))}
+              </div>
+              <template id="tpl-stays">
+                <StayRow s={{ name: '', address: '', link: '', note: '' }} />
+              </template>
+              <button type="button" class="btn btn-ghost btn-sm" data-add-row="stays" data-max={LIMITS.stays}>
+                + Aggiungi un alloggio
+              </button>
+              <h3 class="ed-subtitle">Passaggi in auto</h3>
+              <Toggle name="ridesBoard" checked={d.ridesBoard} label="Bacheca dei passaggi" hint="Gli invitati offrono o chiedono un passaggio e si scrivono su WhatsApp." />
             </section>
 
             <section class="ed-card">
               <h2 class="ed-title">Conferme di presenza</h2>
               <Field label="Chiedi di rispondere entro il" name="rsvpDeadline" type="date" value={d.rsvpDeadline} />
               <Toggle name="askChildren" checked={d.askChildren} label="Chiedi quanti bambini" />
-              <Toggle name="askDiet" checked={d.askDiet} label="Chiedi allergie, intolleranze e menu" />
+              <Toggle name="askNames" checked={d.askNames} label="Chiedi il nome di ogni persona" hint="Utile per il tableau e per i segnaposto." />
+              <Field
+                label="Scelta del menu (facoltativa)"
+                name="menuOptions"
+                value={d.menuOptions.join(', ')}
+                maxlength={260}
+                placeholder="Es. Carne, Pesce, Vegetariano"
+                hint="Scrivi le scelte separate da virgole: ognuno sceglie il suo menu. Lascia vuoto per non chiederlo."
+              />
+              <Toggle name="askDiet" checked={d.askDiet} label="Chiedi allergie e intolleranze" />
+              <Toggle name="askSong" checked={d.askSong} label="Chiedi una canzone per la festa" hint="Le trovi tutte nel pannello, da girare al DJ." />
               <Field label="Una domanda in più (facoltativa)" name="customQuestion" value={d.customQuestion} maxlength={LIMITS.customQuestion} placeholder="Es. Ti serve il bus navetta?" />
               <div class="row-2">
                 <Field label="Chi contattare per domande" name="contactName" value={d.contactName} maxlength={LIMITS.contactName} placeholder="Es. Anna" />
                 <Field label="Il suo WhatsApp" name="contactPhone" type="tel" value={d.contactPhone} maxlength={LIMITS.contactPhone} placeholder="333 123 4567" inputmode="tel" />
               </div>
+            </section>
+
+            <section class="ed-card">
+              <h2 class="ed-title">Tavoli</h2>
+              <p class="ed-hint">Assegni i tavoli dalla lista invitati nel pannello. Qui scegli quando gli invitati li vedono sul loro link personale.</p>
+              <label class="field">
+                <span class="field-label">Mostra il tavolo agli invitati</span>
+                <select name="tableReveal">
+                  <option value="never" selected={d.tableReveal === 'never'}>
+                    No, lo tengo per me
+                  </option>
+                  <option value="day" selected={d.tableReveal === 'day'}>
+                    Dal giorno dell’evento
+                  </option>
+                  <option value="always" selected={d.tableReveal === 'always'}>
+                    Da subito
+                  </option>
+                </select>
+                <span class="field-hint">Quando sono visibili, all’ingresso basta un cartello con il QR «Trova il tuo tavolo» (lo stampi dal tableau).</span>
+              </label>
+            </section>
+
+            <section class="ed-card" id="avviso-ed">
+              <h2 class="ed-title">Avviso agli invitati</h2>
+              <p class="ed-hint">Un cambio di orario, il parcheggio, la navetta: compare in evidenza in cima all’invito, con la data. Lascia vuoto per toglierlo.</p>
+              <Field label="Testo dell’avviso" name="notice" value={d.notice} textarea rows={3} maxlength={LIMITS.notice} placeholder="Es. Il ricevimento inizierà alle 14:30 invece che alle 14:00." />
+              <p class="ed-hint">Dopo averlo scritto, dal pannello puoi mandarlo a tutti su WhatsApp.</p>
             </section>
           </form>
 

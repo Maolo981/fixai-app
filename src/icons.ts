@@ -53,6 +53,13 @@ export const UI_ICONS = {
   sparkle: '<path d="M16 4C16.8 11 21 15.2 28 16C21 16.8 16.8 21 16 28C15.2 21 11 16.8 4 16C11 15.2 15.2 11 16 4Z"/>',
   warning: '<path d="M16 5L28 26H4Z"/><path d="M16 12.6V19M16 22.4V22.6"/>',
   compass: '<circle cx="16" cy="16" r="11.5"/><path d="M19.8 12.2L17.6 17.6L12.2 19.8L14.4 14.4Z"/>',
+  printer: '<path d="M9.5 12V5H22.5V12"/><rect x="5" y="12" width="22" height="10" rx="1.4"/><path d="M9.5 18.5H22.5V27H9.5Z"/><path d="M22.4 15.2H23.4"/>',
+  users: '<circle cx="12" cy="11.6" r="4.2"/><path d="M4.4 25.4C5 21 8 18.4 12 18.4S19 21 19.6 25.4"/><circle cx="22" cy="12.4" r="3.4"/><path d="M21 18.6C24.6 18.4 27 20.6 27.6 24.4"/>',
+  send: '<path d="M27.5 5L4.5 14.2L13 17.6Z"/><path d="M27.5 5L17.4 26.4L13 17.6"/>',
+  car: '<path d="M5.5 21V16.2L8.4 10.4C8.8 9.6 9.6 9 10.6 9H21.4C22.4 9 23.2 9.6 23.6 10.4L26.5 16.2V21Z"/><path d="M5.5 16.2H26.5"/><circle cx="10.4" cy="21.4" r="2.4"/><circle cx="21.6" cy="21.4" r="2.4"/>',
+  music: '<path d="M12 23.5V8L25 5.5V21"/><circle cx="9" cy="23.5" r="3"/><circle cx="22" cy="21" r="3"/>',
+  photo: '<rect x="4.5" y="7.5" width="23" height="17" rx="1.4"/><circle cx="11.5" cy="13" r="2.2"/><path d="M4.5 21.5L11 16.5L16 20.5L21 15.5L27.5 21"/>',
+  megaphone: '<path d="M6 13.5H11L22 7V25L11 18.5H6Z"/><path d="M11 18.5L13 26H16L14.6 19.6"/><path d="M25.5 13.2C26.8 14.6 26.8 17.4 25.5 18.8"/>',
 } as const;
 
 export type UiIcon = keyof typeof UI_ICONS;

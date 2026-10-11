@@ -2,8 +2,22 @@ import type { Invitation } from '../types';
 import { Logo } from './layout';
 import { publicPath } from '../model';
 
-export function AppHeader({ inv, active }: { inv: Invitation; active: 'dash' | 'edit' }) {
+export function AppHeader({ inv, active, readOnly }: { inv: Invitation; active: 'dash' | 'edit'; readOnly?: boolean }) {
   const base = `/gestisci/${inv.admin_token}`;
+  if (readOnly)
+    return (
+      <header class="site-header app-header">
+        <div class="container header-inner">
+          <Logo />
+          <span class="badge badge-readonly">Sola lettura</span>
+          {inv.status === 'active' && (
+            <a class="btn btn-secondary btn-sm" href={publicPath(inv)} target="_blank" rel="noopener">
+              Apri invito ↗
+            </a>
+          )}
+        </div>
+      </header>
+    );
   return (
     <header class="site-header app-header">
       <div class="container header-inner">

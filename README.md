@@ -76,26 +76,36 @@ Il cliente crea l'invito, lo vede completo e lo personalizza gratis. Finché non
 
 ## 3. Cosa c'è già (tutto funzionante)
 
+Stile da cartoleria di lusso (carta di cotone, acquerelli, oro a caldo, sigillo di ceralacca) ma **testi semplici e leggibili**: titoli in Cormorant Garamond, tutto il resto in Jost, a grandezza comoda anche per i nonni.
+
 **Per gli invitati** (nessuna app, si apre da WhatsApp):
 
 - busta animata con sigillo di ceralacca e iniziali, poi una pioggia di coriandoli
-- saluto personalizzato con il nome dell'invitato
-- foto, conto alla rovescia, messaggio, programma con il tasto «Come arrivare» (Google Maps)
-- dress code, lista nozze, IBAN con il tasto «Copia»
-- conferma di presenza: «Parteciperò con piacere» / «Non potrò partecipare», adulti, bambini, allergie e menu, una domanda personalizzata (es. «Ti serve la navetta?») e un messaggio per gli sposi
-- risposta modificabile in qualsiasi momento
-- «Aggiungi al calendario» per iPhone, Android e Google Calendar
-- anteprima bella del link su WhatsApp, con foto oppure con l'immagine della busta
+- saluto personalizzato con il nome dell'invitato e, se vuoi, **il suo tavolo**
+- foto di copertina, **galleria di foto** (fino a 8), **la vostra storia** a tappe, conto alla rovescia, messaggio
+- programma con «Indicazioni stradali» (Google Maps) e **meteo** del giorno nei 14 giorni prima
+- **tappe riservate**: chi è invitato solo alla cerimonia non vede il ricevimento
+- dress code, **dove dormire** (hotel consigliati), **bacheca dei passaggi** tra invitati
+- **lista regali senza doppioni**: si prenota un regalo con un tocco o si partecipa a una **colletta** (es. viaggio di nozze), oltre a IBAN con «Copia» e link a liste esterne
+- conferma di presenza: «Sì, ci sarò» / «No, non potrò esserci», adulti e bambini, **nome e menu di ogni persona** (es. carne, pesce, vegetariano), allergie, una domanda personalizzata, **una canzone per il DJ** e un messaggio per gli sposi
+- risposta modificabile in qualsiasi momento, «Aggiungi al calendario» (iPhone, Android, Google Calendar)
+- **avvisi**: se cambia qualcosa compare un riquadro «Aggiornamento del…» in cima all'invito
+- **save the date**: si può mandare prima solo nomi e data, poi l'invito completo con lo stesso link
+- **trova il tuo tavolo**: il giorno della festa ognuno scrive il proprio nome e vede il tavolo (QR all'ingresso)
+- anteprima del link su WhatsApp con la foto, oppure con un'immagine con i nomi generata automaticamente
 
 **Per chi organizza:**
 
-- editor con anteprima dal vivo e salvataggio automatico
-- 9 stili da cartoleria di lusso (carta di cotone, oro a caldo, acquerelli, sigillo in ceralacca): Avorio e oro, Ulivo, Amalfi, Mezzanotte, Alloro, Cielo, Cipria, Grano, Gala
-- frasi già pronte per ogni occasione, foto ridimensionata automaticamente
-- dashboard: persone confermate, adulti e bambini, chi non viene, dediche
-- **lista invitati con link personali**, anche incollando l'elenco intero: «Invia su WhatsApp», stato «aperto / non aperto / ha risposto», **promemoria** solo a chi manca
-- **Excel (CSV)** per ristorante, catering e tableau, con chi non ha ancora risposto in fondo
-- email con il link di gestione, avviso a ogni nuova risposta, recupero dei link dimenticati
+- editor con anteprima dal vivo e salvataggio automatico, 9 stili, frasi già pronte per ogni occasione
+- **testi scritti dall'AI** (facoltativo, con chiave Claude): «più elegante», «più semplice», «più simpatico», «più breve» o «scrivine uno nuovo»
+- dashboard: persone confermate, adulti e bambini, **totale dei menu**, chi non viene, dediche e **canzoni** proposte
+- **lista invitati con link personali**, anche incollando l'elenco intero o scegliendo **dalla rubrica** del telefono (Android): gruppi (famiglia, amici, colleghi), tavoli, invitati solo alle tappe aperte a tutti, filtri, «Invia su WhatsApp», stato «aperto / ha risposto», **promemoria** solo a chi manca
+- **lista regali** con chi ha prenotato cosa e il totale delle collette; moderazione della bacheca dei passaggi
+- **Excel (CSV)** delle risposte e **Excel per il catering** (una riga per persona con menu, allergie e tavolo)
+- **da stampare**: invito A5 con codice QR, biglietti con il nome di ogni invitato e il suo QR, **tableau dei tavoli** con il cartello «Trova il tuo tavolo»
+- **link di sola lettura** per genitori, testimoni o wedding planner (revocabile)
+- **avviso a tutti su WhatsApp** quando cambia qualcosa, uno per uno o con un solo messaggio
+- avvisi a ogni nuova risposta via email e, facoltativo, **su Telegram**
 - eliminazione dell'invito in qualsiasi momento
 
 **Per te (il business):**
@@ -104,14 +114,18 @@ Il cliente crea l'invito, lo vede completo e lo personalizza gratis. Finché non
 - **area `/admin`** protetta da password: incasso totale e degli ultimi 30 giorni, conversione da bozza a pagato, grafico degli ultimi 14 giorni, ultimi 100 inviti
 - **pagine SEO** per ogni occasione (`/inviti/battesimo`…) e raccolte di **frasi** (`/frasi/matrimonio`…) per farti trovare su Google
 - privacy: dati cancellati in automatico 6 mesi dopo l'evento e bozze abbandonate dopo 60 giorni; font ospitati in casa (niente Google Fonts); nessun cookie di profilazione
-- sicurezza: link di gestione segreti e impossibili da indovinare, protezione anti-spam, Content-Security-Policy, CSV protetto dalle formule Excel
+- sicurezza: link di gestione segreti e impossibili da indovinare, protezione anti-spam e limiti di frequenza, Content-Security-Policy, CSV protetto dalle formule Excel
 - statistiche visite facoltative e senza cookie (Cloudflare Web Analytics)
 
 | Dashboard | Editor |
 |---|---|
 | ![Dashboard](docs/screenshots/dashboard.webp) | ![Editor](docs/screenshots/editor.webp) |
-| **Lista invitati con link personali** | **La tua area admin** |
-| ![Lista invitati](docs/screenshots/guests.webp) | ![Admin](docs/screenshots/admin.webp) |
+| **Lista invitati con gruppi e tavoli** | **Lista regali e collette** |
+| ![Lista invitati](docs/screenshots/guests.webp) | ![Lista regali](docs/screenshots/regali-pannello.webp) |
+| **Invito da stampare con QR** | **Tableau dei tavoli** |
+| ![Invito da stampare](docs/screenshots/stampa.webp) | ![Tableau](docs/screenshots/tableau.webp) |
+| **La tua area admin** | **Lista regali nell'invito** |
+| ![Admin](docs/screenshots/admin.webp) | ![Lista regali nell'invito](docs/screenshots/lista-regali.webp) |
 
 ![Alcuni stili](docs/screenshots/temi.webp)
 
@@ -160,6 +174,22 @@ npx wrangler secret put STRIPE_WEBHOOK_SECRET   # whsec_...
 4. controlla la dashboard e `/admin` (utente `admin`)
 
 Quando tutto funziona, sostituisci la chiave con `sk_live_...` e crea il webhook anche in modalità live.
+
+**Facoltativo: risposte su Telegram.** Su Telegram scrivi a [@BotFather](https://t.me/BotFather), crea un bot (`/newbot`) e copia il token. Poi:
+
+```bash
+npx wrangler secret put TELEGRAM_BOT_TOKEN       # il token di BotFather
+npx wrangler secret put TELEGRAM_BOT_NAME        # il nome del bot, es. ConfettoInvitiBot (senza @)
+npx wrangler secret put TELEGRAM_WEBHOOK_SECRET  # una parola segreta a tua scelta (lettere e numeri)
+# collega il bot al sito (una volta sola):
+curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://TUO-DOMINIO/api/telegram/webhook&secret_token=<SEGRETO>"
+```
+
+Nel pannello di ogni invito compare «Collega Telegram»: chi organizza preme «Avvia» nel bot e da quel momento riceve lì ogni risposta.
+
+**Facoltativo: testi scritti dall'AI.** Crea una chiave su [platform.claude.com](https://platform.claude.com) e salvala con `npx wrangler secret put ANTHROPIC_API_KEY`. Nell'editor compaiono i tasti «Più elegante», «Più semplice», «Più simpatico», «Più breve» e «Scrivine uno nuovo». Usa il modello Claude Opus 5.5 con impegno basso (risposte rapide ed economiche, pochi centesimi per decine di testi) e il **fallback automatico lato server** di Anthropic: se il modello rifiuta una richiesta, l'API la riprova da sola sul modello consigliato. Ogni invito può chiedere al massimo 30 testi l'ora. Il testo del messaggio, i nomi e la data vengono inviati all'API di Anthropic: ricordalo nella privacy policy.
+
+**Meteo.** Le previsioni arrivano da [Open-Meteo](https://open-meteo.com), gratis e senza chiave (si invia solo il nome del paese e la data). Per spegnerle: `WEATHER = "false"` in `wrangler.toml`.
 
 **Prima di aprire al pubblico:**
 
@@ -213,7 +243,7 @@ Testi pronti da copiare (post, messaggi ai partner, scheda Etsy, parole chiave) 
 
 - **Versione in inglese per i matrimoni di stranieri in Italia** (destination wedding): budget molto più alti, prezzo 59–79 €.
 - **Album foto degli invitati** dopo la festa: un QR sui tavoli, gli ospiti caricano le foto senza app, come l'americana POV. Si venderebbe come extra da 19 €.
-- **QR stampabile** per save-the-date e tableau di carta che rimanda all'invito.
+- **Segnaposto stampabili** con nome e menu di ogni persona, presi dalle risposte.
 - **Rimozione del footer** «Creato con Confetto» come extra a pagamento.
 - **Programma affiliati** automatico per i partner.
 
@@ -221,7 +251,7 @@ Testi pronti da copiare (post, messaggi ai partner, scheda Etsy, parole chiave) 
 
 ## 9. Per sviluppatori
 
-**Tecnologia:** Cloudflare Workers + [Hono](https://hono.dev) con pagine renderizzate dal server in JSX, D1 (SQLite) per i dati, R2 per le foto, Stripe Checkout via REST (nessun SDK), Resend per le email e un cron notturno per la pulizia. Niente framework frontend: il JavaScript totale è circa 25 KB. I font sono ospitati in casa.
+**Tecnologia:** Cloudflare Workers + [Hono](https://hono.dev) con pagine renderizzate dal server in JSX, D1 (SQLite) per i dati, R2 per le foto, Stripe Checkout via REST (nessun SDK), Resend per le email, l'SDK ufficiale `@anthropic-ai/sdk` per i testi AI e un cron notturno per la pulizia. Niente framework frontend: il JavaScript totale è circa 50 KB. I font sono ospitati in casa.
 
 ```
 src/
@@ -235,10 +265,15 @@ src/
   stripe.ts        Checkout, verifica sessione, firma del webhook
   email.ts         email transazionali (Resend)
   calendar.ts      file .ics e link a Google Calendar
-  views/           pagine in JSX (landing, editor, dashboard, invito, SEO, legali, admin)
+  ai.ts            «riscrivi il messaggio» con Claude (facoltativo)
+  telegram.ts      bot Telegram per le risposte (facoltativo)
+  weather.ts       previsioni meteo (Open-Meteo)
+  qr.ts            codici QR in SVG per stampa e tableau
+  demo.ts          inviti di esempio per le pagine /demo
+  views/           pagine in JSX (landing, editor, dashboard, invito, stampa e tableau, SEO, legali, admin)
 public/            CSS, JS, font, immagini dei temi, anteprime social
 migrations/        schema del database
-tests/             test end-to-end (browser vero + Stripe simulato)
+tests/             test end-to-end (browser vero + Stripe, Telegram, Claude e meteo simulati)
 scripts/           generazione immagini dei temi e anteprime social, copia dei font
 ```
 
@@ -250,7 +285,7 @@ npm run db:migrate:local
 npm run dev                        # http://localhost:8787
 ```
 
-**Test** (24 controlli end-to-end: creazione, editor, upload, pagamento Stripe simulato, webhook firmato, link personali, conferme, CSV, admin, pulizia GDPR):
+**Test** (38 controlli end-to-end: creazione, editor, foto e galleria, testi AI, pagamento Stripe simulato, webhook firmato, link personali, tappe riservate, menu, tavoli, lista regali e collette, passaggi, link di sola lettura, Telegram, meteo, save the date, stampa, CSV, admin, pulizia GDPR):
 
 ```bash
 npm test                           # richiede Chromium: CHROMIUM=/percorso/chrome npm test

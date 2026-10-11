@@ -1,0 +1,77 @@
+/* Confetto — printable invitation, guest cards, tableau and the table finder.
+   Loaded after invite.css: same paper, colours and type as the invitation. */
+.print-doc{padding:0 16px 48px}
+.print-toolbar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:0 -16px 18px;padding:12px 16px;background:var(--paper);border-bottom:1px solid var(--rule);box-shadow:0 8px 20px -16px rgba(0,0,0,.5)}
+.print-toolbar-tools{display:flex;flex-wrap:wrap;gap:8px}
+.print-tip{max-width:640px;margin:0 auto 20px;text-align:center;font-size:15px;color:var(--on-table)}
+.print-empty{text-align:center;color:var(--on-table);font-size:17px}
+.print-area{display:flex;justify-content:center}
+
+/* A5 invitation (148 × 210 mm): the content sets the height, never cut */
+.print-card{width:148mm;max-width:100%;min-height:200mm}
+.print-card .hero{padding-bottom:26px}
+.print-card .hero-body{justify-content:flex-start;padding-top:14px}
+.print-card .art-top+.hero-body{padding-top:0}
+.print-card .names{--names-size:44px}
+.print-card .art-div{margin:12px auto}
+.print-card .d-day{font-size:44px}
+.print-message{margin:14px auto 0;max-width:30ch;font-size:15px;line-height:1.5;white-space:pre-line}
+.print-qr{display:flex;align-items:center;gap:14px;margin:18px auto 0;padding:12px 14px;border:1px solid var(--rule);border-radius:var(--radius);text-align:left;max-width:330px;background:rgba(255,255,255,.55)}
+.t-notte .print-qr{background:#fbf7ef;color:#1f1a16}
+.t-notte .print-qr strong{color:#1f1a16}
+.print-qr svg{flex:none;display:block}
+.print-qr p{margin:0;font-size:13px;line-height:1.45}
+.print-qr strong{display:block;font-size:15px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.print-url{display:block;font-weight:600;word-break:break-all}
+
+/* guest cards: 2 × 4 per A4 */
+.gcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;max-width:1000px;margin:0 auto}
+.gcard{display:flex;align-items:center;gap:14px;padding:18px;background:var(--grain) 0 0/240px 240px,var(--paper);border:1.5px solid transparent;border-image:var(--foil) 1;break-inside:avoid;min-height:62mm}
+.gcard-text{flex:1;min-width:0;text-align:center}
+.gcard .kicker{margin:0 0 4px;font-size:12px}
+.gcard-name{margin:0;font-family:var(--f-display);font-weight:600;font-size:26px;line-height:1.15;color:var(--names);overflow-wrap:anywhere}
+.gcard-event{margin:8px 0 0;font-size:13px;line-height:1.45;color:var(--muted)}
+.gcard-qr{flex:none;display:grid;justify-items:center;gap:4px;padding:8px;background:#fff;border-radius:6px}
+.gcard-qr span{font-size:11px;font-weight:500;color:#1f1a16}
+
+/* tableau */
+.tableau-head{text-align:center;margin:0 auto 18px}
+.tableau-head .kicker{color:var(--on-table)}
+.tableau-head .sec-title{color:var(--on-table)}
+.tableau{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;max-width:1200px;margin:0 auto}
+.tb{padding:18px 18px 16px;background:var(--grain) 0 0/240px 240px,var(--paper);border:1.5px solid transparent;border-image:var(--foil) 1;break-inside:avoid;text-align:center}
+.tb-name{margin:0;font-family:var(--f-display);font-weight:600;font-size:28px;line-height:1.15;color:var(--names)}
+.tb-count{margin:2px 0 10px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.tb ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.tb li{border-top:1px solid var(--rule);padding-top:8px;line-height:1.35}
+.tb li strong{display:block;font-weight:600;font-size:16px}
+.tb li span{font-size:14px;color:var(--muted)}
+.tb li.out{opacity:.55}
+.tb li.out strong{text-decoration:line-through}
+.tb-sign{display:flex;align-items:center;justify-content:center;gap:18px;max-width:520px;margin:28px auto 0;padding:18px;background:var(--grain) 0 0/240px 240px,var(--paper);border:1.5px solid transparent;border-image:var(--foil) 1;break-inside:avoid}
+.tb-sign svg{flex:none;background:#fff;padding:6px}
+.tb-sign .sec-title{margin:0 0 4px;font-size:28px}
+.tb-sign p{margin:0}
+
+/* table finder (guests at the venue) */
+.finder{padding:40px clamp(20px,6.5cqw,38px) 30px;text-align:center}
+.finder-form{display:grid;gap:14px;max-width:380px;margin:18px auto 0;text-align:left}
+.finder-msg{margin:18px auto 0;max-width:34ch;color:var(--muted)}
+.finder-results{list-style:none;margin:20px auto 0;padding:0;max-width:380px;display:grid;gap:10px;text-align:left}
+.finder-results li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--rule);border-radius:var(--radius);background:rgba(255,255,255,.55)}
+.t-notte .finder-results li{background:rgba(255,255,255,.05)}
+.finder-results span{font-weight:500}
+.finder-results strong{flex:none;font-family:var(--f-display);font-weight:600;font-size:24px;line-height:1.1;color:var(--accent)}
+.finder .link-btn{display:inline-block;margin-top:22px}
+
+@media print{
+  @page{margin:10mm}
+  body.inv.print-doc{background:#fff;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-toolbar,.print-tip{display:none}
+  .print-a5 .print-card{box-shadow:none;width:128mm;min-height:0;margin:0 auto}
+  .gcards{grid-template-columns:1fr 1fr;gap:6mm;max-width:none}
+  .gcard,.tb,.tb-sign,.sheet{box-shadow:none}
+  .tableau{grid-template-columns:repeat(3,1fr);gap:5mm;max-width:none}
+  .tableau-head .kicker,.tableau-head .sec-title{color:var(--names)}
+}
+@media print and (orientation:landscape){.tableau{grid-template-columns:repeat(4,1fr)}}

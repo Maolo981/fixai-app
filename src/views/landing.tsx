@@ -8,7 +8,7 @@ import { Layout } from './layout';
 export const FAQ: { q: string; a: string }[] = [
   {
     q: 'Gli invitati devono scaricare un’app o registrarsi?',
-    a: 'No. L’invito è un link: si apre con un tocco da WhatsApp, Instagram, SMS o email, su qualsiasi telefono. Per confermare basta scrivere il nome e premere «Parteciperò con piacere».',
+    a: 'No. L’invito è un link: si apre con un tocco da WhatsApp, Instagram, SMS o email, su qualsiasi telefono. Per confermare basta scrivere il nome e scegliere «Sì, ci sarò».',
   },
   {
     q: 'Come mando l’invito?',
@@ -27,6 +27,14 @@ export const FAQ: { q: string; a: string }[] = [
     a: 'Sì, con i link personalizzati vedi chi l’ha aperto e chi non ha ancora risposto. Con un tocco mandi un promemoria gentile su WhatsApp solo a chi manca.',
   },
   {
+    q: 'Posso mettere la lista nozze o una colletta?',
+    a: 'Sì. Aggiungi i regali e gli invitati li prenotano dall’invito, così nessuno sceglie lo stesso. Per il viaggio di nozze o un regalo di gruppo apri una colletta: ognuno indica la sua quota e tu vedi il totale. Il pagamento avviene direttamente tra voi (IBAN o come preferite).',
+  },
+  {
+    q: 'Posso gestire menu e tavoli?',
+    a: 'Sì. Ogni invitato sceglie il menu per ogni persona, tu assegni i tavoli dalla lista e stampi il tableau. Se vuoi, il giorno della festa ognuno trova il proprio tavolo direttamente sul telefono.',
+  },
+  {
     q: 'Quanto costa? C’è un abbonamento?',
     a: `Nessun abbonamento: crei e provi l’invito gratis, paghi una sola volta quando lo pubblichi (da ${euro(PRICES.festa.cents)}). Le conferme sono illimitate e non ci sono pubblicità.`,
   },
@@ -42,23 +50,28 @@ export const FAQ: { q: string; a: string }[] = [
 
 const FEATURES_GUESTS: [UiIcon, string, string][] = [
   ['envelope', 'Una busta da aprire', 'Il primo tocco è un’emozione: si rompe il sigillo di ceralacca, la busta si apre e l’invito esce, tra coriandoli d’oro.'],
-  ['pin', 'Programma e mappa', 'Chiesa, ristorante, orari: ogni tappa con le indicazioni stradali a portata di dito.'],
-  ['hourglass', 'Conto alla rovescia', 'Giorni, ore e minuti che mancano al grande giorno.'],
-  ['gift', 'IBAN con un tocco', 'Lista nozze o IBAN copiabile, senza imbarazzo e senza errori.'],
-  ['calendar', 'Dritto in calendario', 'Un tocco e la data è salvata su iPhone, Android e Google Calendar.'],
-  ['phone', 'Nessuna app', 'Si apre ovunque, anche sul telefono della nonna.'],
+  ['pin', 'Programma, mappa e meteo', 'Ogni tappa con le indicazioni stradali e, nei giorni prima, le previsioni del tempo.'],
+  ['gift', 'Lista regali senza doppioni', 'Prenotano il regalo con un tocco o partecipano a una colletta: nessuno sceglie lo stesso.'],
+  ['table', 'Il tavolo sul telefono', 'Il giorno della festa ognuno trova il suo tavolo, senza code davanti al tableau.'],
+  ['car', 'Passaggi e alloggi', 'Una bacheca per offrire o chiedere un passaggio e gli hotel consigliati per chi viene da lontano.'],
+  ['photo', 'Le vostre foto e la vostra storia', 'Una galleria da sfogliare e le tappe più belle, da raccontare prima della festa.'],
+  ['phone', 'Nessuna app', 'Si apre ovunque, anche sul telefono della nonna. E si salva in calendario con un tocco.'],
 ];
 
 const FEATURES_HOSTS: [UiIcon, string, string][] = [
-  ['check', 'Conferme automatiche', 'Chi viene, quanti adulti e bambini, menu e allergie: tutto in una lista che si aggiorna da sola.'],
-  ['person', 'Un link per ogni invitato', '«Un invito speciale per Zia Carla e Zio Paolo»: ognuno vede il proprio nome e i posti riservati.'],
+  ['check', 'Conferme automatiche', 'Chi viene, nome e menu di ogni persona, allergie e canzoni per il DJ: tutto in una lista che si aggiorna da sola.'],
+  ['person', 'Un link per ogni invitato', '«Un invito speciale per Zia Carla e Zio Paolo»: ognuno vede il suo nome, i posti riservati e solo le tappe a cui è invitato.'],
   ['eye', 'Sai chi l’ha aperto', 'Vedi chi ha aperto l’invito e chi non ha ancora risposto.'],
-  ['bell', 'Promemoria su WhatsApp', 'Un tocco e mandi un promemoria gentile solo a chi manca all’appello.'],
-  ['table', 'Excel per il catering', 'Scarichi l’elenco pronto per ristorante, catering e tableau.'],
+  ['bell', 'Promemoria e avvisi', 'Un tocco e mandi su WhatsApp un promemoria a chi manca, o un avviso a tutti se cambia un orario.'],
+  ['printer', 'Excel, tableau e stampa', 'Excel per il catering, tableau dei tavoli e l’invito da stampare con il codice QR.'],
+  ['users', 'Organizzi in compagnia', 'Un link di sola lettura per genitori, testimoni e wedding planner: vedono tutto, senza poter cambiare nulla.'],
   ['pencil', 'Modifiche illimitate', 'Cambi un orario o un indirizzo? Il link resta lo stesso.'],
 ];
 
-export function LandingPage({ origin }: { origin: string }) {
+export function LandingPage({ origin, telegram }: { origin: string; telegram?: boolean }) {
+  const hosts = telegram
+    ? FEATURES_HOSTS.map((f): [UiIcon, string, string] => (f[0] === 'users' ? [f[0], f[1], `${f[2].replace(/: vedono.*$/, '')}. E ricevi le risposte anche su Telegram.`] : f))
+    : FEATURES_HOSTS;
   return (
     <Layout
       title={`${BRAND.name} · Inviti digitali con conferma presenza per matrimoni, battesimi e feste`}
@@ -156,7 +169,7 @@ export function LandingPage({ origin }: { origin: string }) {
             <div>
               <h2 class="h3">Per te che organizzi</h2>
               <ul class="features">
-                {FEATURES_HOSTS.map(([icon, t, d]) => (
+                {hosts.map(([icon, t, d]) => (
                   <li>
                     <span class="f-icon">{raw(uiIcon(icon))}</span>
                     <div>
@@ -257,9 +270,9 @@ export function LandingPage({ origin }: { origin: string }) {
                   <p class="muted small">{PRICES[tier].examples}</p>
                   <ul class="checks">
                     <li>Conferme di presenza illimitate</li>
-                    <li>Link personalizzati per ogni invitato</li>
-                    <li>Promemoria su WhatsApp</li>
-                    <li>Excel per catering e ristorante</li>
+                    <li>Link personalizzati e promemoria su WhatsApp</li>
+                    <li>Lista regali, menu e tavoli</li>
+                    <li>Excel per il catering e tableau</li>
                     <li>Modifiche illimitate</li>
                     <li>Online fino a 6 mesi dopo l’evento</li>
                   </ul>

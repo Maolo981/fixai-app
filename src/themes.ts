@@ -17,18 +17,18 @@ export interface ThemeDef {
   fonts: string[];
 }
 
-const SCRIPT = ['pinyon-script-latin-400-normal', 'cinzel-latin-500-normal', 'cormorant-garamond-latin-400-italic'];
+const FONTS = ['cormorant-garamond-latin-600-normal', 'jost-latin-400-normal', 'jost-latin-500-normal'];
 
 export const THEMES: ThemeDef[] = [
-  { id: 'avorio', name: 'Avorio e oro', desc: 'Carta di cotone avorio, stemma d’alloro e calligrafia in oro a caldo', swatches: ['#fbf7ef', '#a8843f', '#2b241d'], demoEvent: 'anniversario', fonts: SCRIPT },
-  { id: 'ulivo', name: 'Ulivo', desc: 'Rami d’ulivo dipinti ad acquerello e nomi in oro', swatches: ['#f9f8f2', '#7d8d5e', '#2f3a2c'], demoEvent: 'matrimonio', fonts: SCRIPT },
-  { id: 'limoni', name: 'Amalfi', desc: 'Limoni ad acquerello e calligrafia blu cobalto, come le maioliche', swatches: ['#fefdf9', '#1f3f78', '#f2c94c'], demoEvent: 'festa', fonts: SCRIPT },
-  { id: 'notte', name: 'Mezzanotte', desc: 'Carta blu notte, luna e stelle in oro: per le feste di sera', swatches: ['#161c33', '#d6b56e', '#efe6d0'], demoEvent: 'diciottesimo', fonts: ['cinzel-latin-400-normal', 'cinzel-latin-500-normal', 'cormorant-garamond-latin-400-italic'] },
-  { id: 'alloro', name: 'Alloro', desc: 'Corona d’alloro in oro e nastro rosso: il classico della laurea', swatches: ['#fbf6ee', '#8f1d22', '#2d2522'], demoEvent: 'laurea', fonts: SCRIPT },
-  { id: 'cielo', name: 'Cielo', desc: 'Nuvole ad acquerello, luna e stelle color champagne', swatches: ['#fbfcfd', '#7f9cc4', '#263248'], demoEvent: 'battesimo', fonts: SCRIPT },
-  { id: 'cipria', name: 'Cipria', desc: 'Rose ad acquerello e dettagli in oro rosa', swatches: ['#fefaf8', '#c98e8a', '#4a2f2f'], demoEvent: 'babyshower', fonts: SCRIPT },
-  { id: 'spiga', name: 'Grano', desc: 'Corona di spighe in oro su carta crema: sobrio e luminoso', swatches: ['#fcf8ef', '#b08a4a', '#3b3125'], demoEvent: 'comunione', fonts: SCRIPT },
-  { id: 'coriandoli', name: 'Gala', desc: 'Busta nera e coriandoli d’oro: la festa elegante', swatches: ['#fbf8f1', '#b8924a', '#1f1a17'], demoEvent: 'compleanno', fonts: SCRIPT },
+  { id: 'avorio', name: 'Avorio e oro', desc: 'Carta di cotone avorio, stemma d’alloro e calligrafia in oro a caldo', swatches: ['#fbf7ef', '#a8843f', '#2b241d'], demoEvent: 'anniversario', fonts: FONTS },
+  { id: 'ulivo', name: 'Ulivo', desc: 'Rami d’ulivo dipinti ad acquerello e nomi in oro', swatches: ['#f9f8f2', '#7d8d5e', '#2f3a2c'], demoEvent: 'matrimonio', fonts: FONTS },
+  { id: 'limoni', name: 'Amalfi', desc: 'Limoni ad acquerello e calligrafia blu cobalto, come le maioliche', swatches: ['#fefdf9', '#1f3f78', '#f2c94c'], demoEvent: 'festa', fonts: FONTS },
+  { id: 'notte', name: 'Mezzanotte', desc: 'Carta blu notte, luna e stelle in oro: per le feste di sera', swatches: ['#161c33', '#d6b56e', '#efe6d0'], demoEvent: 'diciottesimo', fonts: FONTS },
+  { id: 'alloro', name: 'Alloro', desc: 'Corona d’alloro in oro e nastro rosso: il classico della laurea', swatches: ['#fbf6ee', '#8f1d22', '#2d2522'], demoEvent: 'laurea', fonts: FONTS },
+  { id: 'cielo', name: 'Cielo', desc: 'Nuvole ad acquerello, luna e stelle color champagne', swatches: ['#fbfcfd', '#7f9cc4', '#263248'], demoEvent: 'battesimo', fonts: FONTS },
+  { id: 'cipria', name: 'Cipria', desc: 'Rose ad acquerello e dettagli in oro rosa', swatches: ['#fefaf8', '#c98e8a', '#4a2f2f'], demoEvent: 'babyshower', fonts: FONTS },
+  { id: 'spiga', name: 'Grano', desc: 'Corona di spighe in oro su carta crema: sobrio e luminoso', swatches: ['#fcf8ef', '#b08a4a', '#3b3125'], demoEvent: 'comunione', fonts: FONTS },
+  { id: 'coriandoli', name: 'Gala', desc: 'Busta nera e coriandoli d’oro: la festa elegante', swatches: ['#fbf8f1', '#b8924a', '#1f1a17'], demoEvent: 'compleanno', fonts: FONTS },
 ];
 
 export const THEME_BY_ID = Object.fromEntries(THEMES.map((t) => [t.id, t])) as Record<ThemeId, ThemeDef>;

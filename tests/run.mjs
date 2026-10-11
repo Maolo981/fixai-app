@@ -4,13 +4,15 @@ import { execFileSync, spawn } from 'node:child_process';
 import { createHmac } from 'node:crypto';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright-core';
-import { startStripeMock } from './stripe-mock.mjs';
+import { AI_TEXT, startMockApis } from './mock-apis.mjs';
 
 const PORT = 8790;
 const BASE = `http://127.0.0.1:${PORT}`;
 const STATE = '.wrangler/test-state';
 const OUT = 'tests/output';
 const WEBHOOK_SECRET = 'whsec_test';
+const TG_SECRET = 'tg-secret-test';
+const MOCK = 'http://127.0.0.1:12111';
 const ADMIN = 'Basic ' + Buffer.from('admin:test-admin').toString('base64');
 
 let failures = 0;
@@ -48,11 +50,25 @@ mkdirSync(OUT, { recursive: true });
 execFileSync('npx', ['wrangler', 'd1', 'migrations', 'apply', 'DB', '--local', '--persist-to', STATE], { stdio: 'ignore' });
 writeFileSync(
   `${OUT}/test.env`,
-  ['STRIPE_SECRET_KEY=sk_test_mock', 'STRIPE_API_BASE=http://127.0.0.1:12111', `STRIPE_WEBHOOK_SECRET=${WEBHOOK_SECRET}`, 'ADMIN_PASSWORD=test-admin', 'ALLOW_FREE_ACTIVATION=false', 'CF_ANALYTICS_TOKEN=test-token'].join('\n'),
+  [
+    'STRIPE_SECRET_KEY=sk_test_mock',
+    `STRIPE_API_BASE=${MOCK}`,
+    `STRIPE_WEBHOOK_SECRET=${WEBHOOK_SECRET}`,
+    'ADMIN_PASSWORD=test-admin',
+    'ALLOW_FREE_ACTIVATION=false',
+    'CF_ANALYTICS_TOKEN=test-token',
+    'TELEGRAM_BOT_TOKEN=123456:test',
+    'TELEGRAM_BOT_NAME=ConfettoTestBot',
+    `TELEGRAM_WEBHOOK_SECRET=${TG_SECRET}`,
+    `TELEGRAM_API_BASE=${MOCK}`,
+    'ANTHROPIC_API_KEY=sk-ant-test',
+    `ANTHROPIC_API_BASE=${MOCK}`,
+    `WEATHER_API_BASE=${MOCK}`,
+  ].join('\n'),
 );
 
-console.log('▸ starting fake Stripe and the Worker');
-const stripe = await startStripeMock(12111);
+console.log('▸ starting fake external APIs (Stripe, Telegram, Claude, Open-Meteo) and the Worker');
+const stripe = await startMockApis(12111);
 const portBusy = await fetch(`${BASE}/robots.txt`).then(() => true, () => false);
 if (portBusy) {
   console.error(`Port ${PORT} is already in use (a previous test server still running?). Stop it and retry.`);
@@ -224,6 +240,72 @@ await step('cover photo upload (resized in the browser) and type check', async (
   await page.screenshot({ path: `${OUT}/02-editor-desktop.png`, fullPage: false });
 });
 
+await step('editor: registry, story, stays, rides, menus, notice, tables and private steps', async () => {
+  const { page } = host;
+  // the reception is only for guests invited to everything
+  await page.locator('[data-moment]').nth(1).locator('[data-k="restricted"]').check();
+  assert((await page.inputValue('input[name="menuOptions"]')).includes('Vegetariano'), 'weddings should ask the menu by default');
+  await page.click('label.toggle:has(input[name="askSong"])');
+  await page.click('label.toggle:has(input[name="ridesBoard"])');
+  await page.click('[data-add-row="gifts"]');
+  let row = page.locator('[data-rows="gifts"] [data-row]').last();
+  await row.locator('[data-k="title"]').fill('Macchina del caffè');
+  await row.locator('[data-k="price"]').fill('180');
+  await page.click('[data-add-row="gifts"]');
+  row = page.locator('[data-rows="gifts"] [data-row]').last();
+  await row.locator('[data-k="kind"]').selectOption('fund');
+  await row.locator('[data-k="title"]').fill('Viaggio di nozze in Giappone');
+  await row.locator('[data-k="price"]').fill('3000');
+  await page.click('[data-add-row="story"]');
+  row = page.locator('[data-rows="story"] [data-row]').last();
+  await row.locator('[data-k="when"]').fill('2016');
+  await row.locator('[data-k="title"]').fill('Il primo incontro');
+  await page.click('[data-add-row="stays"]');
+  row = page.locator('[data-rows="stays"] [data-row]').last();
+  await row.locator('[data-k="name"]').fill('Hotel Villa Rosa');
+  await row.locator('[data-k="address"]').fill('Via Roma 12, Ravello');
+  await page.selectOption('select[name="tableReveal"]', 'always');
+  await page.fill('textarea[name="notice"]', 'Il ricevimento inizierà alle 14:30.');
+  await page.waitForSelector('#save-status[data-state="saved"]', { timeout: 10000 });
+  await page.waitForTimeout(1200);
+  const frame = page.frameLocator('#preview');
+  await frame.locator('.registry').waitFor();
+  assert((await frame.locator('.registry .gift').count()) === 2, 'registry should list 2 gifts');
+  assert((await frame.locator('.story li').count()) === 1, 'story missing');
+  assert((await frame.locator('.stay').count()) === 1, 'stay missing');
+  assert((await frame.locator('.notice-banner').count()) === 1, 'notice missing');
+  assert((await frame.locator('.m-tag').count()) === 1, 'the preview should mark the private step');
+  assert((await frame.locator('input[name="song"]').count()) === 1, 'song question missing');
+});
+
+await step('AI rewrite of the message (Claude API, mocked)', async () => {
+  const { page } = host;
+  await page.waitForSelector('#ai-tools');
+  const before = await page.inputValue('textarea[name="message"]');
+  await page.click('[data-ai-tone="formale"]');
+  await page.waitForFunction((t) => document.querySelector('textarea[name="message"]').value === t, AI_TEXT, { timeout: 15000 });
+  const call = stripe.requests.find((r) => r.path === '/v1/messages');
+  const sent = JSON.parse(call.body);
+  assert(sent.model === 'claude-opus-5-5', `model: ${sent.model}`);
+  assert(sent.fallbacks === 'default', 'server-side fallbacks should be on');
+  assert(sent.output_config?.effort === 'low', 'effort should be low');
+  assert(String(call.headers['anthropic-beta']).includes('server-side-fallback-2026-07-01'), 'fallback beta header missing');
+  assert(JSON.stringify(sent.messages).includes('Giulia'), 'the names should be sent as context');
+  await page.click('#ai-undo');
+  assert((await page.inputValue('textarea[name="message"]')) === before, 'undo should restore the text');
+  await page.waitForSelector('#save-status[data-state="saved"]', { timeout: 10000 });
+});
+
+await step('photo gallery: upload two photos, remove one', async () => {
+  const { page } = host;
+  await page.setInputFiles('#gallery-input', [`${OUT}/cover.jpg`, `${OUT}/cover.jpg`]);
+  await page.waitForFunction(() => document.querySelectorAll('#gallery figure').length === 2, null, { timeout: 20000 });
+  await page.locator('#gallery figure').first().locator('[data-gallery-remove]').click();
+  await page.waitForFunction(() => document.querySelectorAll('#gallery figure').length === 1, null, { timeout: 10000 });
+  await page.waitForTimeout(1200);
+  assert((await page.frameLocator('#preview').locator('.gallery button').count()) === 1, 'the preview gallery should show 1 photo');
+});
+
 await step('draft is protected: watermark on, RSVP refused', async () => {
   const dash = await fetch(`${BASE}/gestisci/${state.token}`);
   const html = await dash.text();
@@ -270,17 +352,29 @@ console.log('▸ guest list and personal links');
 await step('add guests one by one and in bulk', async () => {
   const { page } = host;
   await page.goto(`${BASE}/gestisci/${state.token}#invitati`);
-  await page.fill('.guest-form input[name="name"]', 'Zia Carla e Zio Paolo');
-  await page.fill('.guest-form input[name="seats"]', '2');
-  await page.fill('.guest-form input[name="phone"]', '333 1234567');
-  await page.click('.guest-form .guest-form-row button[type="submit"]');
+  await page.fill('.guest-form.card input[name="name"]', 'Zia Carla e Zio Paolo');
+  await page.fill('.guest-form.card input[name="seats"]', '2');
+  await page.fill('.guest-form.card input[name="phone"]', '333 1234567');
+  await page.fill('.guest-form.card input[name="grp"]', 'Famiglia');
+  await page.fill('.guest-form.card input[name="table"]', 'Tavolo 4');
+  await page.click('.guest-form.card .guest-form-actions button[type="submit"]');
   await page.waitForURL(/msg=invitati/);
   await page.click('.bulk summary');
   await page.fill('textarea[name="bulk"]', 'Famiglia Bianchi, 4, 347 7654321\nNonna Pina\nGiorgio e Sara; 2');
   await page.click('.bulk button[type="submit"]');
   await page.waitForURL(/msg=invitati/);
+  // colleagues are invited to the ceremony only
+  await page.fill('.guest-form.card input[name="name"]', 'Colleghi di Giulia');
+  await page.fill('.guest-form.card input[name="seats"]', '3');
+  await page.fill('.guest-form.card input[name="grp"]', 'Colleghi');
+  await page.check('.guest-form.card input[name="partial"]');
+  await page.click('.guest-form.card .guest-form-actions button[type="submit"]');
+  await page.waitForURL(/msg=invitati/);
   const count = await page.locator('.guest').count();
-  assert(count === 4, `expected 4 guests, got ${count}`);
+  assert(count === 5, `expected 5 guests, got ${count}`);
+  await page.click('[data-group-filter="Colleghi"]');
+  assert((await page.locator('.guest:not([hidden])').count()) === 1, 'group filter should show 1 guest');
+  await page.click('[data-group-filter=""]');
   const wa = await page.locator('.guest').first().locator('a.btn-wa').getAttribute('href');
   assert(wa.startsWith('https://wa.me/393331234567?text='), `WhatsApp link wrong: ${wa}`);
   assert(decodeURIComponent(wa).includes('Zia Carla e Zio Paolo'), 'WhatsApp text should greet the guest');
@@ -304,6 +398,17 @@ await step('guest opens personal link: envelope, greeting, RSVP within reserved 
   await page.click('.stepper:first-child [data-step="1"]');
   const adults = await page.inputValue('input[name="adults"]');
   assert(adults === '2', `seats limit not enforced in the form, adults=${adults}`);
+  assert((await page.innerText('.table-banner')).includes('Tavolo 4'), 'the personal link should show the table');
+  assert((await page.locator('.moment').count()) === 2, 'a guest invited to everything sees both steps');
+  const people = page.locator('.people .person');
+  assert((await people.count()) === 2, 'one row per person expected');
+  await people.nth(0).locator('[data-p="name"]').fill('Carla');
+  await people.nth(0).locator('[data-p="menu"]').selectOption('Pesce');
+  await people.nth(1).locator('[data-p="name"]').fill('Paolo');
+  await page.click('#rsvp-form button[type="submit"]');
+  assert((await page.innerText('#rsvp-form .form-msg')).includes('menu'), 'the menu of each person should be required');
+  await people.nth(1).locator('[data-p="menu"]').selectOption('Carne');
+  await page.fill('input[name="song"]', 'Volare - Domenico Modugno');
   await page.fill('textarea[name="diet"]', '1 celiaca');
   await page.fill('input[name="answer"]', 'Sì, grazie');
   await page.fill('textarea[name="message"]', 'Che emozione! Vi vogliamo bene ❤️');
@@ -321,7 +426,7 @@ await step('someone answers "no" on the shared link; answer is remembered and ed
   const { ctx, page } = await newPage(mobile);
   await page.goto(state.publicUrl);
   await openEnvelope(page);
-  await page.fill('input[name="name"]', 'Marco Rossi');
+  await page.fill('#rsvp-form input[name="name"]', 'Marco Rossi');
   await page.check('input[name="attending"][value="no"]', { force: true });
   assert(!(await page.isVisible('.if-yes')), 'guest count should hide when answering no');
   await page.fill('textarea[name="message"]', 'Mi dispiace tantissimo, sarò con voi col cuore');
@@ -332,6 +437,8 @@ await step('someone answers "no" on the shared link; answer is remembered and ed
   assert(await page.isVisible('#rsvp-done.no'), 'answer not remembered after reload');
   await page.click('#rsvp-edit');
   await page.check('input[name="attending"][value="yes"]', { force: true });
+  assert((await page.inputValue('.person [data-p="name"]')) === 'Marco Rossi', 'the first person should be the one answering');
+  await page.selectOption('.person [data-p="menu"]', 'Vegetariano');
   await page.click('#rsvp-form button[type="submit"]');
   await page.waitForSelector('#rsvp-done:not(.no):not([hidden])');
   await ctx.close();
@@ -375,6 +482,205 @@ await step('dashboard shows stats, guest states and messages', async () => {
   await page.screenshot({ path: `${OUT}/10-guests-desktop.png`, fullPage: true });
   await page.click('[data-tab="dediche"]');
   assert((await page.locator('.msg').count()) >= 2, 'messages missing');
+});
+
+console.log('▸ guests, tables, registry, rides and sharing');
+await step('private steps: only guests invited to everything see the reception', async () => {
+  const zia = await (await fetch(state.guestUrl)).text();
+  assert(zia.includes('Villa Cimbrone'), 'a guest invited to everything should see the reception');
+  const pub = await (await fetch(state.publicUrl)).text();
+  assert(!pub.includes('Villa Cimbrone'), 'the shared link must not show private steps');
+  const { page } = host;
+  await page.goto(`${BASE}/gestisci/${state.token}#invitati`);
+  const colleghi = await page.locator('.guest', { hasText: 'Colleghi di Giulia' }).locator('[data-copy]').getAttribute('data-copy');
+  const col = await (await fetch(colleghi)).text();
+  assert(!col.includes('Villa Cimbrone') && col.includes('Duomo'), 'colleagues should only see the ceremony');
+});
+
+await step('tables: finder at the venue, tableau and printables', async () => {
+  const path = new URL(state.publicUrl).pathname;
+  const found = await (await fetch(`${BASE}${path}/tavolo?nome=carla`)).text();
+  assert(found.includes('Tavolo 4'), 'the finder should find Zia Carla');
+  const byPerson = await (await fetch(`${BASE}${path}/tavolo?nome=paolo`)).text();
+  assert(byPerson.includes('Tavolo 4'), 'the finder should find people by the names in the answer');
+  const nothing = await (await fetch(`${BASE}${path}/tavolo?nome=zzzz`)).text();
+  assert(nothing.includes('Nessun risultato'), 'unknown names should find nothing');
+  const tableau = await (await fetch(`${BASE}/gestisci/${state.token}/tableau`)).text();
+  assert(tableau.includes('Tavolo 4') && tableau.includes('Carla, Paolo'), 'the tableau should list the table with its people');
+  const print = await (await fetch(`${BASE}/gestisci/${state.token}/stampa`)).text();
+  assert(print.includes('<svg') && print.includes('Conferma la tua presenza'), 'the printable invitation needs the QR code');
+  const cards = await (await fetch(`${BASE}/gestisci/${state.token}/stampa?invitati=1`)).text();
+  assert((cards.match(/class="gcard"/g) || []).length === 5, 'one card per guest');
+  const { ctx, page } = await newPage(desktop);
+  await page.goto(`${BASE}/gestisci/${state.token}/tableau`);
+  await page.screenshot({ path: `${OUT}/14-tableau.png`, fullPage: true });
+  await page.goto(`${BASE}/gestisci/${state.token}/stampa`);
+  await page.evaluate(() => document.fonts.ready);
+  await page.screenshot({ path: `${OUT}/15-print.png`, fullPage: true });
+  await ctx.close();
+});
+
+await step('gift registry: reserve a present, chip in to the fund, cancel', async () => {
+  const a = await newPage(mobile);
+  await a.page.goto(state.publicUrl);
+  await openEnvelope(a.page);
+  const item = a.page.locator('.gift', { hasText: 'Macchina del caffè' });
+  await item.locator('[data-gift-open]').click();
+  await item.locator('input[name="name"]').fill('Marco Rossi');
+  await item.locator('[type="submit"]').click();
+  await a.page.waitForSelector('.gift.taken.mine');
+  const b = await newPage(mobile);
+  await b.page.goto(state.publicUrl);
+  await openEnvelope(b.page);
+  const itemB = b.page.locator('.gift', { hasText: 'Macchina del caffè' });
+  assert((await itemB.locator('[data-gift-open]').count()) === 0, 'a reserved present must not be bookable twice');
+  assert((await itemB.innerText()).includes('Già scelto'), 'a reserved present should say so');
+  const fund = b.page.locator('.gift', { hasText: 'Viaggio di nozze' });
+  await fund.locator('[data-gift-open]').click();
+  await fund.locator('input[name="name"]').fill('Giorgio');
+  await fund.locator('input[name="amount"]').fill('50');
+  await fund.locator('[type="submit"]').click();
+  await b.page.waitForFunction(() => /Raccolti 50/.test(document.querySelector('.gift-fund .fund-sum').textContent));
+  await b.page.locator('.registry').screenshot({ path: `${OUT}/16-registry.png` });
+  await item.locator('[data-gift-cancel]').click();
+  await item.locator('[data-gift-open]').waitFor();
+  await a.ctx.close();
+  await b.ctx.close();
+  // the server refuses double bookings and cancellations without the token
+  const path = new URL(state.publicUrl).pathname;
+  const html = await (await fetch(state.publicUrl)).text();
+  const giftId = html.match(/data-gift="([a-z0-9]+)" data-kind="item"/)[1];
+  const book = () => fetch(`${BASE}${path}/regali`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ gift: giftId, name: 'Sara' }) });
+  const first = await book();
+  assert(first.status === 200, `booking failed: ${first.status}`);
+  assert((await book()).status === 409, 'the second booking must be refused');
+  const { id } = await first.json();
+  const cancel = await fetch(`${BASE}${path}/regali/annulla`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, token: 'wrong' }) });
+  assert(cancel.status === 404, 'cancelling needs the token of whoever booked');
+});
+
+await step('rides board: offer a lift, others see it, only the author deletes it', async () => {
+  const path = new URL(state.publicUrl).pathname;
+  const { ctx, page } = await newPage(mobile);
+  await page.goto(state.publicUrl);
+  await openEnvelope(page);
+  await page.click('[data-ride-open]');
+  await page.fill('[data-ride-form] input[name="place"]', 'Napoli Centrale');
+  await page.fill('[data-ride-form] input[name="seats"]', '3');
+  await page.fill('[data-ride-form] input[name="name"]', 'Luca');
+  await page.fill('[data-ride-form] input[name="phone"]', '333 9876543');
+  await page.click('[data-ride-form] button[type="submit"]');
+  const ride = page.locator('.ride', { hasText: 'Napoli Centrale' });
+  await ride.locator('[data-ride-delete]').waitFor();
+  const wa = await ride.locator('a').getAttribute('href');
+  assert(wa.startsWith('https://wa.me/393339876543'), `ride WhatsApp link wrong: ${wa}`);
+  const other = await (await fetch(state.publicUrl)).text();
+  assert(other.includes('Napoli Centrale'), 'other guests should see the ride');
+  const rideId = other.match(/data-ride="([a-z0-9]+)"/)[1];
+  const bad = await fetch(`${BASE}${path}/passaggi/elimina`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: rideId, token: 'nope' }) });
+  assert(bad.status === 404, 'only the author can delete a ride');
+  await ride.locator('[data-ride-delete]').click();
+  await ride.waitFor({ state: 'detached' });
+  await ctx.close();
+});
+
+await step('dashboard: menu totals, songs, gift reservations, catering Excel', async () => {
+  const { page } = host;
+  await page.goto(`${BASE}/gestisci/${state.token}`);
+  const chips = await page.locator('.menu-totals').innerText();
+  assert(/Pesce\s*1/.test(chips) && /Carne\s*1/.test(chips) && /Vegetariano\s*1/.test(chips), `menu totals: ${chips}`);
+  await page.click('[data-tab="regali"]');
+  const gifts = await page.locator('#regali').innerText();
+  assert(gifts.includes('Giorgio · 50') && gifts.includes('Prenotato da Sara'), `registry in the dashboard: ${gifts}`);
+  await page.screenshot({ path: `${OUT}/17-dashboard-gifts.png`, fullPage: true });
+  await page.click('[data-tab="dediche"]');
+  assert((await page.locator('.songs li').innerText()).includes('Volare'), 'songs missing');
+  const csv = await (await fetch(`${BASE}/gestisci/${state.token}/catering.csv`)).text();
+  assert(csv.includes('Carla;Adulto;Pesce') && csv.includes('Tavolo 4'), 'the catering CSV should list each person with menu and table');
+  const answers = await (await fetch(`${BASE}/gestisci/${state.token}/risposte.csv`)).text();
+  assert(answers.includes('Carla · Pesce | Paolo · Carne') && answers.includes('Volare'), 'the answers CSV should include people, menus and songs');
+});
+
+await step('co-organiser link: read-only and revocable', async () => {
+  const { page } = host;
+  await page.goto(`${BASE}/gestisci/${state.token}#condividi`);
+  await page.click('#condividi button[type="submit"]');
+  await page.waitForURL(/msg=link-condiviso/);
+  const url = await page.locator('#condividi input').inputValue();
+  assert(/\/vedi\/[A-Za-z0-9]{20,}$/.test(url), `viewer link: ${url}`);
+  const html = await (await fetch(url)).text();
+  assert(html.includes('Sola lettura') && html.includes('Zia Carla'), 'the viewer should see the answers');
+  assert(!html.includes('method="post"'), 'the read-only page must not change anything');
+  assert(!html.includes(state.token), 'the read-only page must never reveal the management link');
+  assert((await fetch(`${url}/risposte.csv`)).status === 200, 'the viewer can download the Excel');
+  page.once('dialog', (d) => d.accept());
+  await page.click('#condividi button.link-danger');
+  await page.waitForURL(/msg=link-revocato/);
+  assert((await fetch(url)).status === 404, 'a revoked link must stop working');
+});
+
+await step('Telegram: link the chat with /start and receive new answers', async () => {
+  const dash = await (await fetch(`${BASE}/gestisci/${state.token}`)).text();
+  const code = dash.match(/https:\/\/t\.me\/ConfettoTestBot\?start=([a-z0-9]+)/)?.[1];
+  assert(code, 'Telegram link missing on the dashboard');
+  const hook = (body, secret = TG_SECRET) =>
+    fetch(`${BASE}/api/telegram/webhook`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-telegram-bot-api-secret-token': secret }, body: JSON.stringify(body) });
+  assert((await hook({ message: { text: `/start ${code}`, chat: { id: 1 } } }, 'wrong')).status === 401, 'the webhook needs the secret');
+  await hook({ update_id: 0, message: { message_id: 1, text: `/start ${code}`, chat: { id: -100, type: 'group' } } });
+  assert((await (await fetch(`${BASE}/gestisci/${state.token}`)).text()).includes(`start=${code}`), 'a group chat must not be linked');
+  assert((await hook({ update_id: 1, message: { message_id: 1, text: `/start ${code}`, chat: { id: 4242, type: 'private' } } })).status === 200, 'webhook failed');
+  const sent = (needle) => stripe.requests.some((r) => r.path.endsWith('/sendMessage') && JSON.parse(r.body).chat_id === '4242' && JSON.parse(r.body).text.includes(needle));
+  await waitFor(() => sent('Fatto'), 10000);
+  assert((await (await fetch(`${BASE}/gestisci/${state.token}`)).text()).includes('Collegato'), 'the dashboard should show Telegram as linked');
+  const path = new URL(state.publicUrl).pathname;
+  await fetch(`${BASE}${path}/rsvp`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Elena Verdi', attending: 'yes', adults: 1, people: [{ name: 'Elena Verdi', menu: 'Pesce' }] }) });
+  await waitFor(() => sent('Elena Verdi'), 10000);
+  assert(!stripe.requests.some((r) => r.path.endsWith('/sendMessage') && r.body.includes(state.token)), 'Telegram messages must not contain the management link');
+});
+
+await step('notice: banner on the invitation, WhatsApp message from the dashboard', async () => {
+  const pub = await (await fetch(state.publicUrl)).text();
+  assert(pub.includes('notice-banner') && pub.includes('14:30'), 'notice banner missing');
+  const dash = await (await fetch(`${BASE}/gestisci/${state.token}`)).text();
+  assert(dash.includes('Manda l’avviso agli invitati'), 'the dashboard should offer to send the notice');
+});
+
+console.log('▸ weather, save the date, WhatsApp preview image');
+await step('weather forecast appears in the 14 days before the event', async () => {
+  const created = await fetch(`${BASE}/crea`, { method: 'POST', body: new URLSearchParams({ type: 'compleanno' }), redirect: 'manual' });
+  state.token3 = created.headers.get('location').match(/gestisci\/([A-Za-z0-9]+)/)[1];
+  const soon = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10);
+  const save = await fetch(`${BASE}/gestisci/${state.token3}/salva`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ data: { name1: 'Martina', date: soon, program: [{ time: '17:00', title: 'Festa', place: 'Villa Rufolo', address: 'Piazza Duomo, Ravello' }] } }),
+  });
+  assert(save.ok, 'save failed');
+  const dash = await (await fetch(`${BASE}/gestisci/${state.token3}`)).text();
+  state.path3 = dash.match(/href="(\/i\/[a-z0-9]+)"/)[1];
+  const w = await (await fetch(`${BASE}${state.path3}/meteo`)).json();
+  assert(w.ok && w.text.includes('Ravello') && w.title.includes('quasi sereno'), `forecast: ${JSON.stringify(w)}`);
+  const { ctx, page } = await newPage(mobile);
+  await page.goto(BASE + state.path3);
+  await openEnvelope(page);
+  await page.waitForSelector('.weather-sec:not([hidden])');
+  assert((await page.innerText('.weather')).includes('27°'), 'the weather card should show the temperature');
+  await ctx.close();
+});
+
+await step('WhatsApp preview image is drawn in the editor when there is no photo', async () => {
+  const { ctx, page } = await newPage(desktop);
+  await page.goto(`${BASE}/gestisci/${state.token3}/modifica`);
+  await waitFor(async () => /property="og:image" content="[^"]*\/media\/c\//.test(await (await fetch(BASE + state.path3)).text()), 20000);
+  await ctx.close();
+});
+
+await step('save the date: names and date only, no programme and no RSVP', async () => {
+  await fetch(`${BASE}/gestisci/${state.token3}/salva`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: { saveTheDate: true } }) });
+  const html = await (await fetch(BASE + state.path3)).text();
+  assert(html.includes('Save the date') && !html.includes('id="rsvp-form"') && !html.includes('class="program sec"'), 'a save the date shows only names, date and place');
+  const ics = await (await fetch(`${BASE}${state.path3}/calendario.ics`)).text();
+  assert(ics.includes('Save the date'), 'the calendar entry should say save the date');
 });
 
 await step('mobile editor: preview overlay opens', async () => {

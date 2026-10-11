@@ -42,9 +42,8 @@ def as_json(obj) -> str:
 
 
 fonts = (
-    'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600'
-    '&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500'
-    '&family=Jost:wght@300;400;500;600&family=Pinyon+Script&display=swap'
+    'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500'
+    '&family=Jost:wght@400;500;600&display=swap'
 )
 ui = data.pop('ui')
 ui_css = f":root{{--s-grain:{ui['grain']};--s-linen:{ui['linen']}}}"

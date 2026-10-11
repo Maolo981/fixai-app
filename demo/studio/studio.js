@@ -198,7 +198,18 @@
   function defaultsFor(evId) {
     const ev = EV[evId];
     const date = nextSaturday(evId === 'matrimonio' ? 240 : 60);
-    return { ...JSON.parse(JSON.stringify(ev.defaults)), date, rsvpDeadline: addDays(date, evId === 'matrimonio' ? -45 : -10) };
+    const d = { ...JSON.parse(JSON.stringify(ev.defaults)), date, rsvpDeadline: addDays(date, evId === 'matrimonio' ? -45 : -10) };
+    d.menuText = (d.menuOptions || []).join(', ');
+    return d;
+  }
+  /** "Carne, Pesce, Vegetariano" → unique options (max 6), as in the product. */
+  function menuList(d) {
+    const out = [];
+    for (const o of String(d.menuText || '').split(/[,;\n]/)) {
+      const t = o.trim().slice(0, 40);
+      if (t && !out.some((x) => x.toLowerCase() === t.toLowerCase())) out.push(t);
+    }
+    return out.slice(0, 6);
   }
 
   function startEditing(evId) {
@@ -231,6 +242,7 @@
     ['contactName', 'cn', 40],
     ['contactPhone', 'cp', 24],
     ['signature', 'sg', 120],
+    ['menuText', 'mo', 260],
   ];
   function pack() {
     const d = state.data;
@@ -238,7 +250,7 @@
     for (const [k, s] of KEYS) if (d[k]) o[s] = d[k];
     const prog = d.program.filter((x) => x.time || x.title || x.place || x.address);
     if (prog.length) o.p = prog.map((x) => [x.time, x.title, x.place, x.address]);
-    o.f = (d.askChildren ? 1 : 0) | (d.askDiet ? 2 : 0) | (d.showCountdown ? 4 : 0);
+    o.f = (d.askChildren ? 1 : 0) | (d.askDiet ? 2 : 0) | (d.showCountdown ? 4 : 0) | (d.askNames ? 8 : 0) | (d.askSong ? 16 : 0);
     if (state.cover) o.c = state.cover;
     return o;
   }
@@ -262,6 +274,8 @@
     d.askChildren = Boolean(f & 1);
     d.askDiet = Boolean(f & 2);
     d.showCountdown = Boolean(f & 4);
+    d.askNames = Boolean(f & 8);
+    d.askSong = Boolean(f & 16);
     return { ev: o.e, theme: TH[o.t] ? o.t : EV[o.e].theme, cover: COVERS[o.c] ? o.c : '', data: d };
   }
   const b64url = (bytes) => {
@@ -317,6 +331,39 @@
     const parts = F_LONG.formatToParts(ymdDate(ymd));
     const get = (type) => parts.find((x) => x.type === type)?.value ?? '';
     return { weekday: get('weekday'), day: get('day'), month: get('month'), year: get('year') };
+  }
+
+  /** One row per person: name and/or menu (same markup as the product). */
+  function peopleRows(adults, children, prev = []) {
+    const d = state.data;
+    const menus = menuList(d);
+    let out = '';
+    for (let i = 0; i < Math.min(adults + children, 20); i++) {
+      const label = i >= adults ? `Bambino ${i - adults + 1}` : `Adulto ${i + 1}`;
+      const v = prev[i] || {};
+      out +=
+        `<div class="person${d.askNames ? '' : ' no-name'}${menus.length ? '' : ' no-menu'}">` +
+        (d.askNames ? `<label class="field"><span>${label}</span><input data-pp="name" maxlength="60" value="${esc(v.name || '')}" placeholder="Nome"></label>` : '') +
+        (menus.length
+          ? `<label class="field"><span>${d.askNames ? 'Menu' : `${label}: menu`}</span><select data-pp="menu"><option value="">Scegli…</option>${menus
+              .map((m) => `<option${m === v.menu ? ' selected' : ''}>${esc(m)}</option>`)
+              .join('')}</select></label>`
+          : '') +
+        '</div>';
+    }
+    return out;
+  }
+  const readPeople = (form) =>
+    [...form.querySelectorAll('.person')].map((r) => ({ name: r.querySelector('[data-pp="name"]')?.value.trim() || '', menu: r.querySelector('[data-pp="menu"]')?.value || '' }));
+  function refreshPeople(form) {
+    const box = form?.querySelector('[data-people]');
+    if (!box) return;
+    const a = Number(form.querySelector('[name="adults"]')?.value) || 0;
+    const c = Number(form.querySelector('[name="children"]')?.value) || 0;
+    const prev = readPeople(form);
+    box.querySelectorAll('.person').forEach((r) => r.remove());
+    box.insertAdjacentHTML('beforeend', peopleRows(a, c, prev));
+    box.hidden = a + c === 0;
   }
 
   function renderInvite(mode, withEnvelope) {
@@ -410,16 +457,25 @@
     }
     // Reply card
     h.push('<article class="sheet sheet-reply">');
-    h.push(`<section class="rsvp sec" id="rsvp"><p class="kicker">R.S.V.P.</p><h2 class="sec-title">Conferma la tua presenza</h2>`);
-    if (d.rsvpDeadline) h.push(`<p class="deadline">Ti chiediamo gentilmente di rispondere entro il <strong>${esc(dayMonth(d.rsvpDeadline))}</strong>.</p>`);
+    const menus = menuList(d);
+    const askPeople = d.askNames || menus.length > 0;
+    h.push(`<section class="rsvp sec" id="rsvp"><p class="kicker">Rispondi all’invito</p><h2 class="sec-title">Ci sarai?</h2>`);
+    if (d.rsvpDeadline && (!isYmd(d.date) || d.rsvpDeadline <= d.date))
+      h.push(`<p class="deadline">Ti chiediamo di rispondere entro il <strong>${esc(dayMonth(d.rsvpDeadline))}</strong>.</p>`);
     h.push(`<form class="rsvp-form" id="rsvp-form" novalidate>
       <label class="field" for="r-name"><span>Nome e cognome</span><input id="r-name" name="name" maxlength="80" autocomplete="name" placeholder="Il tuo nome" value="${esc(guest)}"></label>
       <fieldset class="choice"><legend class="sr-only">Parteciperai?</legend>
-        <label class="choice-opt"><input type="radio" id="r-yes" name="attending" value="yes"><span>Parteciperò con piacere</span></label>
-        <label class="choice-opt"><input type="radio" id="r-no" name="attending" value="no"><span>Non potrò partecipare</span></label></fieldset>
+        <label class="choice-opt"><input type="radio" id="r-yes" name="attending" value="yes"><span>Sì, ci sarò</span></label>
+        <label class="choice-opt"><input type="radio" id="r-no" name="attending" value="no"><span>No, non potrò esserci</span></label></fieldset>
       <div class="if-yes"><div class="steppers">${stepper('Adulti', 'adults', 1, 10)}${d.askChildren ? stepper('Bambini', 'children', 0, 10) : ''}</div>
-      ${d.askDiet ? '<label class="field" for="r-diet"><span>Allergie, intolleranze o menu particolari</span><textarea id="r-diet" name="diet" rows="2" maxlength="300" placeholder="Es. 1 vegetariano, 1 senza glutine"></textarea></label>' : ''}
-      ${d.customQuestion ? `<label class="field" for="r-answer"><span>${esc(d.customQuestion)}</span><input id="r-answer" name="answer" maxlength="200"></label>` : ''}</div>
+      ${
+        askPeople
+          ? `<div class="people" data-people><p class="people-title">${d.askNames && menus.length ? 'Nome e menu di ogni persona' : d.askNames ? 'Chi viene?' : 'Il menu di ogni persona'}</p>${peopleRows(1, 0)}</div>`
+          : ''
+      }
+      ${d.askDiet ? '<label class="field" for="r-diet"><span>Allergie o intolleranze</span><textarea id="r-diet" name="diet" rows="2" maxlength="300" placeholder="Es. 1 celiaco, 1 senza lattosio"></textarea></label>' : ''}
+      ${d.customQuestion ? `<label class="field" for="r-answer"><span>${esc(d.customQuestion)}</span><input id="r-answer" name="answer" maxlength="200"></label>` : ''}
+      ${d.askSong ? '<label class="field" for="r-song"><span>Una canzone che non può mancare <em>(facoltativo)</em></span><input id="r-song" name="song" maxlength="120" placeholder="Titolo e cantante"></label>' : ''}</div>
       <label class="field" for="r-message"><span>${esc(ev.messageFor)} <em>(facoltativo)</em></span><textarea id="r-message" name="message" rows="3" maxlength="600"></textarea></label>
       <button class="btn btn-primary btn-block" type="submit">Invia la risposta</button>
       <p class="form-msg" role="status" aria-live="polite"></p></form>
@@ -556,7 +612,11 @@
         <section class="s-card"><h2 class="s-card-title"><span class="s-num">VII</span>Conferme di presenza</h2>
           ${field('Chiedi di rispondere entro il', 'rsvpDeadline', d.rsvpDeadline, 'type="date"')}
           ${toggle('Chiedi quanti bambini', 'askChildren', d.askChildren)}
-          ${toggle('Chiedi allergie e menu', 'askDiet', d.askDiet)}
+          ${toggle('Chiedi il nome di ogni persona', 'askNames', d.askNames)}
+          ${field('Scelta del menu (facoltativa)', 'menuText', d.menuText, 'maxlength="260" placeholder="Es. Carne, Pesce, Vegetariano"')}
+          <p class="s-hint s-hint-sm">Scrivi le scelte separate da virgole: ognuno sceglie il suo menu. Lascia vuoto per non chiederlo.</p>
+          ${toggle('Chiedi allergie e intolleranze', 'askDiet', d.askDiet)}
+          ${toggle('Chiedi una canzone per la festa', 'askSong', d.askSong)}
           ${field('Una domanda in più (facoltativa)', 'customQuestion', d.customQuestion, 'maxlength="120" placeholder="Es. Ti serve il passaggio?"')}
           <div class="s-row2">${field('Il tuo nome', 'contactName', d.contactName, 'maxlength="40" placeholder="Es. Anna"')}${field('Il tuo WhatsApp', 'contactPhone', d.contactPhone, 'type="tel" maxlength="24" placeholder="333 123 4567" inputmode="tel"')}</div>
           <p class="s-hint s-hint-sm">Gli invitati ti manderanno la risposta su questo numero. Nel servizio completo le risposte arrivano da sole in una lista.</p></section>
@@ -713,11 +773,13 @@
     if (answer.yes) {
       const parts = [`${answer.adults} ${answer.adults === 1 ? 'adulto' : 'adulti'}`];
       if (answer.children) parts.push(`${answer.children} ${answer.children === 1 ? 'bambino' : 'bambini'}`);
-      lines.push(`✅ Parteciperò con piacere (${parts.join(', ')})`);
-      if (answer.diet) lines.push(`Allergie e menu: ${answer.diet}`);
+      lines.push(`✅ Ci sarò (${parts.join(', ')})`);
+      for (const p of answer.people) if (p.name || p.menu) lines.push(`• ${[p.name, p.menu].filter(Boolean).join(' · ')}`);
+      if (answer.diet) lines.push(`Allergie: ${answer.diet}`);
       if (answer.extra) lines.push(`${d.customQuestion} ${answer.extra}`);
+      if (answer.song) lines.push(`Canzone per la festa: ${answer.song}`);
     } else {
-      lines.push('❌ Purtroppo non potrò partecipare');
+      lines.push('❌ Purtroppo non potrò esserci');
     }
     if (answer.message) lines.push(`Messaggio: ${answer.message}`);
     lines.push(`— ${answer.name}`);
@@ -738,18 +800,23 @@
     const name = String(fd.get('name') || '').trim();
     const attending = fd.get('attending');
     if (!name) return fail('Scrivi il tuo nome, così sappiamo chi sei');
-    if (!attending) return fail('Dicci se ci sarai: scegli «Parteciperò con piacere» oppure «Non potrò partecipare»');
+    if (!attending) return fail('Dicci se ci sarai: scegli «Sì, ci sarò» oppure «No, non potrò esserci»');
     const yes = attending === 'yes';
     const adults = yes ? Number(fd.get('adults')) || 0 : 0;
     const children = yes ? Number(fd.get('children')) || 0 : 0;
     if (yes && adults + children < 1) return fail('Indica quante persone verranno');
+    const people = yes ? readPeople(form) : [];
+    if (yes && menuList(state.data).length && people.some((x) => !x.menu)) return fail('Scegli il menu per ogni persona');
+    if (yes && state.data.askNames && people.some((x) => !x.name)) return fail('Scrivi il nome di ogni persona');
     answer = {
       name,
       yes,
       adults,
       children,
+      people,
       diet: yes ? String(fd.get('diet') || '').trim() : '',
       extra: yes ? String(fd.get('answer') || '').trim() : '',
+      song: yes ? String(fd.get('song') || '').trim() : '',
       message: String(fd.get('message') || '').trim(),
     };
     const done = document.getElementById('rsvp-done');
@@ -875,10 +942,21 @@ Descrizione dell'utente: """${text.slice(0, 800)}"""`;
 
   document.addEventListener('input', (e) => {
     if (state.step === 'edit' && e.target.closest('.s-form')) onEditorInput(e);
+    // the first person is whoever answers (until they change it)
+    const f = e.target.closest('#rsvp-form');
+    if (f && e.target.name === 'name') {
+      const first = f.querySelector('.person [data-pp="name"]');
+      if (first && (!first.value || first.dataset.auto === '1')) {
+        first.value = e.target.value.trim();
+        first.dataset.auto = '1';
+      }
+    }
+    if (f && e.target.dataset.pp === 'name') delete e.target.dataset.auto;
   });
   document.addEventListener('change', (e) => {
     const f = e.target.closest('#rsvp-form');
     if (f && e.target.name === 'attending') f.classList.toggle('is-no', e.target.value === 'no');
+    if (f && (e.target.name === 'adults' || e.target.name === 'children')) refreshPeople(f);
   });
   document.addEventListener('submit', (e) => {
     if (e.target.id === 'rsvp-form') {
@@ -894,7 +972,7 @@ Descrizione dell'utente: """${text.slice(0, 800)}"""`;
     if (stepBtn) {
       const input = stepBtn.parentElement.querySelector('input');
       input.value = Math.max(Number(input.min || 0), Math.min(Number(input.max || 10), (parseInt(input.value, 10) || 0) + Number(stepBtn.dataset.step)));
-      return;
+      return refreshPeople(stepBtn.closest('#rsvp-form'));
     }
     const copyBtn = e.target.closest('[data-copy]');
     if (copyBtn) {

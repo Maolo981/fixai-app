@@ -718,6 +718,18 @@ export function defaultInviteData(eventType: EventType, from?: string): InviteDa
     contactPhone: '',
     signature: '',
     showCountdown: true,
+    menuOptions: eventType === 'matrimonio' ? ['Carne', 'Pesce', 'Vegetariano'] : [],
+    askNames: eventType === 'matrimonio',
+    askSong: false,
+    gifts: [],
+    stays: [],
+    ridesBoard: false,
+    story: [],
+    tableReveal: 'never',
+    saveTheDate: false,
+    notice: '',
+    noticeAt: '',
+    showWeather: true,
     ...d,
   };
 }

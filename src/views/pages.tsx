@@ -250,8 +250,12 @@ export function PrivacyPage() {
             numero della carta).
           </li>
           <li>
-            <strong>Chi risponde a un invito</strong>: nome, partecipazione, numero di adulti e bambini, eventuali esigenze alimentari o allergie, risposta alla domanda dell’organizzatore e il
-            messaggio facoltativo.
+            <strong>Chi risponde a un invito</strong>: nome, partecipazione, numero di adulti e bambini, se richiesti nome e menu di ogni persona, eventuali allergie, risposta alla domanda
+            dell’organizzatore, canzone e messaggio facoltativi.
+          </li>
+          <li>
+            <strong>Lista regali e passaggi</strong> (solo se l’organizzatore li attiva): il nome di chi prenota un regalo o partecipa a una colletta, con l’importo indicato; nome, telefono e
+            luogo di partenza di chi offre o cerca un passaggio, visibili agli altri invitati finché l’autore non cancella l’annuncio.
           </li>
           <li>
             <strong>Dati tecnici</strong>: per prevenire abusi conserviamo per poche ore un’impronta cifrata (hash) dell’indirizzo IP. Non usiamo cookie di profilazione né strumenti di
@@ -270,8 +274,9 @@ export function PrivacyPage() {
         </p>
         <h2>Fornitori</h2>
         <p>
-          Hosting e database: Cloudflare (UE/USA, con clausole contrattuali standard). Pagamenti: Stripe. Email transazionali: Resend. Ciascun fornitore tratta i dati solo per erogare il
-          servizio.
+          Hosting e database: Cloudflare (UE/USA, con clausole contrattuali standard). Pagamenti: Stripe. Email transazionali: Resend. Solo se l’organizzatore usa queste funzioni:
+          Telegram (avvisi delle nuove risposte), Anthropic (riscrittura del testo dell’invito: ricevono il testo, i nomi e la data). Le previsioni meteo arrivano da Open-Meteo, a cui
+          inviamo solo il nome del paese e la data, nessun dato personale. Ciascun fornitore tratta i dati solo per erogare il servizio.
         </p>
         <h2>I tuoi diritti</h2>
         <p>

@@ -42,3 +42,5 @@ CF_ANALYTICS_TOKEN = ""
 #   STRIPE_WEBHOOK_SECRET  segreto del webhook Stripe (whsec_...)
 #   RESEND_API_KEY         opzionale, per le email (resend.com)
 #   ADMIN_PASSWORD         password della tua area /admin (utente: admin)
+#   TELEGRAM_BOT_TOKEN, TELEGRAM_BOT_NAME, TELEGRAM_WEBHOOK_SECRET   facoltativi: risposte su Telegram
+#   ANTHROPIC_API_KEY      facoltativo: «riscrivi il messaggio» con Claude nell'editor

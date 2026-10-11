@@ -1,6 +1,6 @@
 import { DRAFT_RETENTION_DAYS, EVENT_BY_ID, RETENTION_DAYS_AFTER_EVENT } from './config';
-import { parseInvitation } from './model';
-import type { EventType, GuestRow, Invitation, InvitationRow, InviteData, RsvpRow, ThemeId } from './types';
+import { parseGallery, parseInvitation, parsePeople } from './model';
+import type { EventType, GiftClaimRow, GuestRow, Invitation, InvitationRow, InviteData, Person, RideRow, RsvpRow, ThemeId } from './types';
 import { addDays, newId, newToken, nowIso, randomString, slugify, todayRome } from './util';
 
 export const MAX_RSVPS_PER_INVITATION = 2000;
@@ -31,6 +31,11 @@ export async function createInvitation(db: D1Database, eventType: EventType, the
     activated_at: null,
     amount_cents: null,
     stripe_session_id: null,
+    gallery: null,
+    og_key: null,
+    viewer_token: null,
+    tg_chat_id: null,
+    tg_code: null,
   };
   await db
     .prepare(
@@ -116,13 +121,61 @@ export async function activate(
   return (res.meta?.changes ?? 0) > 0;
 }
 
-export async function deleteInvitation(db: D1Database, media: R2Bucket, inv: Pick<InvitationRow, 'id' | 'cover_key'>): Promise<void> {
-  if (inv.cover_key) await media.delete(inv.cover_key).catch(() => undefined);
+export async function deleteInvitation(db: D1Database, media: R2Bucket, inv: Pick<InvitationRow, 'id' | 'cover_key' | 'gallery' | 'og_key'>): Promise<void> {
+  const keys = [inv.cover_key, inv.og_key, ...parseGallery(inv.gallery)].filter((k): k is string => Boolean(k));
+  if (keys.length) await media.delete(keys).catch(() => undefined);
   await db.batch([
+    db.prepare('DELETE FROM gift_claims WHERE invitation_id = ?1').bind(inv.id),
+    db.prepare('DELETE FROM rides WHERE invitation_id = ?1').bind(inv.id),
     db.prepare('DELETE FROM rsvps WHERE invitation_id = ?1').bind(inv.id),
     db.prepare('DELETE FROM guests WHERE invitation_id = ?1').bind(inv.id),
     db.prepare('DELETE FROM invitations WHERE id = ?1').bind(inv.id),
   ]);
+}
+
+export async function setGallery(db: D1Database, id: string, keys: string[]): Promise<void> {
+  await db.prepare('UPDATE invitations SET gallery = ?2, updated_at = ?3 WHERE id = ?1').bind(id, keys.length ? JSON.stringify(keys) : null, nowIso()).run();
+}
+
+export async function setOgKey(db: D1Database, id: string, key: string | null): Promise<void> {
+  await db.prepare('UPDATE invitations SET og_key = ?2 WHERE id = ?1').bind(id, key).run();
+}
+
+/** Read-only link for co-organisers: creates a new secret (revoking the old one) or removes it. */
+export async function setViewerToken(db: D1Database, id: string, enable: boolean): Promise<string | null> {
+  const token = enable ? newToken() : null;
+  await db.prepare('UPDATE invitations SET viewer_token = ?2 WHERE id = ?1').bind(id, token).run();
+  return token;
+}
+
+export async function getByViewerToken(db: D1Database, token: string): Promise<Invitation | null> {
+  if (!/^[A-Za-z0-9]{20,64}$/.test(token)) return null;
+  const row = await db.prepare('SELECT * FROM invitations WHERE viewer_token = ?1').bind(token).first<InvitationRow>();
+  return row ? parseInvitation(row) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Telegram
+// ---------------------------------------------------------------------------
+
+export async function ensureTelegramCode(db: D1Database, inv: Pick<InvitationRow, 'id' | 'tg_code'>): Promise<string> {
+  if (inv.tg_code) return inv.tg_code;
+  const code = randomString(16);
+  await db.prepare('UPDATE invitations SET tg_code = ?2 WHERE id = ?1').bind(inv.id, code).run();
+  return code;
+}
+
+export async function linkTelegram(db: D1Database, code: string, chatId: string): Promise<Invitation | null> {
+  if (!/^[a-z0-9]{8,32}$/.test(code)) return null;
+  const row = await db.prepare('SELECT * FROM invitations WHERE tg_code = ?1').bind(code).first<InvitationRow>();
+  if (!row) return null;
+  // the code is single use: the next link needs a new one
+  await db.prepare('UPDATE invitations SET tg_chat_id = ?2, tg_code = NULL WHERE id = ?1').bind(row.id, chatId).run();
+  return parseInvitation({ ...row, tg_chat_id: chatId, tg_code: null });
+}
+
+export async function unlinkTelegram(db: D1Database, id: string): Promise<void> {
+  await db.prepare('UPDATE invitations SET tg_chat_id = NULL, tg_code = NULL WHERE id = ?1').bind(id).run();
 }
 
 export async function invitationsByEmail(db: D1Database, email: string): Promise<InvitationRow[]> {
@@ -150,23 +203,50 @@ export async function countGuests(db: D1Database, invitationId: string): Promise
   return row?.n ?? 0;
 }
 
-export async function addGuests(
-  db: D1Database,
-  invitationId: string,
-  guests: { name: string; seats: number; phone: string | null }[],
-): Promise<number> {
+export interface GuestInput {
+  name: string;
+  seats: number;
+  phone: string | null;
+  grp?: string | null;
+  table?: string | null;
+  full?: boolean;
+}
+
+export async function addGuests(db: D1Database, invitationId: string, guests: GuestInput[]): Promise<number> {
   if (!guests.length) return 0;
   const now = nowIso();
   const stmts = guests.map((g, i) =>
     db
       .prepare(
-        `INSERT INTO guests (id, invitation_id, code, name, seats, phone, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
+        `INSERT INTO guests (id, invitation_id, code, name, seats, phone, grp, table_name, full_access, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
       )
       // created_at gets a per-row offset so the list keeps the typed order
-      .bind(newId(), invitationId, randomString(6), g.name, g.seats, g.phone, new Date(Date.parse(now) + i).toISOString()),
+      .bind(newId(), invitationId, randomString(6), g.name, g.seats, g.phone, g.grp || null, g.table || null, g.full === false ? 0 : 1, new Date(Date.parse(now) + i).toISOString()),
   );
   await db.batch(stmts);
   return guests.length;
+}
+
+export async function updateGuest(db: D1Database, invitationId: string, guestId: string, g: GuestInput): Promise<void> {
+  await db
+    .prepare('UPDATE guests SET name = ?3, seats = ?4, phone = ?5, grp = ?6, table_name = ?7, full_access = ?8 WHERE id = ?1 AND invitation_id = ?2')
+    .bind(guestId, invitationId, g.name, g.seats, g.phone, g.grp || null, g.table || null, g.full === false ? 0 : 1)
+    .run();
+}
+
+/** Guests with a table, with the people of their answer (table finder and tableau). */
+export type SeatedGuest = GuestRow & { people: string | null; attending: number | null; adults: number | null; children: number | null };
+
+export async function listSeatedGuests(db: D1Database, invitationId: string): Promise<SeatedGuest[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT g.*, r.people AS people, r.attending AS attending, r.adults AS adults, r.children AS children
+       FROM guests g LEFT JOIN rsvps r ON r.guest_id = g.id
+       WHERE g.invitation_id = ?1 AND g.table_name IS NOT NULL AND g.table_name != '' ORDER BY g.created_at`,
+    )
+    .bind(invitationId)
+    .all<SeatedGuest>();
+  return results;
 }
 
 export async function getGuestByCode(db: D1Database, invitationId: string, code: string): Promise<GuestRow | null> {
@@ -220,6 +300,8 @@ export interface RsvpInput {
   diet: string;
   answer: string;
   message: string;
+  people: Person[];
+  song: string;
 }
 
 export type UpsertResult = { ok: true; row: RsvpRow; created: boolean } | { ok: false; error: string };
@@ -238,15 +320,18 @@ export async function upsertRsvp(
     if (row && row.edit_token === who.editToken) existing = row;
   }
 
-  const values = [input.name, input.attending ? 1 : 0, input.adults, input.children, input.diet || null, input.answer || null, input.message || null];
+  const people = input.people.length ? JSON.stringify(input.people) : null;
+  const song = input.song || null;
+  const values = [input.name, input.attending ? 1 : 0, input.adults, input.children, input.diet || null, input.answer || null, input.message || null, people, song];
+  const fields = { name: input.name, attending: input.attending ? 1 : 0, adults: input.adults, children: input.children, diet: input.diet || null, answer: input.answer || null, message: input.message || null, people, song };
   if (existing) {
     await db
       .prepare(
-        `UPDATE rsvps SET name = ?2, attending = ?3, adults = ?4, children = ?5, diet = ?6, answer = ?7, message = ?8, updated_at = ?9 WHERE id = ?1`,
+        `UPDATE rsvps SET name = ?2, attending = ?3, adults = ?4, children = ?5, diet = ?6, answer = ?7, message = ?8, people = ?9, song = ?10, updated_at = ?11 WHERE id = ?1`,
       )
       .bind(existing.id, ...values, now)
       .run();
-    return { ok: true, created: false, row: { ...existing, name: input.name, attending: input.attending ? 1 : 0, adults: input.adults, children: input.children, diet: input.diet || null, answer: input.answer || null, message: input.message || null, updated_at: now } };
+    return { ok: true, created: false, row: { ...existing, ...fields, updated_at: now } };
   }
 
   const count = await db.prepare('SELECT COUNT(*) AS n FROM rsvps WHERE invitation_id = ?1').bind(invitationId).first<{ n: number }>();
@@ -257,20 +342,14 @@ export async function upsertRsvp(
     invitation_id: invitationId,
     guest_id: who.guest?.id ?? null,
     edit_token: newToken(),
-    name: input.name,
-    attending: input.attending ? 1 : 0,
-    adults: input.adults,
-    children: input.children,
-    diet: input.diet || null,
-    answer: input.answer || null,
-    message: input.message || null,
+    ...fields,
     created_at: now,
     updated_at: now,
   };
   await db
     .prepare(
-      `INSERT INTO rsvps (id, invitation_id, guest_id, edit_token, name, attending, adults, children, diet, answer, message, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?12)`,
+      `INSERT INTO rsvps (id, invitation_id, guest_id, edit_token, name, attending, adults, children, diet, answer, message, people, song, created_at, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14)`,
     )
     .bind(row.id, invitationId, row.guest_id, row.edit_token, ...values, now)
     .run();
@@ -292,6 +371,9 @@ export interface Stats {
   invitedSeats: number;
   pendingGroups: number;
   openedGroups: number;
+  /** people per menu choice (only answers that said yes); '' = not chosen */
+  menus: Record<string, number>;
+  songs: number;
 }
 
 export function computeStats(rsvps: RsvpRow[], guests: GuestRow[]): Stats {
@@ -310,7 +392,108 @@ export function computeStats(rsvps: RsvpRow[], guests: GuestRow[]): Stats {
     invitedSeats: guests.reduce((s, g) => s + g.seats, 0),
     pendingGroups: guests.filter((g) => !answered.has(g.id)).length,
     openedGroups: guests.filter((g) => g.opened_count > 0).length,
+    menus: countMenus(yes),
+    songs: rsvps.filter((r) => r.song).length,
   };
+}
+
+/** People per menu choice; people coming without a chosen menu count as ''. */
+export function countMenus(yes: RsvpRow[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of yes) {
+    const people = parsePeople(r.people);
+    const total = r.adults + r.children;
+    for (let i = 0; i < total; i++) {
+      const m = people[i]?.menu || '';
+      out[m] = (out[m] ?? 0) + 1;
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Gift registry
+// ---------------------------------------------------------------------------
+
+export async function listGiftClaims(db: D1Database, invitationId: string): Promise<GiftClaimRow[]> {
+  const { results } = await db
+    .prepare('SELECT * FROM gift_claims WHERE invitation_id = ?1 ORDER BY created_at')
+    .bind(invitationId)
+    .all<GiftClaimRow>();
+  return results;
+}
+
+export type ClaimResult = { ok: true; row: GiftClaimRow } | { ok: false; error: string; status: 400 | 409 };
+
+/** Reserves a present (once) or records a contribution to a fund. */
+export async function claimGift(
+  db: D1Database,
+  invitationId: string,
+  gift: { id: string; kind: 'item' | 'fund' },
+  input: { name: string; amountCents: number; guestId: string | null },
+): Promise<ClaimResult> {
+  const row: GiftClaimRow = {
+    id: newId(),
+    invitation_id: invitationId,
+    gift_id: gift.id,
+    name: input.name,
+    amount_cents: gift.kind === 'fund' ? input.amountCents : 0,
+    guest_id: input.guestId,
+    token: newToken(),
+    created_at: nowIso(),
+  };
+  const count = await db.prepare('SELECT COUNT(*) AS n FROM gift_claims WHERE invitation_id = ?1').bind(invitationId).first<{ n: number }>();
+  if ((count?.n ?? 0) >= 1000) return { ok: false, error: 'Troppe prenotazioni per questo invito.', status: 400 };
+  // For a present the insert only happens if nobody reserved it yet (atomic in one statement).
+  const sql =
+    gift.kind === 'item'
+      ? `INSERT INTO gift_claims (id, invitation_id, gift_id, name, amount_cents, guest_id, token, created_at)
+         SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8 WHERE NOT EXISTS (SELECT 1 FROM gift_claims WHERE invitation_id = ?2 AND gift_id = ?3)`
+      : `INSERT INTO gift_claims (id, invitation_id, gift_id, name, amount_cents, guest_id, token, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`;
+  const res = await db.prepare(sql).bind(row.id, invitationId, gift.id, row.name, row.amount_cents, row.guest_id, row.token, row.created_at).run();
+  if ((res.meta?.changes ?? 0) === 0) return { ok: false, error: 'Qualcuno ha appena scelto questo regalo.', status: 409 };
+  return { ok: true, row };
+}
+
+/** Cancels a reservation made from this phone (token); returns the gift it belonged to. */
+export async function cancelGiftClaim(db: D1Database, invitationId: string, claimId: string, token: string): Promise<string | null> {
+  const row = await db
+    .prepare('DELETE FROM gift_claims WHERE id = ?1 AND invitation_id = ?2 AND token = ?3 RETURNING gift_id')
+    .bind(claimId, invitationId, token)
+    .first<{ gift_id: string }>();
+  return row?.gift_id ?? null;
+}
+
+export async function deleteGiftClaim(db: D1Database, invitationId: string, claimId: string): Promise<void> {
+  await db.prepare('DELETE FROM gift_claims WHERE id = ?1 AND invitation_id = ?2').bind(claimId, invitationId).run();
+}
+
+// ---------------------------------------------------------------------------
+// Rides board
+// ---------------------------------------------------------------------------
+
+export async function listRides(db: D1Database, invitationId: string): Promise<RideRow[]> {
+  const { results } = await db.prepare('SELECT * FROM rides WHERE invitation_id = ?1 ORDER BY created_at').bind(invitationId).all<RideRow>();
+  return results;
+}
+
+export async function addRide(db: D1Database, invitationId: string, r: Pick<RideRow, 'kind' | 'place' | 'seats' | 'name' | 'phone' | 'note'>): Promise<RideRow | null> {
+  const count = await db.prepare('SELECT COUNT(*) AS n FROM rides WHERE invitation_id = ?1').bind(invitationId).first<{ n: number }>();
+  if ((count?.n ?? 0) >= 200) return null;
+  const row: RideRow = { id: newId(), invitation_id: invitationId, ...r, token: newToken(), created_at: nowIso() };
+  await db
+    .prepare('INSERT INTO rides (id, invitation_id, kind, place, seats, name, phone, note, token, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)')
+    .bind(row.id, invitationId, row.kind, row.place, row.seats, row.name, row.phone, row.note, row.token, row.created_at)
+    .run();
+  return row;
+}
+
+/** Deletes a ride: by its author (token) or by the host (no token). */
+export async function deleteRide(db: D1Database, invitationId: string, rideId: string, token?: string): Promise<boolean> {
+  const res = token
+    ? await db.prepare('DELETE FROM rides WHERE id = ?1 AND invitation_id = ?2 AND token = ?3').bind(rideId, invitationId, token).run()
+    : await db.prepare('DELETE FROM rides WHERE id = ?1 AND invitation_id = ?2').bind(rideId, invitationId).run();
+  return (res.meta?.changes ?? 0) > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -397,12 +580,12 @@ export async function runCleanup(db: D1Database, media: R2Bucket): Promise<{ del
   const eventCutoff = addDays(todayRome(), -RETENTION_DAYS_AFTER_EVENT);
   const { results } = await db
     .prepare(
-      `SELECT id, cover_key FROM invitations
+      `SELECT id, cover_key, gallery, og_key FROM invitations
        WHERE (status = 'draft' AND updated_at < ?1) OR (event_date IS NOT NULL AND event_date < ?2)
        LIMIT 300`,
     )
     .bind(draftCutoff, eventCutoff)
-    .all<{ id: string; cover_key: string | null }>();
+    .all<{ id: string; cover_key: string | null; gallery: string | null; og_key: string | null }>();
   for (const inv of results) await deleteInvitation(db, media, inv);
   await db.prepare('DELETE FROM rate_limits WHERE reset_at < ?1').bind(Math.floor(Date.now() / 1000)).run();
   return { deleted: results.length };
