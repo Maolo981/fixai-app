@@ -19,11 +19,13 @@
   // ---------- confetti ----------
   function confetti(count = 90) {
     if (reduce) return;
-    const cs = getComputedStyle(body);
-    const colors = ['--accent', '--seal', '--seal-hi', '--names-color']
-      .map((v) => cs.getPropertyValue(v).trim())
-      .filter(Boolean)
-      .concat(['#f4c542', '#ff8fa0', '#8fd3c3', '#ffffff']);
+    // theme palette: gold leaf, paper and ink (see --confetti in invite.css)
+    const colors = getComputedStyle(body)
+      .getPropertyValue('--confetti')
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
+    if (!colors.length) colors.push('#c9a65f', '#ead9a0', '#ffffff');
     const frag = document.createDocumentFragment();
     for (let i = 0; i < count; i++) {
       const el = document.createElement('i');
@@ -33,7 +35,7 @@
       el.style.width = w + 'px';
       el.style.height = w * (Math.random() > 0.5 ? 1.8 : 1) + 'px';
       el.style.background = colors[i % colors.length];
-      el.style.borderRadius = Math.random() > 0.6 ? '50%' : '2px';
+      el.style.borderRadius = Math.random() > 0.6 ? '50%' : '1px';
       el.style.animationDelay = Math.random() * 0.7 + 's';
       el.style.setProperty('--dx', (Math.random() - 0.5) * 180 + 'px');
       el.style.setProperty('--rot', (Math.random() - 0.5) * 1000 + 'deg');
@@ -77,7 +79,7 @@
         }),
       { rootMargin: '0px 0px -6% 0px' },
     );
-    document.querySelectorAll('.card > .sec:not(.hero)').forEach((s) => {
+    document.querySelectorAll('.card .sheet:not(.sheet-main) .sec').forEach((s) => {
       s.classList.add('reveal');
       io.observe(s);
     });
@@ -232,8 +234,8 @@
       id: saved?.id || '',
       editToken: saved?.editToken || '',
     };
-    if (!payload.name) return fail('Scrivi il tuo nome, così sappiamo chi sei 🙂');
-    if (!attending) return fail('Dicci se ci sarai: tocca «Ci sarò» oppure «Non potrò esserci»');
+    if (!payload.name) return fail('Scrivi il tuo nome, così sappiamo chi sei');
+    if (!attending) return fail('Dicci se ci sarai: scegli «Parteciperò con piacere» oppure «Non potrò partecipare»');
     if (attending === 'yes' && payload.adults + payload.children < 1) return fail('Indica quante persone verranno');
     if (form.dataset.mode === 'preview') return toast('Anteprima: le risposte vere arriveranno quando l’invito sarà pubblicato');
     if (form.dataset.mode === 'demo') {

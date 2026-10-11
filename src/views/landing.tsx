@@ -6,7 +6,7 @@ import { Layout } from './layout';
 export const FAQ: { q: string; a: string }[] = [
   {
     q: 'Gli invitati devono scaricare un’app o registrarsi?',
-    a: 'No. L’invito è un link: si apre con un tocco da WhatsApp, Instagram, SMS o email, su qualsiasi telefono. Per confermare basta scrivere il nome e premere «Ci sarò».',
+    a: 'No. L’invito è un link: si apre con un tocco da WhatsApp, Instagram, SMS o email, su qualsiasi telefono. Per confermare basta scrivere il nome e premere «Parteciperò con piacere».',
   },
   {
     q: 'Come mando l’invito?',

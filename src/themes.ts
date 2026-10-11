@@ -1,424 +1,740 @@
 /**
- * Invitation themes. Each theme = CSS variables (public/css/invite.css, class "t-<id>")
- * + procedurally drawn SVG ornaments generated here once per isolate.
+ * Invitation themes in the "luxury stationery" style: cotton paper, hot-foil gold, watercolor and wax.
+ * Colours and typography live in public/css/invite.css (class "t-<id>"); the artwork is drawn here,
+ * once per isolate, and shipped as inline CSS (data URIs) so every page only carries its own theme.
  */
+import { type P, type WaxColors, along, blurFilter, brush, cubic, dataUri, leafHalves, linen, paperGrain, placeAt, r1, rad, rng, spiral, svgDoc, taper, taperEnd, waxSeal, wcFilter } from './art';
 import type { EventType, ThemeId } from './types';
 
 export interface ThemeDef {
   id: ThemeId;
   name: string;
   desc: string;
-  /** background, accent, ink — used for the theme picker swatches */
+  /** paper, accent, ink: used for the theme picker swatches and the browser bar */
   swatches: [string, string, string];
   demoEvent: EventType;
   /** font files to preload on the invitation page */
   fonts: string[];
 }
 
+const SCRIPT = ['pinyon-script-latin-400-normal', 'cinzel-latin-500-normal', 'cormorant-garamond-latin-400-italic'];
+
 export const THEMES: ThemeDef[] = [
-  {
-    id: 'ulivo',
-    name: 'Ulivo',
-    desc: 'Rami d’ulivo e verde salvia, elegante e naturale',
-    swatches: ['#f4f1e8', '#7b8a58', '#3a3a2c'],
-    demoEvent: 'matrimonio',
-    fonts: ['cormorant-garamond-latin-400-italic', 'jost-latin-300-normal'],
-  },
-  {
-    id: 'avorio',
-    name: 'Avorio & Oro',
-    desc: 'Carta avorio, dettagli oro e calligrafia classica',
-    swatches: ['#fffaf2', '#b08d4f', '#3b3127'],
-    demoEvent: 'anniversario',
-    fonts: ['pinyon-script-latin-400-normal', 'cormorant-garamond-latin-400-normal'],
-  },
-  {
-    id: 'limoni',
-    name: 'Limoni di Amalfi',
-    desc: 'Maioliche blu e limoni, pura estate italiana',
-    swatches: ['#ffffff', '#1f4e8c', '#f4c542'],
-    demoEvent: 'festa',
-    fonts: ['dm-serif-display-latin-400-normal', 'jost-latin-400-normal'],
-  },
-  {
-    id: 'notte',
-    name: 'Notte stellata',
-    desc: 'Blu notte e oro: per feste serali e diciottesimi',
-    swatches: ['#141b34', '#d8b46a', '#f3ecdc'],
-    demoEvent: 'diciottesimo',
-    fonts: ['italiana-latin-400-normal', 'jost-latin-300-normal'],
-  },
-  {
-    id: 'alloro',
-    name: 'Alloro',
-    desc: 'Rosso laurea e corona d’alloro',
-    swatches: ['#fbf6ee', '#9b1c1c', '#2d2522'],
-    demoEvent: 'laurea',
-    fonts: ['dm-serif-display-latin-400-normal', 'cormorant-garamond-latin-400-normal'],
-  },
-  {
-    id: 'cielo',
-    name: 'Cielo',
-    desc: 'Nuvole, stelline e azzurro polvere',
-    swatches: ['#eef5fc', '#6f9bd1', '#33475f'],
-    demoEvent: 'battesimo',
-    fonts: ['fredoka-latin-500-normal', 'jost-latin-400-normal'],
-  },
-  {
-    id: 'cipria',
-    name: 'Cipria',
-    desc: 'Rosa cipria e fiori delicati',
-    swatches: ['#fdf3f3', '#d58e98', '#4a3436'],
-    demoEvent: 'babyshower',
-    fonts: ['pinyon-script-latin-400-normal', 'cormorant-garamond-latin-400-normal'],
-  },
-  {
-    id: 'spiga',
-    name: 'Grano',
-    desc: 'Spighe dorate su crema, luminoso e sobrio',
-    swatches: ['#fbf7ee', '#b8955a', '#3d3326'],
-    demoEvent: 'comunione',
-    fonts: ['dm-serif-display-latin-400-italic', 'cormorant-garamond-latin-400-normal'],
-  },
-  {
-    id: 'coriandoli',
-    name: 'Coriandoli',
-    desc: 'Colori e coriandoli: si fa festa!',
-    swatches: ['#fffaf0', '#ff5d73', '#2b2d42'],
-    demoEvent: 'compleanno',
-    fonts: ['fredoka-latin-600-normal', 'jost-latin-400-normal'],
-  },
+  { id: 'avorio', name: 'Avorio e oro', desc: 'Carta di cotone avorio, stemma d’alloro e calligrafia in oro a caldo', swatches: ['#fbf7ef', '#a8843f', '#2b241d'], demoEvent: 'anniversario', fonts: SCRIPT },
+  { id: 'ulivo', name: 'Ulivo', desc: 'Rami d’ulivo dipinti ad acquerello e nomi in oro', swatches: ['#f9f8f2', '#7d8d5e', '#2f3a2c'], demoEvent: 'matrimonio', fonts: SCRIPT },
+  { id: 'limoni', name: 'Amalfi', desc: 'Limoni ad acquerello e calligrafia blu cobalto, come le maioliche', swatches: ['#fefdf9', '#1f3f78', '#f2c94c'], demoEvent: 'festa', fonts: SCRIPT },
+  { id: 'notte', name: 'Mezzanotte', desc: 'Carta blu notte, luna e stelle in oro: per le feste di sera', swatches: ['#161c33', '#d6b56e', '#efe6d0'], demoEvent: 'diciottesimo', fonts: ['cinzel-latin-400-normal', 'cinzel-latin-500-normal', 'cormorant-garamond-latin-400-italic'] },
+  { id: 'alloro', name: 'Alloro', desc: 'Corona d’alloro in oro e nastro rosso: il classico della laurea', swatches: ['#fbf6ee', '#8f1d22', '#2d2522'], demoEvent: 'laurea', fonts: SCRIPT },
+  { id: 'cielo', name: 'Cielo', desc: 'Nuvole ad acquerello, luna e stelle color champagne', swatches: ['#fbfcfd', '#7f9cc4', '#263248'], demoEvent: 'battesimo', fonts: SCRIPT },
+  { id: 'cipria', name: 'Cipria', desc: 'Rose ad acquerello e dettagli in oro rosa', swatches: ['#fefaf8', '#c98e8a', '#4a2f2f'], demoEvent: 'babyshower', fonts: SCRIPT },
+  { id: 'spiga', name: 'Grano', desc: 'Corona di spighe in oro su carta crema: sobrio e luminoso', swatches: ['#fcf8ef', '#b08a4a', '#3b3125'], demoEvent: 'comunione', fonts: SCRIPT },
+  { id: 'coriandoli', name: 'Gala', desc: 'Busta nera e coriandoli d’oro: la festa elegante', swatches: ['#fbf8f1', '#b8924a', '#1f1a17'], demoEvent: 'compleanno', fonts: SCRIPT },
 ];
 
 export const THEME_BY_ID = Object.fromEntries(THEMES.map((t) => [t.id, t])) as Record<ThemeId, ThemeDef>;
 export const isTheme = (v: unknown): v is ThemeId => typeof v === 'string' && v in THEME_BY_ID;
 
 // ---------------------------------------------------------------------------
-// Geometry helpers
+// Painting helpers (watercolor)
 // ---------------------------------------------------------------------------
 
-type P = [number, number];
-const r1 = (n: number) => Math.round(n * 10) / 10;
-const deg = (rad: number) => (rad * 180) / Math.PI;
+type Pair = [string, string];
+const pick = <T>(a: T[], rand: () => number): T => a[Math.floor(rand() * a.length)];
 
-function rng(seed: number) {
-  return () => {
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+/** A set of watercolor filters w0…w{n-1} with different edges. */
+function wcSet(n: number, o: Parameters<typeof wcFilter>[1] = {}) {
+  let s = '';
+  for (let i = 0; i < n; i++) s += wcFilter(`w${i}`, { ...o, seed: (o.seed ?? 3) + i * 7 });
+  return s;
 }
 
-const bez = (a: P, c: P, b: P, t: number): P => [
-  (1 - t) ** 2 * a[0] + 2 * (1 - t) * t * c[0] + t * t * b[0],
-  (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * c[1] + t * t * b[1],
-];
-const bezTan = (a: P, c: P, b: P, t: number): P => [
-  2 * (1 - t) * (c[0] - a[0]) + 2 * t * (b[0] - c[0]),
-  2 * (1 - t) * (c[1] - a[1]) + 2 * t * (b[1] - c[1]),
-];
+/** Soft wash without pigment rims (skies, clouds). */
+const softWash = (id: string, seed: number, blur = 1.6) =>
+  `<filter id="${id}" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".03" numOctaves="4" seed="${seed}" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="${blur}" result="b"/><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="2" seed="${seed + 3}" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -.7 1.22" result="ga"/><feComposite in="b" in2="ga" operator="in"/></filter>`;
 
-/** Pointed leaf from (0,0) to (len,0). */
-const leafPath = (len: number, wid: number) =>
-  `M0 0C${r1(len * 0.25)} ${r1(-wid)} ${r1(len * 0.7)} ${r1(-wid * 0.9)} ${r1(len)} 0C${r1(len * 0.7)} ${r1(wid * 0.9)} ${r1(len * 0.25)} ${r1(wid)} 0 0Z`;
-
-interface LeafStyle {
-  fills: string[];
-  stroke?: string;
-  strokeWidth?: number;
-  vein?: string;
-  awn?: { color: string; len: number };
+function paintLeaf(at: P, angle: number, len: number, wid: number, c: Pair, f: string, gap = 0.7, belly = 0.34): string {
+  const [up, lo] = leafHalves(len, wid, gap, belly);
+  return placeAt(at, angle, `<g filter="url(#${f})"><path d="${up}" fill="${c[0]}"/><path d="${lo}" fill="${c[1]}"/></g>`);
 }
 
-function leaf(at: P, angle: number, len: number, wid: number, st: LeafStyle, rand: () => number): string {
-  const fill = st.fills.length ? st.fills[Math.floor(rand() * st.fills.length)] : 'none';
-  const stroke = st.stroke ? ` stroke="${st.stroke}" stroke-width="${st.strokeWidth ?? 1}"` : '';
-  let s = `<g transform="translate(${r1(at[0])} ${r1(at[1])}) rotate(${r1(angle)})"><path d="${leafPath(len, wid)}" fill="${fill}"${stroke}/>`;
-  if (st.vein) s += `<path d="M${r1(len * 0.08)} 0L${r1(len * 0.82)} 0" stroke="${st.vein}" stroke-width=".6" stroke-linecap="round"/>`;
-  if (st.awn) s += `<path d="M${r1(len)} 0L${r1(len + st.awn.len)} 0" stroke="${st.awn.color}" stroke-width=".55" stroke-linecap="round"/>`;
-  return s + '</g>';
-}
+const paintStem = (pts: P[], width: number, color: string, f: string) => `<path d="${brush(pts, taperEnd(width, width * 0.3))}" fill="${color}" filter="url(#${f})"/>`;
 
-interface BranchSpec extends LeafStyle {
-  from: P;
-  ctrl: P;
-  to: P;
-  count: number;
+interface SprigSpec {
+  stem: P[];
+  leaves: number;
   len: number;
+  /** leaf width relative to its length */
   wid: number;
-  angle: number;
-  stem: string;
+  spread: [number, number];
+  colors: Pair[];
+  stemColor: string;
   stemWidth: number;
-  taper?: number;
   seed: number;
-  pairs?: boolean;
   start?: number;
   tip?: boolean;
+  belly?: number;
 }
 
-function branch(s: BranchSpec): string {
+function paintSprig(s: SprigSpec): string {
   const rand = rng(s.seed);
-  let out = `<path d="M${s.from.join(' ')}Q${s.ctrl.join(' ')} ${s.to.join(' ')}" fill="none" stroke="${s.stem}" stroke-width="${s.stemWidth}" stroke-linecap="round"/>`;
-  const start = s.start ?? 0.12;
-  for (let i = 0; i < s.count; i++) {
-    const t = start + (0.94 - start) * (s.count === 1 ? 0.5 : i / (s.count - 1));
-    const at = bez(s.from, s.ctrl, s.to, t);
-    const tan = bezTan(s.from, s.ctrl, s.to, t);
-    const base = deg(Math.atan2(tan[1], tan[0]));
-    const k = 1 - (s.taper ?? 0.4) * t;
-    const jitter = () => (rand() - 0.5) * 10;
-    if (s.pairs) {
-      out += leaf(at, base - s.angle + jitter(), s.len * k, s.wid * k, s, rand);
-      out += leaf(at, base + s.angle + jitter(), s.len * k, s.wid * k, s, rand);
-    } else {
-      const side = i % 2 === 0 ? -1 : 1;
-      out += leaf(at, base + side * s.angle + jitter(), s.len * k, s.wid * k, s, rand);
-    }
+  let out = paintStem(s.stem, s.stemWidth, s.stemColor, 'w0');
+  const start = s.start ?? 0.08;
+  for (let i = 0; i < s.leaves; i++) {
+    const t = start + ((0.97 - start) * i) / Math.max(1, s.leaves - 1);
+    const { p, angle } = along(s.stem, t);
+    const side = i % 2 ? 1 : -1;
+    const len = s.len * (1 - 0.35 * t) * (0.85 + rand() * 0.3);
+    const c = pick(s.colors, rand);
+    out += paintLeaf(p, angle + side * (s.spread[0] + rand() * (s.spread[1] - s.spread[0])), len, len * s.wid, side < 0 ? c : [c[1], c[0]], `w${1 + (i % 3)}`, 0.7, s.belly);
   }
   if (s.tip) {
-    const tan = bezTan(s.from, s.ctrl, s.to, 1);
-    out += leaf(s.to, deg(Math.atan2(tan[1], tan[0])), s.len * 0.6, s.wid * 0.6, s, rand);
+    const end = along(s.stem, 1);
+    out += paintLeaf(end.p, end.angle, s.len * 0.62, s.len * 0.62 * s.wid, s.colors[0], 'w2', 0.6, s.belly);
   }
   return out;
 }
 
-const mirror = (inner: string, width: number) => `${inner}<g transform="translate(${width} 0) scale(-1 1)">${inner}</g>`;
-const svg = (w: number, h: number, body: string, cls = '') =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" class="${cls}" aria-hidden="true" focusable="false">${body}</svg>`;
+// ---------------------------------------------------------------------------
+// Foil helpers (black shapes, used as CSS masks over a metallic gradient)
+// ---------------------------------------------------------------------------
 
-function star(cx: number, cy: number, outer: number, inner: number, fill: string, rot = -90): string {
+function foilLeaf(at: P, angle: number, len: number, wid: number, gap = 0.9, belly = 0.34): string {
+  const [up, lo] = leafHalves(len, wid, gap, belly);
+  return placeAt(at, angle, `<path d="${up}"/><path d="${lo}"/>`);
+}
+
+function sparkle(c: P, s: number, thin = 0.18): string {
+  const [x, y] = c;
+  const k = s * thin;
+  return `<path d="M${r1(x)} ${r1(y - s)}Q${r1(x + k)} ${r1(y - k)} ${r1(x + s)} ${r1(y)}Q${r1(x + k)} ${r1(y + k)} ${r1(x)} ${r1(y + s)}Q${r1(x - k)} ${r1(y + k)} ${r1(x - s)} ${r1(y)}Q${r1(x - k)} ${r1(y - k)} ${r1(x)} ${r1(y - s)}Z"/>`;
+}
+
+function star5(c: P, outer: number, inner = outer * 0.42, rot = -90): string {
   let d = '';
   for (let i = 0; i < 10; i++) {
-    const rr = i % 2 === 0 ? outer : inner;
-    const a = ((rot + i * 36) * Math.PI) / 180;
-    d += `${i ? 'L' : 'M'}${r1(cx + rr * Math.cos(a))} ${r1(cy + rr * Math.sin(a))}`;
+    const r = i % 2 ? inner : outer;
+    const a = rad(rot + i * 36);
+    d += `${i ? 'L' : 'M'}${r1(c[0] + r * Math.cos(a))} ${r1(c[1] + r * Math.sin(a))}`;
   }
-  return `<path d="${d}Z" fill="${fill}"/>`;
+  return `<path d="${d}Z"/>`;
 }
 
-const sparkle = (cx: number, cy: number, s: number, fill: string) =>
-  `<path d="M${cx} ${r1(cy - s)}Q${cx} ${cy} ${r1(cx + s)} ${cy}Q${cx} ${cy} ${cx} ${r1(cy + s)}Q${cx} ${cy} ${r1(cx - s)} ${cy}Q${cx} ${cy} ${cx} ${r1(cy - s)}Z" fill="${fill}"/>`;
-
-/** Crescent opening to the right: left half-circle minus a flatter arc. */
-function crescent(cx: number, cy: number, r: number, fill: string): string {
-  const inner = r1(r * 1.25);
-  return `<path d="M${cx} ${cy - r}A${r} ${r} 0 0 0 ${cx} ${cy + r}A${inner} ${inner} 0 0 1 ${cx} ${cy - r}Z" fill="${fill}" transform="rotate(-25 ${cx} ${cy})"/>`;
+/** Crescent opening to the right, tilted. */
+function crescent(c: P, r: number, tilt = -28): string {
+  const [x, y] = c;
+  const inner = r1(r * 1.22);
+  return `<path transform="rotate(${tilt} ${x} ${y})" d="M${x} ${r1(y - r)}A${r} ${r} 0 1 0 ${x} ${r1(y + r)}A${inner} ${inner} 0 0 1 ${x} ${r1(y - r)}Z"/>`;
 }
 
-function cloud(x: number, y: number, s: number, fill: string, shade: string): string {
-  const bumps: [number, number, number][] = [
-    [0, 0, 13],
-    [15, -9, 16],
-    [33, -4, 13],
-    [46, 2, 10],
-    [24, 5, 12],
-    [-11, 4, 9],
-  ];
-  const draw = (dx: number, dy: number, color: string) =>
-    bumps.map(([bx, by, br]) => `<circle cx="${r1(x + (bx + dx) * s)}" cy="${r1(y + (by + dy) * s)}" r="${r1(br * s)}" fill="${color}"/>`).join('');
-  return draw(2, 3, shade) + draw(0, 0, fill);
-}
+/** Hairline that swells in the middle, with a dot at the far end. */
+const hairline = (a: P, b: P, w = 1.5, dot = 1.3) =>
+  `<path d="${brush(cubic(a, [a[0] + (b[0] - a[0]) / 3, a[1]], [a[0] + (2 * (b[0] - a[0])) / 3, b[1]], b, 24), taper(w, 0.15))}"/>` + (dot ? `<circle cx="${r1(b[0])}" cy="${r1(b[1])}" r="${dot}"/>` : '');
 
-function blossom(cx: number, cy: number, r: number, petals: string[], center: string, rand: () => number): string {
-  let out = '';
-  const rot = rand() * 72;
-  for (let i = 0; i < 5; i++) {
-    const a = ((rot + i * 72) * Math.PI) / 180;
-    out += `<circle cx="${r1(cx + r * Math.cos(a))}" cy="${r1(cy + r * Math.sin(a))}" r="${r1(r * 0.95)}" fill="${petals[i % petals.length]}"/>`;
-  }
-  return out + `<circle cx="${cx}" cy="${cy}" r="${r1(r * 0.55)}" fill="${center}"/>`;
-}
-
-function lemon(cx: number, cy: number, angle: number, s: number): string {
-  const body =
-    'M-18 0C-17.5-10-8-14 2-13.5C12-13 18-8 19.5-2.5L23 0L19.5 2.5C18 8 12 13 2 13.5C-8 14-17.5 10-18 0Z';
-  return `<g transform="translate(${cx} ${cy}) rotate(${angle}) scale(${s})"><path d="${body}" fill="#f4c542" stroke="#dca72c" stroke-width=".8"/><ellipse cx="-3" cy="-6" rx="8" ry="3" fill="#fbe38f" opacity=".85"/><circle cx="-21" cy="0" r="1.6" fill="#7a8a3a"/></g>`;
-}
-
-function wreathSide(cx: number, cy: number, radius: number, from: number, to: number, st: LeafStyle, seed: number, n: number) {
-  const rand = rng(seed);
-  let path = '';
-  let out = '';
-  for (let i = 0; i <= n; i++) {
-    const a = ((from + ((to - from) * i) / n) * Math.PI) / 180;
-    const x = cx + radius * Math.cos(a);
-    const y = cy + radius * Math.sin(a);
-    path += `${i ? 'L' : 'M'}${r1(x)} ${r1(y)}`;
-    if (i === 0) continue;
-    const dir = deg(Math.atan2(Math.cos(a), -Math.sin(a))) + (to < from ? 180 : 0);
-    const k = 1 - 0.35 * (i / n);
-    out += leaf([x, y], dir - 38, 20 * k, 6.5 * k, st, rand) + leaf([x, y], dir + 38, 20 * k, 6.5 * k, st, rand);
-  }
-  return `<path d="${path}" fill="none" stroke="#6d5a3a" stroke-width="1.2"/>` + out;
+/** Calligraphic curl winding into a spiral. */
+function curl(c: P, r0: number, a0: number, turns: number, w: number): string {
+  const pts = spiral(c, r0, r0 * 0.18, a0, turns, 36);
+  return `<path d="${brush(pts, (t) => 0.25 + w * (1 - t) ** 1.2)}"/>`;
 }
 
 // ---------------------------------------------------------------------------
-// Ornaments per theme
+// Foil pieces
+// ---------------------------------------------------------------------------
+
+/** Classic scroll divider, 260×44, centred on (130,22). */
+function filigreeDivider(): string {
+  let s = `<path d="M130 13L136.5 22L130 31L123.5 22Z"/>`;
+  for (const m of [1, -1]) {
+    const X = (x: number) => 130 + m * x;
+    const lead = cubic([X(8), 22], [X(14), 22], [X(20), 15], [X(28), 15], 14);
+    const coil = spiral([X(28), 21.5], 6.5, 1.2, m > 0 ? -90 : 270, m > 0 ? 1.15 : -1.15, 34);
+    s += `<path d="${brush(lead.concat(coil.slice(1)), (t) => 0.3 + 2.1 * Math.sin(Math.PI * Math.min(1, t * 1.6)) * (1 - t * 0.7))}"/>`;
+    const tail = cubic([X(13), 24], [X(20), 31], [X(36), 31], [X(44), 25], 18);
+    s += `<path d="${brush(tail, taper(1.6, 0.25))}"/>`;
+    s += hairline([X(46), 22], [X(124), 22], 1.6, 1.4);
+    s += foilLeaf([X(40), 18], m > 0 ? -35 : 215, 9, 2.6, 0.5);
+  }
+  return svgDoc(260, 44, s);
+}
+
+/** Art-deco divider, 260×30. */
+function decoDivider(): string {
+  let s = `<path fill-rule="evenodd" d="M130 6L139 15L130 24L121 15ZM130 10.5L125.5 15L130 19.5L134.5 15Z"/>`;
+  for (const m of [1, -1]) {
+    const X = (x: number) => 130 + m * x;
+    const [a, b] = m > 0 ? [X(13), X(122)] : [X(122), X(13)];
+    const [c, d] = m > 0 ? [X(16), X(70)] : [X(70), X(16)];
+    s += `<path d="M${a} 14.4H${b}V15.6H${a}Z"/>`;
+    s += `<path d="M${c} 10.6H${d}V11.2H${c}ZM${c} 18.8H${d}V19.4H${c}Z"/>`;
+    s += `<circle cx="${X(126)}" cy="15" r="1.5"/>`;
+    s += `<path d="M${X(74)} 15L${X(78)} 11L${X(82)} 15L${X(78)} 19Z"/>`;
+  }
+  return svgDoc(260, 30, s);
+}
+
+/** Leafy sprig divider (olive, laurel, generic leaf), 200×36. */
+function sprigDivider(kind: 'olive' | 'laurel' | 'leaf'): string {
+  let s = `<circle cx="100" cy="18" r="2"/>`;
+  for (const m of [1, -1]) {
+    const X = (x: number) => 100 + m * x;
+    const stem = cubic([X(6), 18], [X(30), 19], [X(55), 17], [X(86), 13], 30);
+    s += `<path d="${brush(stem, taperEnd(1.3, 0.3))}"/>`;
+    const n = kind === 'laurel' ? 7 : 6;
+    for (let i = 0; i < n; i++) {
+      const { p, angle } = along(stem, 0.14 + (0.84 * i) / (n - 1));
+      const k = 1 - 0.35 * (i / n);
+      if (kind === 'laurel') {
+        s += foilLeaf(p, angle - 34, 11 * k, 3.6 * k, 0.6) + foilLeaf(p, angle + 34, 11 * k, 3.6 * k, 0.6);
+      } else {
+        const side = i % 2 ? 1 : -1;
+        s += foilLeaf(p, angle + side * 36, (kind === 'olive' ? 15 : 12) * k, (kind === 'olive' ? 2.6 : 3.8) * k, 0.6, 0.4);
+      }
+    }
+    const end = along(stem, 1);
+    s += foilLeaf(end.p, end.angle, 8, kind === 'olive' ? 1.8 : 2.8, 0.5);
+  }
+  return svgDoc(200, 36, s);
+}
+
+/** Stars divider (sky themes), 200×30. */
+function starDivider(): string {
+  let s = sparkle([100, 15], 9, 0.16) + sparkle([82, 15], 4) + sparkle([118, 15], 4);
+  for (const m of [1, -1]) s += hairline([100 + m * 26, 15], [100 + m * 92, 15], 1.2, 1.2);
+  return svgDoc(200, 30, s);
+}
+
+/** Wheat divider, 220×34. */
+function wheatDivider(): string {
+  let s = `<circle cx="110" cy="17" r="1.8"/>`;
+  for (const m of [1, -1]) {
+    const X = (x: number) => 110 + m * x;
+    const stem = cubic([X(6), 17], [X(30), 17], [X(60), 17], [X(100), 15], 24);
+    s += `<path d="${brush(stem, taperEnd(1.2, 0.3))}"/>`;
+    for (let i = 0; i < 6; i++) {
+      const { p, angle } = along(stem, 0.45 + i * 0.1);
+      for (const side of [-1, 1]) {
+        const a = angle + side * 26;
+        s += foilLeaf(p, a, 7.5, 2.6, 0.5, 0.45);
+        const tip: P = [p[0] + Math.cos(rad(a)) * 7.5, p[1] + Math.sin(rad(a)) * 7.5];
+        const tip2: P = [tip[0] + Math.cos(rad(a - side * 8)) * 7, tip[1] + Math.sin(rad(a - side * 8)) * 7];
+        s += `<path d="${brush([tip, tip2], () => 0.45)}"/>`;
+      }
+    }
+    const end = along(stem, 1);
+    s += foilLeaf(end.p, end.angle, 8, 2.6, 0.5, 0.45);
+  }
+  return svgDoc(220, 34, s);
+}
+
+/** Points along the left half of a wreath (bottom → top). */
+function wreathArc(c: P, r: number, from: number, sweep: number): P[] {
+  const arc: P[] = [];
+  for (let i = 0; i <= 40; i++) {
+    const a = rad(from + (sweep * i) / 40);
+    arc.push([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]);
+  }
+  return arc;
+}
+
+const mirrorHalf = (side: string, w = 200) => side + `<g transform="translate(${w} 0) scale(-1 1)">${side}</g>`;
+
+/** Laurel wreath around a monogram, 200×200 (centre 100,102). */
+function laurelWreath(berries = true): string {
+  const arc = wreathArc([100, 102], 74, 104, 148);
+  let side = `<path d="${brush(arc, (t) => 2.4 - 1.6 * t)}"/>`;
+  const n = 11;
+  for (let i = 0; i < n; i++) {
+    const t = 0.06 + (0.88 * i) / (n - 1);
+    const { p, angle } = along(arc, t);
+    const k = 1 - 0.42 * t;
+    side += foilLeaf(p, angle - 38, 23 * k, 7 * k, 1) + foilLeaf(p, angle + 36, 21 * k, 6.4 * k, 1);
+  }
+  const end = along(arc, 1);
+  side += foilLeaf(end.p, end.angle, 15, 4.6, 0.9);
+  if (berries) {
+    for (const t of [0.22, 0.47, 0.71]) {
+      const { p, angle } = along(arc, t);
+      const a = rad(angle + 90);
+      side += `<circle cx="${r1(p[0] + Math.cos(a) * 8)}" cy="${r1(p[1] + Math.sin(a) * 8)}" r="2.4"/>`;
+    }
+  }
+  side += `<path d="${brush(cubic([82, 172], [94, 178], [106, 182], [116, 186], 12), taperEnd(2.2, 0.4))}"/>`;
+  return svgDoc(200, 200, mirrorHalf(side));
+}
+
+/** Wreath of two wheat stalks tied with a bow, 200×200. */
+function wheatWreath(): string {
+  const arc = wreathArc([100, 102], 72, 102, 150);
+  let side = `<path d="${brush(arc, (t) => 2 - 1.2 * t)}"/>`;
+  for (const [t, d, l] of [[0.12, 1, 46], [0.2, -1, 38]] as const) {
+    const { p, angle } = along(arc, t);
+    side += foilLeaf(p, angle + d * 16, l, 3.4, 0.7, 0.2);
+  }
+  for (let i = 0; i < 9; i++) {
+    const t = 0.5 + i * 0.058;
+    const { p, angle } = along(arc, t);
+    const k = 1 - 0.25 * (i / 9);
+    for (const sd of [-1, 1]) {
+      const a = angle + sd * 30;
+      side += foilLeaf(p, a, 11 * k, 4.2 * k, 0.7, 0.46);
+      const tip: P = [p[0] + Math.cos(rad(a)) * 11 * k, p[1] + Math.sin(rad(a)) * 11 * k];
+      const tip2: P = [tip[0] + Math.cos(rad(a - sd * 10)) * 11, tip[1] + Math.sin(rad(a - sd * 10)) * 11];
+      side += `<path d="${brush([tip, tip2], (q) => 0.7 - 0.4 * q)}"/>`;
+    }
+  }
+  const end = along(arc, 1);
+  side += foilLeaf(end.p, end.angle, 12, 4.2, 0.7, 0.46);
+  side += `<path d="${brush(cubic([84, 170], [95, 177], [106, 181], [115, 185], 12), taperEnd(2, 0.4))}"/>`;
+  const knot =
+    `<ellipse cx="100" cy="176" rx="5" ry="4"/><path d="M96 176C88 170 80 170 79 175C78 181 88 182 96 177Z"/><path d="M104 176C112 170 120 170 121 175C122 181 112 182 104 177Z"/>` +
+    `<path d="${brush(cubic([98, 179], [94, 186], [90, 192], [85, 197], 10), taper(3.2, 1))}"/><path d="${brush(cubic([102, 179], [106, 186], [110, 192], [115, 197], 10), taper(3.2, 1))}"/>`;
+  return svgDoc(200, 200, mirrorHalf(side) + knot);
+}
+
+/** Filigree corner (top-left), 100×100. */
+function filigreeCorner(): string {
+  const edge = (t: number) => 0.2 + 2 * Math.sin(Math.PI * Math.min(1, 0.15 + t)) * (1 - t) ** 0.6;
+  let s = curl([21, 21], 11, 225, -1.15, 2.6);
+  s += `<path d="${brush(cubic([20, 10], [40, 4], [62, 9], [94, 6], 30), edge)}"/>`;
+  s += `<path d="${brush(cubic([10, 20], [4, 40], [9, 62], [6, 94], 30), edge)}"/>`;
+  s += `<circle cx="96" cy="6" r="1.3"/><circle cx="6" cy="96" r="1.3"/>`;
+  s += foilLeaf([31, 31], 45, 15, 4.6, 0.8);
+  s += foilLeaf([33, 30], 10, 10, 3, 0.6) + foilLeaf([30, 33], 80, 10, 3, 0.6);
+  s += curl([48, 15], 4.5, 120, 1, 1.4) + curl([15, 48], 4.5, 330, -1, 1.4);
+  s += `<path d="${brush(cubic([28, 13], [36, 18], [42, 18], [46, 16], 12), taper(1.3, 0.2))}"/>`;
+  s += `<path d="${brush(cubic([13, 28], [18, 36], [18, 42], [16, 46], 12), taper(1.3, 0.2))}"/>`;
+  return svgDoc(100, 100, s);
+}
+
+/** Art-deco corner (top-left), 100×100. */
+function decoCorner(): string {
+  let s = `<path d="M3 97V3H97V4.4H4.4V97Z"/><path d="M10 97V10H97V10.7H10.7V97Z"/>`;
+  for (let i = 0; i <= 6; i++) {
+    const a = rad(i * 15);
+    const r0 = 6;
+    const rr = i % 2 ? 22 : 30;
+    s += `<path d="${brush([[10.4 + r0 * Math.cos(a), 10.4 + r0 * Math.sin(a)], [10.4 + rr * Math.cos(a), 10.4 + rr * Math.sin(a)]], (t) => 1.1 - 0.7 * t)}"/>`;
+  }
+  s += `<path d="M24 3.5L27 7L24 10.5L21 7Z"/><path d="M3.5 24L7 27L10.5 24L7 21Z"/>`;
+  return svgDoc(100, 100, s);
+}
+
+/** Night sky above the names (foil), 360×130. */
+function nightSky(): string {
+  const rand = rng(21);
+  let s = crescent([180, 56], 25);
+  const big: [number, number, number][] = [
+    [128, 40, 7], [236, 30, 8], [98, 74, 4.5], [266, 70, 5], [150, 92, 3.5], [212, 96, 4], [64, 38, 3.5], [300, 44, 4], [40, 80, 3], [324, 92, 3],
+  ];
+  for (const [x, y, r] of big) s += sparkle([x, y], r);
+  for (let i = 0; i < 24; i++) s += `<circle cx="${r1(12 + rand() * 336)}" cy="${r1(8 + rand() * 112)}" r="${r1(0.5 + rand() * 0.8)}"/>`;
+  for (const l of [[[64, 38], [98, 74], [128, 40]], [[236, 30], [266, 70], [300, 44]]] as P[][]) for (let i = 1; i < l.length; i++) s += `<path d="${brush([l[i - 1], l[i]], () => 0.45)}"/>`;
+  return svgDoc(360, 130, s);
+}
+
+/** Crescent and stars over the clouds (foil, champagne), 360×150. */
+function cieloFoil(): string {
+  let s = crescent([292, 40], 15, -20);
+  for (const [x, y, r] of [[96, 26, 6], [150, 18, 4], [224, 30, 5], [60, 84, 3.4], [318, 92, 3.6], [190, 70, 2.6]] as const) s += star5([x, y], r);
+  for (const [x, y] of [[120, 52], [256, 64], [36, 40], [340, 28], [170, 100]] as const) s += `<circle cx="${x}" cy="${y}" r="1.2"/>`;
+  return svgDoc(360, 150, s);
+}
+
+/** Gold confetti scattered around the top of the card, 360×210. */
+function confettiFoil(): string {
+  const rand = rng(33);
+  let s = '';
+  for (let i = 0; i < 70; i++) {
+    let x = 0;
+    let y = 0;
+    do {
+      x = rand() * 360;
+      y = rand() * 210;
+    } while (y > 40 && x > 46 && x < 314);
+    const rot = Math.round(rand() * 180);
+    const kind = i % 5;
+    if (kind === 0 || kind === 3) s += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(1.4 + rand() * 2.6)}"/>`;
+    else if (kind === 1) s += `<rect x="${r1(x)}" y="${r1(y)}" width="3.2" height="9" rx=".6" transform="rotate(${rot} ${r1(x)} ${r1(y)})"/>`;
+    else if (kind === 2) s += `<g transform="rotate(${rot} ${r1(x)} ${r1(y)})"><path d="${brush(cubic([x, y], [x + 6, y - 7], [x + 12, y + 7], [x + 18, y], 14), () => 1.6)}"/></g>`;
+    else s += sparkle([x, y], 3 + rand() * 2.5);
+  }
+  return svgDoc(360, 210, s);
+}
+
+// ---------------------------------------------------------------------------
+// Paintings
+// ---------------------------------------------------------------------------
+
+const OLIVE: Pair[] = [
+  ['#9aa97b', '#7d8d5e'],
+  ['#a9b78c', '#8a9a6b'],
+  ['#8c9c6c', '#6f7f52'],
+  ['#b4bf98', '#93a278'],
+];
+
+function olivePainting(): string {
+  const defs = wcSet(4, { seed: 3, alpha: 0.78 });
+  const half = (seed: number) => {
+    const stem = cubic([-14, 64], [36, 20], [100, 6], [170, 18], 48);
+    let s = paintSprig({ stem, leaves: 17, len: 40, wid: 0.16, spread: [28, 52], colors: OLIVE, stemColor: '#8a7a58', stemWidth: 3.2, seed, tip: true, belly: 0.36 });
+    for (const [t, dy] of [[0.42, 10], [0.66, 9], [0.56, 13]] as const) {
+      const { p, angle } = along(stem, t);
+      s += placeAt([p[0] + 1, p[1] + dy], angle + 74, `<ellipse cx="5" cy="0" rx="6.6" ry="4.4" fill="#59613a" filter="url(#w2)"/><ellipse cx="3.6" cy="-1.4" rx="1.8" ry="1" fill="#fff" opacity=".4"/>`);
+    }
+    return s;
+  };
+  return svgDoc(360, 120, half(4) + `<g transform="translate(360 0) scale(-1 1)">${half(9)}</g>`, defs);
+}
+
+function oliveSmall(): string {
+  const defs = wcSet(4, { seed: 5, alpha: 0.78 });
+  const half = (seed: number) => {
+    const stem = cubic([100, 34], [80, 30], [50, 26], [8, 28], 30);
+    return paintSprig({ stem, leaves: 9, len: 24, wid: 0.17, spread: [30, 48], colors: OLIVE, stemColor: '#8a7a58', stemWidth: 2.2, seed, tip: true, belly: 0.36 });
+  };
+  return svgDoc(200, 56, mirrorHalf(half(2)) + `<ellipse cx="100" cy="38" rx="5" ry="3.6" fill="#59613a" filter="url(#w2)"/>`, defs);
+}
+
+const LEMON = 'M-24 0C-24-13-10-18 4-17C16-16 24-9 26-3L30 0L26 3C24 9 16 16 4 17C-10 18-24 13-24 0Z';
+const LEMON_SHADE = 'M-23 3C-20 12-8 17 4 16C15 15 22 9 26 2L29 0L26-1C21 6 12 10 2 10C-8 10-17 8-23 3Z';
+const LEMON_GLOW = 'M-14-8C-8-13 2-14 10-12';
+const LEAF_GREEN: Pair[] = [
+  ['#5f8a45', '#46703a'],
+  ['#6f9a52', '#557f40'],
+  ['#4f7a3a', '#3c6330'],
+  ['#7aa35a', '#5d8744'],
+];
+
+function lemon(at: P, rot: number, s: number): string {
+  return placeAt(
+    at,
+    rot,
+    `<g filter="url(#w4)"><path d="${LEMON}" fill="#f7d65e"/></g><g filter="url(#b)"><path d="${LEMON_SHADE}" fill="#e2a62c" opacity=".62"/></g><path d="${LEMON_GLOW}" stroke="#fff6c8" stroke-width="4" stroke-linecap="round" fill="none" opacity=".55" filter="url(#b)"/><circle cx="-23" cy="0" r="2.2" fill="#7f8a3a" filter="url(#w0)"/>`,
+    s,
+  );
+}
+
+function lemonPainting(): string {
+  const defs = wcSet(5, { seed: 11, alpha: 0.8 }) + blurFilter('b', 2.2);
+  const half = (seed: number, flip: boolean) => {
+    const stem = cubic([-12, 18], [40, 4], [100, 10], [168, 30], 44);
+    let s = paintSprig({ stem, leaves: 13, len: 36, wid: 0.3, spread: [36, 62], colors: LEAF_GREEN, stemColor: '#7a6a4a', stemWidth: 3, seed, tip: true, belly: 0.3 });
+    const fruits: [number, number, number][] = flip ? [[0.3, 100, 1.05], [0.66, 76, 0.86]] : [[0.36, 94, 1], [0.7, 82, 0.8]];
+    for (const [t, r, k] of fruits) {
+      const { p } = along(stem, t);
+      s += lemon([p[0] + 2, p[1] + 30 * k], r, k);
+      s += paintLeaf([p[0] - 2, p[1] + 2], 120, 26, 8, LEAF_GREEN[1], 'w3', 0.7, 0.3);
+    }
+    return s;
+  };
+  return svgDoc(360, 130, half(2, false) + `<g transform="translate(360 0) scale(-1 1)">${half(7, true)}</g>`, defs);
+}
+
+function lemonSmall(): string {
+  const defs = wcSet(5, { seed: 13, alpha: 0.8 }) + blurFilter('b', 2);
+  const stem = cubic([60, 8], [80, 6], [100, 8], [130, 14], 20);
+  let s = paintSprig({ stem, leaves: 5, len: 26, wid: 0.3, spread: [40, 60], colors: LEAF_GREEN, stemColor: '#7a6a4a', stemWidth: 2.2, seed: 4, tip: true, belly: 0.3 });
+  s += lemon([98, 40], 96, 0.85);
+  return svgDoc(200, 74, s, defs);
+}
+
+const ROSE = { light: '#f4cbc6', mid: '#e7a5a0', dark: '#c7737b', deep: '#a9555f' };
+const SAGE: Pair[] = [
+  ['#a7b596', '#8c9c7b'],
+  ['#b9c5a9', '#9caf8c'],
+  ['#9aab8a', '#7f9170'],
+];
+
+function rose(c: P, R: number, rand: () => number): string {
+  let s = `<circle cx="${r1(c[0])}" cy="${r1(c[1])}" r="${r1(R)}" fill="${ROSE.light}" filter="url(#w1)"/>`;
+  let a = rand() * 360;
+  for (let k = 0; k < 9; k++) {
+    const rr = R * (0.86 - k * 0.085);
+    const arc = spiral(c, rr, rr * 0.9, a, 0.24 + rand() * 0.12, 14);
+    const col = k < 3 ? ROSE.mid : k < 6 ? ROSE.dark : ROSE.deep;
+    s += `<path d="${brush(arc, taper(R * (0.2 - k * 0.012), R * 0.03))}" fill="${col}" opacity="${r1(0.62 + k * 0.04)}" filter="url(#w${2 + (k % 3)})"/>`;
+    a += 137.5;
+  }
+  return s + `<circle cx="${r1(c[0] + R * 0.06)}" cy="${r1(c[1] - R * 0.04)}" r="${r1(R * 0.12)}" fill="${ROSE.deep}" filter="url(#w3)"/>`;
+}
+
+function rosebud(c: P, angle: number, s: number): string {
+  return placeAt(
+    c,
+    angle,
+    `<g filter="url(#w2)"><path d="M0 0C-6-4-6-14 0-20C6-14 6-4 0 0Z" fill="${ROSE.mid}"/></g><g filter="url(#w3)"><path d="M0 0C-3-6-2-12 1-18C3-10 3-5 0 0Z" fill="${ROSE.dark}"/></g><g filter="url(#w1)"><path d="M0 0C-7 2-9-6-6-10C-4-5-2-2 0 0ZM0 0C7 2 9-6 6-10C4-5 2-2 0 0Z" fill="#9caf8c"/></g>`,
+    s,
+  );
+}
+
+function roseCluster(seed: number): string {
+  const rand = rng(seed);
+  let s = '';
+  const stems: P[][] = [cubic([-6, 30], [30, 30], [70, 44], [118, 40], 30), cubic([10, -6], [20, 30], [40, 60], [46, 104], 30), cubic([30, 10], [70, 0], [110, 4], [150, 16], 30)];
+  stems.forEach((stem, i) => {
+    s += paintSprig({ stem, leaves: 7 + i, len: 24, wid: 0.36, spread: [38, 64], colors: SAGE, stemColor: '#8c9c7b', stemWidth: 1.6, seed: seed + i, tip: true, belly: 0.3 });
+  });
+  s += rose([26, 24], 30, rand) + rose([74, 26], 20, rand) + rose([30, 70], 15, rand);
+  s += rosebud([110, 38], 70, 0.9) + rosebud([52, 96], 160, 0.8);
+  for (let i = 0; i < 9; i++) s += `<circle cx="${r1(90 + rand() * 50)}" cy="${r1(46 + rand() * 30)}" r="${r1(1.6 + rand() * 1.4)}" fill="${ROSE.mid}" opacity=".7" filter="url(#w2)"/>`;
+  return s;
+}
+
+function rosePainting(): string {
+  const defs = wcSet(5, { seed: 17, alpha: 0.8 });
+  return svgDoc(360, 150, roseCluster(3) + `<g transform="translate(360 0) scale(-1 1)">${roseCluster(8)}</g>`, defs);
+}
+
+function roseSmall(): string {
+  const defs = wcSet(5, { seed: 19, alpha: 0.8 });
+  const rand = rng(5);
+  let s = '';
+  for (const m of [1, -1]) {
+    const stem = cubic([100, 34], [80, 30], [60, 32], [30, 26], 20).map(([x, y]) => [m > 0 ? x : 200 - x, y] as P);
+    s += paintSprig({ stem, leaves: 6, len: 20, wid: 0.36, spread: [38, 60], colors: SAGE, stemColor: '#8c9c7b', stemWidth: 1.4, seed: 7 + m, tip: true, belly: 0.3 });
+  }
+  s += rose([100, 32], 15, rand);
+  return svgDoc(200, 64, s, defs);
+}
+
+function cloud(x: number, y: number, k: number, fill: string, f: string): string {
+  const bumps: [number, number, number][] = [[0, 0, 13], [15, -9, 16], [33, -4, 13], [46, 2, 10], [24, 5, 12], [-11, 4, 9], [8, 6, 11]];
+  return `<g filter="url(#${f})">${bumps.map(([bx, by, br]) => `<circle cx="${r1(x + bx * k)}" cy="${r1(y + by * k)}" r="${r1(br * k)}" fill="${fill}"/>`).join('')}</g>`;
+}
+
+function cloudPainting(): string {
+  const defs = wcSet(3, { seed: 29, alpha: 0.62, rim: 0.9, disp: 7, freq: 0.035 }) + blurFilter('b', 1.2);
+  let s = '';
+  for (const [x, y, k, c1, c2] of [
+    [26, 60, 1.5, '#c9d9eb', '#9fb8d8'],
+    [196, 44, 1.2, '#d0dfef', '#a7bfdd'],
+    [118, 104, 0.85, '#d8e5f2', '#b2c7e2'],
+    [300, 104, 0.9, '#d2e0ef', '#a9c0dd'],
+  ] as const) {
+    // shadowed underside first, then the lit body slightly higher
+    s += cloud(x + 1, y + 5 * k, k, c2, 'w1') + cloud(x, y, k * 0.93, c1, 'w0');
+    s += `<g filter="url(#b)" opacity=".55">${cloud(x - 2 * k, y - 4 * k, k * 0.6, '#ffffff', 'w2')}</g>`;
+  }
+  return svgDoc(360, 150, s, defs);
+}
+
+/** Red ribbon tied under the laurel crest, same frame as the wreath. */
+function ribbonPainting(): string {
+  const defs = wcSet(3, { seed: 23, alpha: 0.86 });
+  const red = '#a3252b';
+  const dark = '#7c171c';
+  const s =
+    `<g filter="url(#w0)"><path d="M100 178C88 166 70 164 68 172C66 182 86 186 100 180Z" fill="${red}"/><path d="M100 178C112 166 130 164 132 172C134 182 114 186 100 180Z" fill="${red}"/></g>` +
+    `<g filter="url(#w1)"><path d="M97 181L84 199L90 197L93 203L101 183Z" fill="${dark}"/><path d="M103 181L116 199L110 197L107 203L99 183Z" fill="${dark}"/></g>` +
+    `<g filter="url(#w2)"><ellipse cx="100" cy="179" rx="5.5" ry="4.6" fill="${dark}"/></g>`;
+  return svgDoc(200, 200, s, defs);
+}
+
+// ---------------------------------------------------------------------------
+// Envelope liners (tiles)
+// ---------------------------------------------------------------------------
+
+function liner(id: ThemeId): { img: string; size: number } {
+  switch (id) {
+    case 'avorio': {
+      const g = '#c9a65f';
+      return {
+        size: 30,
+        img: svgDoc(30, 30, `<rect width="30" height="30" fill="#5c1824"/><path d="M0 15L15 0L30 15L15 30Z" fill="none" stroke="${g}" stroke-width=".7" opacity=".75"/><circle cx="15" cy="15" r="2.2" fill="${g}" opacity=".8"/><circle cx="0" cy="0" r="1" fill="${g}"/><circle cx="30" cy="0" r="1" fill="${g}"/><circle cx="0" cy="30" r="1" fill="${g}"/><circle cx="30" cy="30" r="1" fill="${g}"/>`),
+      };
+    }
+    case 'ulivo': {
+      const rand = rng(4);
+      let s = `<rect width="64" height="64" fill="#cfd6c0"/>`;
+      for (const [x, y, a] of [[8, 12, 30], [40, 6, 150], [22, 40, -40], [52, 44, 60], [4, 52, 200]] as const) s += paintLeaf([x, y], a, 18, 3.2, pick(OLIVE, rand), `w${Math.floor(rand() * 3)}`, 0.5, 0.36);
+      s += `<circle cx="36" cy="28" r="3" fill="#59613a" opacity=".85"/>`;
+      return { size: 64, img: svgDoc(64, 64, s, wcSet(3, { seed: 31, alpha: 0.8, disp: 3 })) };
+    }
+    case 'limoni': {
+      const b = '#1f3f78';
+      return {
+        size: 56,
+        img: svgDoc(
+          56,
+          56,
+          `<rect width="56" height="56" fill="#fbfaf5"/><path d="M28 4L52 28L28 52L4 28Z" fill="none" stroke="${b}" stroke-width="1.6"/><path d="M28 13L43 28L28 43L13 28Z" fill="none" stroke="#5b86c4" stroke-width="1"/><circle cx="28" cy="28" r="6" fill="#f2c94c"/><circle cx="28" cy="28" r="2.4" fill="${b}"/><path d="M0 0h10M46 0h10M0 56h10M46 56h10M0 0v10M56 0v10M0 46v10M56 46v10" stroke="${b}" stroke-width="4"/><path d="M28 0v4M28 52v4M0 28h4M52 28h4" stroke="${b}" stroke-width="1.4"/>`,
+        ),
+      };
+    }
+    case 'notte':
+      return { size: 64, img: svgDoc(64, 64, `<rect width="64" height="64" fill="#141a35"/><g fill="#d6b56e">${sparkle([16, 18], 4.5)}${sparkle([46, 44], 3)}<circle cx="44" cy="12" r=".9"/><circle cx="10" cy="48" r=".8"/><circle cx="56" cy="26" r=".7"/><circle cx="28" cy="56" r=".9"/></g>`) };
+    case 'alloro': {
+      const stem = cubic([10, 34], [16, 26], [24, 18], [34, 10], 12);
+      let sprig = `<path d="${brush(stem, taperEnd(1, 0.3))}"/>`;
+      for (let i = 0; i < 4; i++) {
+        const { p, angle } = along(stem, 0.2 + i * 0.25);
+        sprig += foilLeaf(p, angle - 40, 7, 2.4, 0.4) + foilLeaf(p, angle + 40, 7, 2.4, 0.4);
+      }
+      return { size: 44, img: svgDoc(44, 44, `<rect width="44" height="44" fill="#7d1a1f"/><g fill="#d4b06a" opacity=".85">${sprig}</g>`) };
+    }
+    case 'cielo':
+      return {
+        size: 72,
+        img: svgDoc(72, 72, `<rect width="72" height="72" fill="#d6e2ef"/>${cloud(14, 20, 0.45, '#fff', 's0')}${cloud(44, 54, 0.38, '#f3f7fb', 's0')}<g fill="#cdb98a">${star5([52, 16], 3)}${star5([16, 54], 2.4)}</g>`, softWash('s0', 3, 1)),
+      };
+    case 'cipria': {
+      const bloom = (x: number, y: number, r: number) => {
+        let s = '';
+        for (let i = 0; i < 5; i++) {
+          const a = rad(i * 72 - 90);
+          const cx = r1(x + r * Math.cos(a));
+          const cy = r1(y + r * Math.sin(a));
+          s += `<ellipse cx="${cx}" cy="${cy}" rx="${r1(r * 0.8)}" ry="${r1(r * 0.55)}" transform="rotate(${i * 72} ${cx} ${cy})"/>`;
+        }
+        return s;
+      };
+      return { size: 44, img: svgDoc(44, 44, `<rect width="44" height="44" fill="#eed2ce"/><g fill="#c79a8a" opacity=".9">${bloom(12, 12, 3)}${bloom(34, 32, 2.4)}</g><circle cx="12" cy="12" r="1.3" fill="#fbeee9"/><circle cx="34" cy="32" r="1" fill="#fbeee9"/>`) };
+    }
+    case 'spiga': {
+      let s = '';
+      for (const [x, y] of [[10, 10], [30, 30]] as const) {
+        s += `<path d="M${x} ${y + 9}L${x} ${y - 9}" stroke="#b08a4a" stroke-width=".6"/>`;
+        for (let i = 0; i < 3; i++) s += foilLeaf([x, y + 4 - i * 4], -60, 5, 1.8, 0.3) + foilLeaf([x, y + 4 - i * 4], -120, 5, 1.8, 0.3);
+      }
+      return { size: 40, img: svgDoc(40, 40, `<rect width="40" height="40" fill="#efe3c7"/><g fill="#b08a4a">${s}</g>`) };
+    }
+    case 'coriandoli':
+      return {
+        size: 60,
+        img: svgDoc(60, 60, `<rect width="60" height="60" fill="#171514"/><g fill="#c9a65f"><circle cx="10" cy="12" r="2.4"/><circle cx="44" cy="40" r="1.6"/><rect x="38" y="8" width="2.6" height="8" rx=".5" transform="rotate(35 39 12)"/><rect x="14" y="40" width="2.6" height="8" rx=".5" transform="rotate(-30 15 44)"/>${sparkle([30, 26], 3)}<circle cx="52" cy="54" r="1"/></g>`),
+      };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Per-theme recipes
+// ---------------------------------------------------------------------------
+
+interface Recipe {
+  /** watercolor painting at the top of the invitation */
+  paintTop?: string;
+  /** gold foil at the top of the invitation (same frame as the painting) */
+  foilTop?: string;
+  /** wreath around the monogram, plus an optional painted detail in the same 200×200 frame */
+  crest?: string;
+  crestPaint?: string;
+  divider: string;
+  /** top-left corner flourish, mirrored to the other three corners */
+  corner?: string;
+  /** small painting closing the details card */
+  paintEnd?: string;
+  scatter?: string;
+  seal: WaxColors;
+  grain: { light?: boolean; amount?: number; cloud?: number };
+  linen: number;
+}
+
+const recipeCache = new Map<ThemeId, Recipe>();
+function recipe(id: ThemeId): Recipe {
+  let r = recipeCache.get(id);
+  if (!r) recipeCache.set(id, (r = drawRecipe(id)));
+  return r;
+}
+
+function drawRecipe(id: ThemeId): Recipe {
+  switch (id) {
+    case 'avorio':
+      return { crest: laurelWreath(), divider: filigreeDivider(), corner: filigreeCorner(), seal: { base: '#6e1f2b', light: '#a54553', dark: '#3e0c15' }, grain: {}, linen: 0.7 };
+    case 'ulivo':
+      return { paintTop: olivePainting(), divider: sprigDivider('olive'), paintEnd: oliveSmall(), seal: { base: '#5d6b45', light: '#8a9a69', dark: '#38422a' }, grain: {}, linen: 0.7 };
+    case 'limoni':
+      return { paintTop: lemonPainting(), divider: sprigDivider('leaf'), paintEnd: lemonSmall(), seal: { base: '#1f3f78', light: '#4a6fb0', dark: '#0f2148' }, grain: { amount: 0.06 }, linen: 0.7 };
+    case 'notte':
+      return { foilTop: nightSky(), divider: decoDivider(), corner: decoCorner(), seal: { base: '#b8924a', light: '#ecd38c', dark: '#7a5b25' }, grain: { light: true, amount: 0.06 }, linen: 0.7 };
+    case 'alloro':
+      return { crest: laurelWreath(false), crestPaint: ribbonPainting(), divider: sprigDivider('laurel'), seal: { base: '#8f1d22', light: '#c4454a', dark: '#560d12' }, grain: {}, linen: 0.7 };
+    case 'cielo':
+      return { paintTop: cloudPainting(), foilTop: cieloFoil(), divider: starDivider(), seal: { base: '#7f9cc4', light: '#b3c8e3', dark: '#4d6890' }, grain: { amount: 0.06 }, linen: 0.7 };
+    case 'cipria':
+      return { paintTop: rosePainting(), divider: filigreeDivider(), paintEnd: roseSmall(), seal: { base: '#b26c74', light: '#d99aa1', dark: '#7a3f47' }, grain: {}, linen: 0.7 };
+    case 'spiga':
+      return { crest: wheatWreath(), divider: wheatDivider(), seal: { base: '#a77b3c', light: '#d5a965', dark: '#6b4b1f' }, grain: {}, linen: 0.7 };
+    case 'coriandoli':
+      return { scatter: confettiFoil(), divider: decoDivider(), corner: decoCorner(), seal: { base: '#b8924a', light: '#ecd38c', dark: '#7a5b25' }, grain: {}, linen: 0.7 };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public API: markup hooks + inline CSS
 // ---------------------------------------------------------------------------
 
 export interface Ornaments {
+  /** artwork above the names */
   top: string;
+  /** monogram crest above the names (the view adds the initials) */
+  crest: boolean;
   divider: string;
+  /** artwork closing the details card */
   bottom: string;
-  /** decorative layer behind the hero (absolute) */
+  /** decorative layer behind the hero */
   scatter?: string;
-  /** emblem shown above the names (e.g. laurel wreath) */
-  emblem?: string;
 }
 
-function build(id: ThemeId): Ornaments {
-  switch (id) {
-    case 'ulivo': {
-      const olive: LeafStyle = { fills: ['#8f9d6b', '#a7b384', '#7b8a58'], vein: '#6b7848' };
-      const b = branch({ ...olive, from: [178, 84], ctrl: [112, 36], to: [16, 50], count: 13, len: 30, wid: 5, angle: 40, stem: '#7d6c4f', stemWidth: 1.5, taper: 0.45, seed: 7, tip: true });
-      const olives = `<ellipse cx="118" cy="66" rx="4.2" ry="6" fill="#55603b" transform="rotate(20 118 66)"/><ellipse cx="74" cy="56" rx="3.8" ry="5.5" fill="#4b5436" transform="rotate(-10 74 56)"/>`;
-      const small = branch({ ...olive, from: [12, 14], ctrl: [60, 4], to: [108, 14], count: 7, len: 18, wid: 3.4, angle: 42, stem: '#7d6c4f', stemWidth: 1.1, taper: 0.3, seed: 2, tip: true });
-      const top = svg(360, 110, mirror(b + olives, 360) + `<circle cx="180" cy="86" r="3" fill="#55603b"/>`, 'orn orn-top');
-      return { top, bottom: top.replace('orn-top', 'orn-bottom'), divider: svg(120, 28, small, 'orn orn-div') };
-    }
-    case 'avorio': {
-      const line: LeafStyle = { fills: [], stroke: '#b08d4f', strokeWidth: 1 };
-      const b = branch({ ...line, from: [172, 70], ctrl: [120, 40], to: [40, 44], count: 11, len: 22, wid: 6, angle: 44, stem: '#b08d4f', stemWidth: 1, taper: 0.4, seed: 11, tip: true });
-      const dia = `<path d="M180 62l7 8-7 8-7-8z" fill="none" stroke="#b08d4f"/><circle cx="180" cy="70" r="1.6" fill="#b08d4f"/>`;
-      const top = svg(360, 100, mirror(b, 360) + dia, 'orn orn-top');
-      const divider = svg(160, 20, `<path d="M8 10H66M94 10H152" stroke="#b08d4f" stroke-width=".8"/><path d="M80 3l6 7-6 7-6-7z" fill="none" stroke="#b08d4f"/><circle cx="80" cy="10" r="1.4" fill="#b08d4f"/>`, 'orn orn-div');
-      return { top, bottom: top.replace('orn-top', 'orn-bottom'), divider };
-    }
-    case 'limoni': {
-      const lf: LeafStyle = { fills: ['#3f6b35', '#56843f', '#6e9a4f'], vein: '#2f5228' };
-      const b = branch({ ...lf, from: [176, 46], ctrl: [120, 6], to: [24, 30], count: 9, len: 30, wid: 10, angle: 46, stem: '#5b4a33', stemWidth: 1.8, taper: 0.35, seed: 5, tip: true });
-      const fruits = lemon(128, 50, 100, 1) + lemon(84, 52, 76, 0.9);
-      const top = svg(360, 96, mirror(b + fruits, 360), 'orn orn-top');
-      const small = branch({ ...lf, from: [30, 22], ctrl: [44, 10], to: [58, 6], count: 3, len: 16, wid: 6, angle: 50, stem: '#5b4a33', stemWidth: 1.2, seed: 9, tip: true });
-      const divider = svg(120, 36, mirror(small, 120) + lemon(60, 22, 90, 0.62), 'orn orn-div');
-      return { top, bottom: '', divider };
-    }
-    case 'notte': {
-      const rand = rng(21);
-      let sky = crescent(180, 46, 22, '#d8b46a');
-      const spots: [number, number, number][] = [
-        [120, 30, 6], [240, 26, 7], [92, 62, 4], [272, 66, 4.5], [150, 80, 3], [214, 84, 3.5], [60, 34, 3], [304, 38, 3.5], [36, 74, 2.5], [330, 80, 2.5],
-      ];
-      for (const [x, y, s] of spots) sky += sparkle(x, y, s, '#d8b46a');
-      for (let i = 0; i < 16; i++) sky += `<circle cx="${r1(20 + rand() * 320)}" cy="${r1(10 + rand() * 90)}" r="${r1(0.6 + rand() * 0.9)}" fill="#f3ecdc" opacity="${r1(0.35 + rand() * 0.5)}"/>`;
-      const divider = svg(120, 24, sparkle(40, 12, 4, '#d8b46a') + sparkle(60, 12, 7, '#d8b46a') + sparkle(80, 12, 4, '#d8b46a'), 'orn orn-div');
-      return { top: svg(360, 110, sky, 'orn orn-top'), bottom: '', divider };
-    }
-    case 'alloro': {
-      const laurel: LeafStyle = { fills: ['#5e7d4a', '#6f8f57', '#4f6b3e'], vein: '#3e5530' };
-      const wreath =
-        wreathSide(100, 100, 66, 100, 262, laurel, 3, 11) +
-        `<g transform="translate(200 0) scale(-1 1)">${wreathSide(100, 100, 66, 100, 262, laurel, 4, 11)}</g>` +
-        `<path d="M100 164c-10-10-24-10-26-2 0 7 14 8 26 2zm0 0c10-10 24-10 26-2 0 7-14 8-26 2z" fill="#9b1c1c"/><path d="M96 166l-12 22 7-2 4 7 7-25zm8 0l12 22-7-2-4 7-7-25z" fill="#7e1515"/><circle cx="100" cy="165" r="4" fill="#b52a2a"/>` +
-        `<g transform="translate(100 96)"><path d="M-34 -6L0 -20 34 -6 0 8Z" fill="#2d2522"/><path d="M-20 0v13c0 6 40 6 40 0V0L0 8z" fill="#2d2522"/><path d="M26 -3v18" stroke="#c9a45c" stroke-width="1.6"/><circle cx="26" cy="17" r="3" fill="#c9a45c"/></g>`;
-      const sprig = branch({ ...laurel, from: [20, 14], ctrl: [60, 6], to: [100, 14], count: 6, len: 13, wid: 4.5, angle: 36, stem: '#6d5a3a', stemWidth: 1, pairs: true, seed: 6, taper: 0.3, tip: true });
-      return { top: '', emblem: svg(200, 200, wreath, 'orn orn-emblem'), bottom: '', divider: svg(120, 28, sprig, 'orn orn-div') };
-    }
-    case 'cielo': {
-      const rand = rng(8);
-      let body = cloud(52, 58, 1.15, '#ffffff', '#d8e7f6') + cloud(250, 40, 0.95, '#ffffff', '#d8e7f6') + cloud(160, 78, 0.7, '#ffffff', '#d8e7f6');
-      body += crescent(318, 34, 13, '#f2cf73');
-      for (const [x, y, s] of [[140, 26, 6], [202, 18, 4.5], [104, 90, 4], [300, 84, 5], [28, 22, 4]] as const) body += star(x, y, s, s * 0.45, '#f2cf73');
-      for (let i = 0; i < 12; i++) body += `<circle cx="${r1(10 + rand() * 340)}" cy="${r1(8 + rand() * 96)}" r="${r1(1 + rand() * 1.4)}" fill="#bcd5ee"/>`;
-      const divider = svg(140, 24, `<path d="M10 12H52M88 12H130" stroke="#bcd5ee" stroke-width="2" stroke-dasharray="1 6" stroke-linecap="round"/>` + star(70, 12, 8, 3.6, '#f2cf73'), 'orn orn-div');
-      return { top: svg(360, 110, body, 'orn orn-top'), bottom: '', divider };
-    }
-    case 'cipria': {
-      const rand = rng(14);
-      const lf: LeafStyle = { fills: ['#b7c4a8', '#a3b394', '#c8d3bb'] };
-      let b = branch({ ...lf, from: [176, 70], ctrl: [116, 30], to: [26, 46], count: 12, len: 16, wid: 5, angle: 46, stem: '#a3b394', stemWidth: 1.2, taper: 0.3, seed: 15, tip: true });
-      const petals = ['#eab3b8', '#f3c9cc', '#e39aa2'];
-      for (const [t, r] of [[0.18, 6.5], [0.42, 5.5], [0.66, 6], [0.88, 4.5]] as const) {
-        const [x, y] = bez([176, 70], [116, 30], [26, 46], t);
-        b += blossom(r1(x), r1(y - 2), r, petals, '#d6a656', rand);
-      }
-      const top = svg(360, 104, mirror(b, 360) + blossom(180, 70, 7.5, petals, '#d6a656', rand), 'orn orn-top');
-      const divider = svg(120, 30, branch({ ...lf, from: [24, 16], ctrl: [60, 6], to: [96, 16], count: 6, len: 11, wid: 3.6, angle: 46, stem: '#a3b394', stemWidth: 1, seed: 3 }) + blossom(60, 13, 4.8, petals, '#d6a656', rand), 'orn orn-div');
-      return { top, bottom: top.replace('orn-top', 'orn-bottom'), divider };
-    }
-    case 'spiga': {
-      const grain: LeafStyle = { fills: ['#d4b06a', '#c99e52', '#dcbc7c'], awn: { color: '#cfb07a', len: 9 } };
-      const ear = (seed: number) =>
-        `<path d="M180 104Q150 70 104 22" fill="none" stroke="#b8955a" stroke-width="1.4" stroke-linecap="round"/>` +
-        branch({ ...grain, from: [150, 64], ctrl: [128, 42], to: [104, 22], count: 7, len: 11, wid: 3.8, angle: 24, stem: '#b8955a', stemWidth: 1.2, pairs: true, seed, taper: 0.25, start: 0.05, tip: true }) +
-        leaf([170, 92], 205, 34, 4.5, { fills: ['#c7ad74'] }, rng(seed + 1));
-      const top = svg(360, 110, mirror(ear(4), 360) + `<circle cx="180" cy="104" r="2.5" fill="#b8955a"/>`, 'orn orn-top');
-      const divider = svg(120, 26, branch({ ...grain, from: [18, 13], ctrl: [60, 13], to: [100, 13], count: 6, len: 8, wid: 3, angle: 26, stem: '#b8955a', stemWidth: 1, pairs: true, seed: 2, taper: 0.2, start: 0.35, tip: true, awn: { color: '#cfb07a', len: 6 } }), 'orn orn-div');
-      return { top, bottom: '', divider };
-    }
-    case 'coriandoli': {
-      const rand = rng(33);
-      const colors = ['#ff5d73', '#ffb627', '#3ec1d3', '#7b61ff', '#2ec4b6', '#ff8c42'];
-      let body = '';
-      for (let i = 0; i < 46; i++) {
-        // keep the middle free: names and eyebrow live there
-        let x = 0;
-        let y = 0;
-        do {
-          x = r1(rand() * 360);
-          y = r1(rand() * 200);
-        } while (y > 46 && x > 58 && x < 302);
-        const c = colors[i % colors.length];
-        const rot = Math.round(rand() * 180);
-        const kind = i % 4;
-        if (kind === 0) body += `<rect x="${x}" y="${y}" width="5" height="11" rx="1.5" fill="${c}" transform="rotate(${rot} ${x} ${y})"/>`;
-        else if (kind === 1) body += `<circle cx="${x}" cy="${y}" r="${r1(2.5 + rand() * 2)}" fill="${c}"/>`;
-        else if (kind === 2) body += `<path d="M${x} ${y}q4-5 8 0t8 0" fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round" transform="rotate(${rot} ${x} ${y})"/>`;
-        else body += `<path d="M${x} ${y}l6 10h-12z" fill="${c}" transform="rotate(${rot} ${x} ${y})"/>`;
-      }
-      const dots = colors.slice(0, 5).map((c, i) => `<circle cx="${30 + i * 15}" cy="10" r="4" fill="${c}"/>`).join('');
-      return { top: '', scatter: svg(360, 200, body, 'orn orn-scatter'), bottom: '', divider: svg(120, 20, dots, 'orn orn-div') };
-    }
+const viewBox = (svg: string) => svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/)!.slice(1, 3).join('/');
+
+/** Mirrors a 100×100 corner drawing horizontally and/or vertically. */
+const flipCorner = (c: string, sx: number, sy: number) =>
+  c.replace(/(<svg[^>]*>)([\s\S]*)(<\/svg>)/, `$1<g transform="translate(${sx < 0 ? 100 : 0} ${sy < 0 ? 100 : 0}) scale(${sx} ${sy})">$2</g>$3`);
+
+function buildOrnaments(id: ThemeId): Ornaments {
+  const r = recipe(id);
+  return {
+    top: r.paintTop || r.foilTop ? '<div class="art art-top" aria-hidden="true"></div>' : '',
+    crest: Boolean(r.crest),
+    divider: '<div class="art art-div" aria-hidden="true"></div>',
+    bottom: r.paintEnd ? '<div class="art art-end" aria-hidden="true"></div>' : '',
+    scatter: r.scatter ? '<div class="scatter" aria-hidden="true"></div>' : undefined,
+  };
+}
+
+function buildCss(id: ThemeId): string {
+  const r = recipe(id);
+  const t = `.t-${id}`;
+  const ln = liner(id);
+  const rules: string[] = [];
+  const vars = [
+    `--grain:${dataUri(paperGrain({ ...r.grain, seed: 3 }))}`,
+    `--linen:${dataUri(linen(200, 9, r.linen))}`,
+    `--liner:${dataUri(ln.img)}`,
+    `--liner-size:${ln.size}px`,
+    `--seal-img:${dataUri(waxSeal(r.seal, id.length * 7 + 3))}`,
+    `--m-div:${dataUri(r.divider)}`,
+    `--div-ar:${viewBox(r.divider)}`,
+  ];
+  rules.push(`${t}{${vars.join(';')}}`);
+  if (r.paintTop || r.foilTop) {
+    rules.push(`${t} .art-top{aspect-ratio:${viewBox((r.paintTop || r.foilTop)!)}${r.paintTop ? `;--paint:${dataUri(r.paintTop)}` : ''}}`);
+    if (r.foilTop) rules.push(`${t} .art-top::after{content:"";-webkit-mask-image:${dataUri(r.foilTop)};mask-image:${dataUri(r.foilTop)}}`);
   }
+  if (r.crest) {
+    rules.push(`${t} .crest::before{-webkit-mask-image:${dataUri(r.crest)};mask-image:${dataUri(r.crest)}}`);
+    if (r.crestPaint) rules.push(`${t} .crest{--paint:${dataUri(r.crestPaint)}}`);
+  }
+  if (r.corner) {
+    const [tl, tr, bl, br] = [flipCorner(r.corner, 1, 1), flipCorner(r.corner, -1, 1), flipCorner(r.corner, 1, -1), flipCorner(r.corner, -1, -1)].map(dataUri);
+    const layers = `${tl} top left/var(--corner) no-repeat,${tr} top right/var(--corner) no-repeat,${bl} bottom left/var(--corner) no-repeat,${br} bottom right/var(--corner) no-repeat`;
+    rules.push(`${t} .sheet-main::after{content:"";-webkit-mask:${layers};mask:${layers}}`);
+  }
+  if (r.paintEnd) rules.push(`${t} .art-end{aspect-ratio:${viewBox(r.paintEnd)};--paint:${dataUri(r.paintEnd)}}`);
+  if (r.scatter) rules.push(`${t} .scatter{-webkit-mask-image:${dataUri(r.scatter)};mask-image:${dataUri(r.scatter)}}`);
+  return rules.join('\n');
 }
 
-const cache = new Map<ThemeId, Ornaments>();
+const ornCache = new Map<ThemeId, Ornaments>();
 export function ornaments(id: ThemeId): Ornaments {
-  let o = cache.get(id);
-  if (!o) {
-    o = build(id);
-    cache.set(id, o);
-  }
+  let o = ornCache.get(id);
+  if (!o) ornCache.set(id, (o = buildOrnaments(id)));
   return o;
 }
 
-// ---------------------------------------------------------------------------
-// Envelope liner patterns (inline CSS, theme specific)
-// ---------------------------------------------------------------------------
-
-const dataUri = (s: string) => `url("data:image/svg+xml,${encodeURIComponent(s)}")`;
-
-const LINERS: Record<ThemeId, string> = {
-  ulivo: dataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44"><rect width="44" height="44" fill="#dfe4cf"/><path d="M8 30q6-12 18-14" fill="none" stroke="#a7b384" stroke-width="1.2"/><path d="M14 22c2-4 6-5 9-4-2 3-5 5-9 4zM20 18c3-3 7-3 9-1-3 2-6 3-9 1z" fill="#8f9d6b"/></svg>`,
-  ),
-  avorio: dataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"><rect width="22" height="22" fill="#efe3cc"/><circle cx="11" cy="11" r="1.3" fill="#c7a86d"/></svg>`,
-  ),
-  limoni: dataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="#fff"/><path d="M24 4l20 20-20 20L4 24z" fill="none" stroke="#1f4e8c" stroke-width="2"/><circle cx="24" cy="24" r="6" fill="#1f4e8c"/><circle cx="24" cy="24" r="2.5" fill="#f4c542"/><path d="M0 0h8M40 0h8M0 48h8M40 48h8M0 0v8M48 0v8M0 40v8M48 40v8" stroke="#3d7cc9" stroke-width="3"/></svg>`,
-  ),
-  notte: dataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="#1e2747"/><path d="M10 6q0 4 4 4-4 0-4 4 0-4-4-4 4 0 4-4z" fill="#d8b46a"/><circle cx="30" cy="28" r="1.2" fill="#d8b46a"/></svg>`,
-  ),
-  alloro: dataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><rect width="26" height="26" fill="#8e1b1b"/><circle cx="13" cy="13" r="1.4" fill="#d8b46a"/></svg>`,
-  ),
-  cielo: dataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" fill="#cfe1f3"/><circle cx="9" cy="9" r="2" fill="#fff"/><path d="M27 21l1.5 3 3.3.5-2.4 2.3.6 3.3-3-1.6-3 1.6.6-3.3-2.4-2.3 3.3-.5z" fill="#f2cf73"/></svg>`,
-  ),
-  cipria: dataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" fill="#f6dfe1"/><g fill="#eab3b8"><circle cx="18" cy="14" r="3"/><circle cx="22" cy="17" r="3"/><circle cx="20" cy="22" r="3"/><circle cx="15" cy="21" r="3"/><circle cx="14" cy="16" r="3"/></g><circle cx="18" cy="18" r="1.8" fill="#d6a656"/></svg>`,
-  ),
-  spiga: dataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect width="30" height="30" fill="#efe2c4"/><path d="M15 6c2 2 2 5 0 7-2-2-2-5 0-7zM15 15c2 2 2 5 0 7-2-2-2-5 0-7z" fill="#d4b06a"/></svg>`,
-  ),
-  coriandoli: dataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="#fff3d6"/><circle cx="8" cy="8" r="3" fill="#ff5d73"/><rect x="24" y="6" width="4" height="9" rx="1" fill="#3ec1d3" transform="rotate(30 26 10)"/><circle cx="30" cy="30" r="3" fill="#7b61ff"/><rect x="8" y="24" width="4" height="9" rx="1" fill="#ffb627" transform="rotate(-25 10 28)"/></svg>`,
-  ),
-};
-
+const cssCache = new Map<ThemeId, string>();
+/** Theme artwork as CSS (inlined in the page, so only the chosen theme is downloaded). */
 export function themeInlineCss(id: ThemeId): string {
-  return `.t-${id}{--liner:${LINERS[id]}}`;
+  let c = cssCache.get(id);
+  if (!c) cssCache.set(id, (c = buildCss(id)));
+  return c;
 }

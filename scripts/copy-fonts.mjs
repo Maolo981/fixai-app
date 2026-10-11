@@ -4,7 +4,8 @@ import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const FONTS = {
-  'cormorant-garamond': ['400-normal', '400-italic', '500-normal', '600-normal'],
+  'cormorant-garamond': ['400-normal', '400-italic', '500-normal', '500-italic', '600-normal'],
+  'cinzel': ['400-normal', '500-normal', '600-normal'],
   'pinyon-script': ['400-normal'],
   'italiana': ['400-normal'],
   'dm-serif-display': ['400-normal', '400-italic'],

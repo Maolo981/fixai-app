@@ -4,7 +4,7 @@ import { BRAND, EVENT_BY_ID } from '../config';
 import { displayNames, initials } from '../model';
 import { THEME_BY_ID, ornaments, themeInlineCss } from '../themes';
 import type { GuestRow, InviteData, Invitation, RsvpRow } from '../types';
-import { formatDateLong, formatDateShort, formatDayMonth, formatIban, formatTime, mapsLink, romeToUtc, waLink } from '../util';
+import { formatDateLong, formatDateParts, formatDateShort, formatDayMonth, formatIban, formatTime, mapsLink, romeToUtc, waLink } from '../util';
 
 export type InviteMode = 'live' | 'preview' | 'demo';
 
@@ -28,6 +28,20 @@ function namesSizeClass(d: InviteData): string {
   if (longest <= 10) return 'ns-l';
   if (longest <= 14) return 'ns-m';
   return 'ns-s';
+}
+
+/** Initials for the crest and the wax seal: the script "&" reads badly at small sizes, so it gets its own face. */
+function Monogram({ d }: { d: Pick<InviteData, 'name1' | 'name2'> }) {
+  const [a, b] = initials(d).split('&');
+  return b ? (
+    <>
+      {a}
+      <span class="mono-amp">&amp;</span>
+      {b}
+    </>
+  ) : (
+    <>{a}</>
+  );
 }
 
 function Countdown({ start }: { start: Date }) {
@@ -70,6 +84,7 @@ function RsvpSection(p: InviteViewProps) {
   const children = prev && prev.attending ? prev.children : 0;
   return (
     <section class="rsvp sec" id="rsvp">
+      <p class="kicker">R.S.V.P.</p>
       <h2 class="sec-title">Conferma la tua presenza</h2>
       {d.rsvpDeadline && p.rsvp.open && (
         <p class="deadline">
@@ -101,11 +116,11 @@ function RsvpSection(p: InviteViewProps) {
           <legend class="sr-only">Parteciperai?</legend>
           <label class="choice-opt">
             <input type="radio" name="attending" value="yes" checked={prev?.attending === 1} />
-            <span>🎉 Ci sarò</span>
+            <span>Parteciperò con piacere</span>
           </label>
           <label class="choice-opt">
             <input type="radio" name="attending" value="no" checked={prev?.attending === 0} />
-            <span>Non potrò esserci</span>
+            <span>Non potrò partecipare</span>
           </label>
         </fieldset>
         <div class="if-yes">
@@ -164,14 +179,14 @@ function RsvpSection(p: InviteViewProps) {
       </form>
       <div class="rsvp-done" id="rsvp-done" hidden>
         <div class="done-yes">
-          <p class="done-emoji">🥳</p>
-          <h3>Evviva, ci vediamo!</h3>
+          <p class="done-emoji" aria-hidden="true">✦</p>
+          <h3>Grazie, a presto!</h3>
           <p>Abbiamo ricevuto la tua risposta. Segna la data in calendario qui sotto.</p>
         </div>
         <div class="done-no">
-          <p class="done-emoji">💌</p>
-          <h3>Grazie per averci avvisato</h3>
-          <p>Ci dispiace che non potrai esserci, ti penseremo!</p>
+          <p class="done-emoji" aria-hidden="true">✦</p>
+          <h3>Grazie di cuore</h3>
+          <p>Ci dispiace che non potrai esserci: ti penseremo.</p>
         </div>
         <button class="link-btn" type="button" id="rsvp-edit">
           Modifica la risposta
@@ -202,6 +217,9 @@ export function InvitePage(p: InviteViewProps) {
   const isDraft = inv.status === 'draft' && mode === 'live';
   const ogTitle = p.guest ? `Un invito per ${p.guest.name} · ${names}` : `${names} · ${ev.label}`;
   const hasGifts = d.giftText || d.iban || d.giftLink;
+  const dateParts = formatDateParts(d.date);
+  const showCountdown = d.showCountdown && start.getTime() > Date.now();
+  const hasDetails = showCountdown || d.message || d.program.length > 0 || d.dressCode || hasGifts || d.signature;
   const twoNames = ev.couple && d.name2;
 
   return (
@@ -215,7 +233,7 @@ export function InvitePage(p: InviteViewProps) {
         <meta name="theme-color" content={theme.swatches[0]} />
         <meta property="og:type" content="website" />
         <meta property="og:title" content={ogTitle} />
-        <meta property="og:description" content={`${capitalize(dateLong)} · Apri l’invito e conferma la tua presenza 💌`} />
+        <meta property="og:description" content={`${capitalize(dateLong)} · Apri l’invito e conferma la tua presenza`} />
         <meta property="og:image" content={ogImage} />
         <meta property="og:url" content={pageUrl} />
         <meta name="twitter:card" content="summary_large_image" />
@@ -269,7 +287,9 @@ export function InvitePage(p: InviteViewProps) {
                 <span class="face-out"></span>
                 <span class="face-in"></span>
               </span>
-              <span class="env-seal">{initials(d)}</span>
+              <span class="env-seal">
+                <Monogram d={d} />
+              </span>
             </button>
             <p class="env-hint">Tocca la busta per aprirla</p>
           </div>
@@ -281,123 +301,144 @@ export function InvitePage(p: InviteViewProps) {
                 ANTEPRIMA
               </div>
             )}
-            {orn.scatter && <div class="scatter">{raw(orn.scatter)}</div>}
-            <header class="hero sec">
-              {orn.top && <div class="orn-wrap">{raw(orn.top)}</div>}
-              {orn.emblem && <div class="emblem">{raw(orn.emblem)}</div>}
-              {p.guest && (
-                <p class="for-guest">
-                  Un invito speciale per <strong>{p.guest.name}</strong>
-                </p>
-              )}
-              {coverUrl && (
-                <figure class="cover">
-                  <img src={coverUrl} alt={`Foto di ${names}`} width={600} height={750} />
-                </figure>
-              )}
-              {d.eyebrow && <p class="eyebrow">{d.eyebrow}</p>}
-              <h1 class={`names ${namesSizeClass(d)}`}>
-                {twoNames ? (
-                  <>
-                    <span class="n">{d.name1}</span>
-                    <span class="amp">&amp;</span>
-                    <span class="n">{d.name2}</span>
-                  </>
-                ) : (
-                  <span class="n">{d.name1 || names}</span>
+            <article class="sheet sheet-main">
+              {orn.scatter && raw(orn.scatter)}
+              <header class="hero sec">
+                {orn.top && raw(orn.top)}
+                <div class="hero-body">
+                  {orn.crest && (
+                    <div class="crest" aria-hidden="true">
+                      <span class="crest-mono">
+                        <Monogram d={d} />
+                      </span>
+                    </div>
+                  )}
+                  {p.guest && (
+                    <p class="for-guest">
+                      Un invito speciale per <strong>{p.guest.name}</strong>
+                    </p>
+                  )}
+                  {coverUrl && (
+                    <figure class="cover">
+                      <img src={coverUrl} alt={`Foto di ${names}`} width={600} height={750} />
+                    </figure>
+                  )}
+                  {d.eyebrow && <p class="eyebrow">{d.eyebrow}</p>}
+                  <h1 class={`names ${namesSizeClass(d)}`}>
+                    {twoNames ? (
+                      <>
+                        <span class="n">{d.name1}</span>
+                        <span class="amp">&amp;</span>
+                        <span class="n">{d.name2}</span>
+                      </>
+                    ) : (
+                      <span class="n">{d.name1 || names}</span>
+                    )}
+                  </h1>
+                  {d.subtitle && <p class="subtitle">{d.subtitle}</p>}
+                  {raw(orn.divider)}
+                  {dateParts && (
+                    <p class="date">
+                      <span class="d-wd">{dateParts.weekday}</span> <span class="d-day">{dateParts.day}</span> <span class="d-mo">{dateParts.month}</span>{' '}
+                      <span class="d-yr">{dateParts.year}</span>
+                    </p>
+                  )}
+                  {d.time && <p class="time">{formatTime(d.time)}</p>}
+                  {firstPlace && <p class="place">{firstPlace}</p>}
+                </div>
+              </header>
+            </article>
+
+            {hasDetails && (
+              <article class="sheet sheet-details">
+                {showCountdown && <Countdown start={start} />}
+
+                {d.message && (
+                  <section class="message sec">
+                    <p>{d.message}</p>
+                  </section>
                 )}
-              </h1>
-              {d.subtitle && <p class="subtitle">{d.subtitle}</p>}
-              <div class="div-wrap">{raw(orn.divider)}</div>
-              <p class="date">{dateLong}</p>
-              {d.time && <p class="time">{formatTime(d.time)}</p>}
-              {firstPlace && <p class="place">{firstPlace}</p>}
-            </header>
 
-            {d.showCountdown && start.getTime() > Date.now() && <Countdown start={start} />}
-
-            {d.message && (
-              <section class="message sec">
-                <p>{d.message}</p>
-              </section>
-            )}
-
-            {d.program.length > 0 && (
-              <section class="program sec">
-                <h2 class="sec-title">Programma</h2>
-                <ol class="moments">
-                  {d.program.map((m) => (
-                    <li class="moment">
-                      {m.time && <span class="m-time">{m.time}</span>}
-                      {m.title && <h3 class="m-title">{m.title}</h3>}
-                      {m.place && <p class="m-place">{m.place}</p>}
-                      {m.address && <p class="m-addr">{m.address}</p>}
-                      {(m.place || m.address) && (
-                        <a class="btn btn-ghost btn-sm" href={mapsLink(m.place, m.address)} target="_blank" rel="noopener">
-                          📍 Come arrivare
-                        </a>
-                      )}
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
-
-            {d.dressCode && (
-              <section class="dress sec">
-                <h2 class="sec-title">Dress code</h2>
-                <p>{d.dressCode}</p>
-              </section>
-            )}
-
-            {hasGifts && (
-              <section class="gifts sec">
-                <h2 class="sec-title">{inv.event_type === 'matrimonio' ? 'Lista nozze' : 'Regali'}</h2>
-                {d.giftText && <p>{d.giftText}</p>}
-                {d.iban && (
-                  <div class="iban-box">
-                    <p class="iban-label">IBAN{d.ibanHolder ? ` · intestato a ${d.ibanHolder}` : ''}</p>
-                    <p class="iban">{formatIban(d.iban)}</p>
-                    <button type="button" class="btn btn-ghost btn-sm" data-copy={d.iban}>
-                      Copia IBAN
-                    </button>
-                  </div>
+                {d.program.length > 0 && (
+                  <section class="program sec">
+                    <h2 class="sec-title">Programma</h2>
+                    <ol class="moments">
+                      {d.program.map((m) => (
+                        <li class="moment">
+                          {m.time && <span class="m-time">{m.time}</span>}
+                          {m.title && <h3 class="m-title">{m.title}</h3>}
+                          {m.place && <p class="m-place">{m.place}</p>}
+                          {m.address && <p class="m-addr">{m.address}</p>}
+                          {(m.place || m.address) && (
+                            <a class="btn btn-ghost btn-sm" href={mapsLink(m.place, m.address)} target="_blank" rel="noopener">
+                              Indicazioni stradali
+                            </a>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
                 )}
-                {d.giftLink && (
-                  <a class="btn btn-ghost" href={d.giftLink} target="_blank" rel="noopener nofollow">
-                    🎁 Vai alla lista regali
+
+                {d.dressCode && (
+                  <section class="dress sec">
+                    <h2 class="sec-title">Dress code</h2>
+                    <p>{d.dressCode}</p>
+                  </section>
+                )}
+
+                {hasGifts && (
+                  <section class="gifts sec">
+                    <h2 class="sec-title">{inv.event_type === 'matrimonio' ? 'Lista nozze' : 'Regali'}</h2>
+                    {d.giftText && <p>{d.giftText}</p>}
+                    {d.iban && (
+                      <div class="iban-box">
+                        <p class="iban-label">IBAN{d.ibanHolder ? ` · intestato a ${d.ibanHolder}` : ''}</p>
+                        <p class="iban">{formatIban(d.iban)}</p>
+                        <button type="button" class="btn btn-ghost btn-sm" data-copy={d.iban}>
+                          Copia IBAN
+                        </button>
+                      </div>
+                    )}
+                    {d.giftLink && (
+                      <a class="btn btn-ghost" href={d.giftLink} target="_blank" rel="noopener nofollow">
+                        Vai alla lista regali
+                      </a>
+                    )}
+                  </section>
+                )}
+
+                {d.signature && (
+                  <section class="sign sec">
+                    <p class="signature">{d.signature}</p>
+                  </section>
+                )}
+                {orn.bottom && raw(orn.bottom)}
+              </article>
+            )}
+
+            <article class="sheet sheet-reply">
+              <RsvpSection {...p} />
+
+              <section class="actions sec">
+                <a class="btn btn-ghost" href={`${p.basePath}/calendario.ics`}>
+                  Aggiungi al calendario
+                </a>
+                <a class="btn btn-ghost" href={gcal} target="_blank" rel="noopener">
+                  Google Calendar
+                </a>
+                {d.contactPhone && (
+                  <a
+                    class="btn btn-ghost"
+                    href={waLink(`Ciao${d.contactName ? ` ${d.contactName}` : ''}! Ti scrivo per l’invito ${ev.eventPhrase(d)}: `, d.contactPhone)}
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Scrivi {d.contactName ? `a ${d.contactName}` : 'agli organizzatori'}
                   </a>
                 )}
               </section>
-            )}
-
-            <RsvpSection {...p} />
-
-            <section class="actions sec">
-              <a class="btn btn-ghost" href={`${p.basePath}/calendario.ics`}>
-                📅 Aggiungi al calendario
-              </a>
-              <a class="btn btn-ghost" href={gcal} target="_blank" rel="noopener">
-                Google Calendar
-              </a>
-              {d.contactPhone && (
-                <a
-                  class="btn btn-ghost"
-                  href={waLink(`Ciao${d.contactName ? ` ${d.contactName}` : ''}! Ti scrivo per l’invito ${ev.eventPhrase(d)}: `, d.contactPhone)}
-                  target="_blank"
-                  rel="noopener"
-                >
-                  💬 Scrivi {d.contactName ? `a ${d.contactName}` : 'agli organizzatori'}
-                </a>
-              )}
-            </section>
-
-            {d.signature && (
-              <section class="sign sec">
-                <p class="signature">{d.signature}</p>
-              </section>
-            )}
-            {orn.bottom && <div class="orn-wrap orn-bottom-wrap">{raw(orn.bottom)}</div>}
+            </article>
           </main>
         </div>
         <footer class="made-with">

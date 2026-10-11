@@ -135,7 +135,12 @@
   }
   function confetti() {
     if (reduce) return;
-    const colors = ['#b8475f', '#f4c542', '#3d7cc9', '#8fd3c3', '#ff8fa0', '#ffffff', '#d8b46a'];
+    const inv = document.querySelector('.inv');
+    const colors = (inv ? getComputedStyle(inv).getPropertyValue('--confetti') : '')
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
+    if (!colors.length) colors.push('#c9a65f', '#ead9a0', '#ffffff');
     const frag = document.createDocumentFragment();
     for (let i = 0; i < 90; i++) {
       const el = document.createElement('i');
@@ -145,7 +150,7 @@
       el.style.width = w + 'px';
       el.style.height = w * (Math.random() > 0.5 ? 1.8 : 1) + 'px';
       el.style.background = colors[i % colors.length];
-      el.style.borderRadius = Math.random() > 0.6 ? '50%' : '2px';
+      el.style.borderRadius = Math.random() > 0.6 ? '50%' : '1px';
       el.style.animationDelay = Math.random() * 0.7 + 's';
       el.style.setProperty('--dx', (Math.random() - 0.5) * 180 + 'px');
       el.style.setProperty('--rot', (Math.random() - 0.5) * 1000 + 'deg');
@@ -303,6 +308,17 @@
       <button type="button" data-step="1" aria-label="Uno in più">+</button></div></div>`;
   }
 
+  const mono = (d) => {
+    const [a, b] = initials(d).split('&');
+    return b ? `${esc(a)}<span class="mono-amp">&amp;</span>${esc(b)}` : esc(a);
+  };
+  function dateParts(ymd) {
+    if (!isYmd(ymd)) return null;
+    const parts = F_LONG.formatToParts(ymdDate(ymd));
+    const get = (type) => parts.find((x) => x.type === type)?.value ?? '';
+    return { weekday: get('weekday'), day: get('day'), month: get('month'), year: get('year') };
+  }
+
   function renderInvite(mode, withEnvelope) {
     const ev = EV[state.ev];
     const th = TH[state.theme];
@@ -317,6 +333,10 @@
     const guest = state.guest;
     const who = d.contactName || 'chi ti ha invitato';
     const calLocation = [program[0]?.place, program[0]?.address].filter(Boolean).join(', ');
+    const showCountdown = d.showCountdown && start && start.getTime() > Date.now();
+    const hasGifts = d.giftText || d.iban || d.giftLink;
+    const hasDetails = showCountdown || d.message || program.length || d.dressCode || hasGifts || d.signature;
+    const dp = dateParts(d.date);
     const h = [];
     h.push(`<div class="inv t-${th.id} ev-${ev.id}" data-mode="${mode}">`);
     if (withEnvelope) {
@@ -324,15 +344,16 @@
         guest ? `<p class="env-kicker">Un invito per</p><p class="env-guest">${esc(guest)}</p>` : '<p class="env-kicker">Hai ricevuto</p><p class="env-guest">un invito</p>'
       }</div><button class="env" type="button" id="env-open" aria-label="Apri l’invito"><span class="env-back"></span><span class="env-letter"><span class="env-letter-eyebrow">${esc(
         d.eyebrow || ev.label,
-      )}</span><span class="env-letter-names">${esc(names)}</span><span class="env-letter-date">${esc(dateShort(d.date))}</span></span><span class="env-pocket"></span><span class="env-flap"><span class="face-out"></span><span class="face-in"></span></span><span class="env-seal">${esc(
-        initials(d),
+      )}</span><span class="env-letter-names">${esc(names)}</span><span class="env-letter-date">${esc(dateShort(d.date))}</span></span><span class="env-pocket"></span><span class="env-flap"><span class="face-out"></span><span class="face-in"></span></span><span class="env-seal">${mono(
+        d,
       )}</span></button><p class="env-hint">Tocca la busta per aprirla</p></div>`);
     }
-    h.push('<div class="page"><main class="card">');
-    if (orn.scatter) h.push(`<div class="scatter">${orn.scatter}</div>`);
+    h.push('<div class="page"><main class="card"><article class="sheet sheet-main">');
+    if (orn.scatter) h.push(orn.scatter);
     h.push('<header class="hero sec">');
-    if (orn.top) h.push(`<div class="orn-wrap">${orn.top}</div>`);
-    if (orn.emblem) h.push(`<div class="emblem">${orn.emblem}</div>`);
+    if (orn.top) h.push(orn.top);
+    h.push('<div class="hero-body">');
+    if (orn.crest) h.push(`<div class="crest" aria-hidden="true"><span class="crest-mono">${mono(d)}</span></div>`);
     if (guest) h.push(`<p class="for-guest">Un invito speciale per <strong>${esc(guest)}</strong></p>`);
     if (cover) h.push(`<figure class="cover"><img src="${cover}" alt="Illustrazione: il mare al tramonto" width="480" height="600"></figure>`);
     if (d.eyebrow) h.push(`<p class="eyebrow">${esc(d.eyebrow)}</p>`);
@@ -342,52 +363,60 @@
       }</h1>`,
     );
     if (d.subtitle) h.push(`<p class="subtitle">${esc(d.subtitle)}</p>`);
-    h.push(`<div class="div-wrap">${orn.divider}</div><p class="date">${esc(dateLong(d.date))}</p>`);
+    h.push(orn.divider);
+    if (dp) h.push(`<p class="date"><span class="d-wd">${esc(dp.weekday)}</span> <span class="d-day">${esc(dp.day)}</span> <span class="d-mo">${esc(dp.month)}</span> <span class="d-yr">${esc(dp.year)}</span></p>`);
     if (d.time) h.push(`<p class="time">ore ${esc(d.time)}</p>`);
     if (firstPlace) h.push(`<p class="place">${esc(firstPlace)}</p>`);
-    h.push('</header>');
-    if (d.showCountdown && start && start.getTime() > Date.now()) {
-      h.push(
-        `<section class="countdown sec" aria-label="Conto alla rovescia"><p class="kicker">Mancano</p><div class="cd" data-countdown="${start.toISOString()}">` +
-          ['d:giorni', 'h:ore', 'm:minuti', 's:secondi'].map((u) => `<div><span data-u="${u[0]}">0</span><small>${u.slice(2)}</small></div>`).join('') +
-          '</div></section>',
-      );
-    }
-    if (d.message) h.push(`<section class="message sec"><p>${esc(d.message)}</p></section>`);
-    if (program.length) {
-      h.push('<section class="program sec"><h2 class="sec-title">Programma</h2><ol class="moments">');
-      for (const m of program) {
+    h.push('</div></header></article>');
+    if (hasDetails) {
+      h.push('<article class="sheet sheet-details">');
+      if (showCountdown) {
         h.push(
-          `<li class="moment">${m.time ? `<span class="m-time">${esc(m.time)}</span>` : ''}${m.title ? `<h3 class="m-title">${esc(m.title)}</h3>` : ''}${
-            m.place ? `<p class="m-place">${esc(m.place)}</p>` : ''
-          }${m.address ? `<p class="m-addr">${esc(m.address)}</p>` : ''}${
-            m.place || m.address ? `<a class="btn btn-ghost btn-sm" href="${esc(mapsLink(m.place, m.address))}" target="_blank" rel="noopener">📍 Come arrivare</a>` : ''
-          }</li>`,
+          `<section class="countdown sec" aria-label="Conto alla rovescia"><p class="kicker">Mancano</p><div class="cd" data-countdown="${start.toISOString()}">` +
+            ['d:giorni', 'h:ore', 'm:minuti', 's:secondi'].map((u) => `<div><span data-u="${u[0]}">0</span><small>${u.slice(2)}</small></div>`).join('') +
+            '</div></section>',
         );
       }
-      h.push('</ol></section>');
+      if (d.message) h.push(`<section class="message sec"><p>${esc(d.message)}</p></section>`);
+      if (program.length) {
+        h.push('<section class="program sec"><h2 class="sec-title">Programma</h2><ol class="moments">');
+        for (const m of program) {
+          h.push(
+            `<li class="moment">${m.time ? `<span class="m-time">${esc(m.time)}</span>` : ''}${m.title ? `<h3 class="m-title">${esc(m.title)}</h3>` : ''}${
+              m.place ? `<p class="m-place">${esc(m.place)}</p>` : ''
+            }${m.address ? `<p class="m-addr">${esc(m.address)}</p>` : ''}${
+              m.place || m.address ? `<a class="btn btn-ghost btn-sm" href="${esc(mapsLink(m.place, m.address))}" target="_blank" rel="noopener">Indicazioni stradali</a>` : ''
+            }</li>`,
+          );
+        }
+        h.push('</ol></section>');
+      }
+      if (d.dressCode) h.push(`<section class="dress sec"><h2 class="sec-title">Dress code</h2><p>${esc(d.dressCode)}</p></section>`);
+      if (hasGifts) {
+        h.push(`<section class="gifts sec"><h2 class="sec-title">${state.ev === 'matrimonio' ? 'Lista nozze' : 'Regali'}</h2>`);
+        if (d.giftText) h.push(`<p>${esc(d.giftText)}</p>`);
+        if (d.iban)
+          h.push(
+            `<div class="iban-box"><p class="iban-label">IBAN${d.ibanHolder ? ` · intestato a ${esc(d.ibanHolder)}` : ''}</p><p class="iban">${esc(fmtIban(d.iban))}</p><button type="button" class="btn btn-ghost btn-sm" data-copy="${esc(
+              d.iban,
+            )}">Copia IBAN</button></div>`,
+          );
+        if (d.giftLink) h.push(`<a class="btn btn-ghost" href="${esc(d.giftLink)}" target="_blank" rel="noopener nofollow">Vai alla lista regali</a>`);
+        h.push('</section>');
+      }
+      if (d.signature) h.push(`<section class="sign sec"><p class="signature">${esc(d.signature)}</p></section>`);
+      if (orn.bottom) h.push(orn.bottom);
+      h.push('</article>');
     }
-    if (d.dressCode) h.push(`<section class="dress sec"><h2 class="sec-title">Dress code</h2><p>${esc(d.dressCode)}</p></section>`);
-    if (d.giftText || d.iban || d.giftLink) {
-      h.push(`<section class="gifts sec"><h2 class="sec-title">${state.ev === 'matrimonio' ? 'Lista nozze' : 'Regali'}</h2>`);
-      if (d.giftText) h.push(`<p>${esc(d.giftText)}</p>`);
-      if (d.iban)
-        h.push(
-          `<div class="iban-box"><p class="iban-label">IBAN${d.ibanHolder ? ` · intestato a ${esc(d.ibanHolder)}` : ''}</p><p class="iban">${esc(fmtIban(d.iban))}</p><button type="button" class="btn btn-ghost btn-sm" data-copy="${esc(
-            d.iban,
-          )}">Copia IBAN</button></div>`,
-        );
-      if (d.giftLink) h.push(`<a class="btn btn-ghost" href="${esc(d.giftLink)}" target="_blank" rel="noopener nofollow">🎁 Vai alla lista regali</a>`);
-      h.push('</section>');
-    }
-    // RSVP
-    h.push(`<section class="rsvp sec" id="rsvp"><h2 class="sec-title">Conferma la tua presenza</h2>`);
+    // Reply card
+    h.push('<article class="sheet sheet-reply">');
+    h.push(`<section class="rsvp sec" id="rsvp"><p class="kicker">R.S.V.P.</p><h2 class="sec-title">Conferma la tua presenza</h2>`);
     if (d.rsvpDeadline) h.push(`<p class="deadline">Ti chiediamo gentilmente di rispondere entro il <strong>${esc(dayMonth(d.rsvpDeadline))}</strong>.</p>`);
     h.push(`<form class="rsvp-form" id="rsvp-form" novalidate>
       <label class="field" for="r-name"><span>Nome e cognome</span><input id="r-name" name="name" maxlength="80" autocomplete="name" placeholder="Il tuo nome" value="${esc(guest)}"></label>
       <fieldset class="choice"><legend class="sr-only">Parteciperai?</legend>
-        <label class="choice-opt"><input type="radio" id="r-yes" name="attending" value="yes"><span>🎉 Ci sarò</span></label>
-        <label class="choice-opt"><input type="radio" id="r-no" name="attending" value="no"><span>Non potrò esserci</span></label></fieldset>
+        <label class="choice-opt"><input type="radio" id="r-yes" name="attending" value="yes"><span>Parteciperò con piacere</span></label>
+        <label class="choice-opt"><input type="radio" id="r-no" name="attending" value="no"><span>Non potrò partecipare</span></label></fieldset>
       <div class="if-yes"><div class="steppers">${stepper('Adulti', 'adults', 1, 10)}${d.askChildren ? stepper('Bambini', 'children', 0, 10) : ''}</div>
       ${d.askDiet ? '<label class="field" for="r-diet"><span>Allergie, intolleranze o menu particolari</span><textarea id="r-diet" name="diet" rows="2" maxlength="300" placeholder="Es. 1 vegetariano, 1 senza glutine"></textarea></label>' : ''}
       ${d.customQuestion ? `<label class="field" for="r-answer"><span>${esc(d.customQuestion)}</span><input id="r-answer" name="answer" maxlength="200"></label>` : ''}</div>
@@ -395,34 +424,31 @@
       <button class="btn btn-primary btn-block" type="submit">Invia la risposta</button>
       <p class="form-msg" role="status" aria-live="polite"></p></form>
       <div class="rsvp-done" id="rsvp-done" hidden>
-        <div class="done-yes"><p class="done-emoji">🥳</p><h3>Evviva, ci vediamo!</h3><p>Segna la data in calendario qui sotto.</p></div>
-        <div class="done-no"><p class="done-emoji">💌</p><h3>Grazie per averlo detto</h3><p>Ci dispiace che non potrai esserci.</p></div>
-        <div class="handoff"><p class="handoff-note">Ultimo passo: manda la risposta a ${esc(who)}. Ti si apre WhatsApp con il messaggio già scritto.</p>
+        <div class="done-yes"><p class="done-emoji" aria-hidden="true">✦</p><h3>Grazie, a presto!</h3><p>Segna la data in calendario qui sotto.</p></div>
+        <div class="done-no"><p class="done-emoji" aria-hidden="true">✦</p><h3>Grazie di cuore</h3><p>Ci dispiace che non potrai esserci.</p></div>
+        <div class="handoff"><p class="handoff-note">Ultimo passo: manda la risposta a ${esc(who)}. Si apre WhatsApp con il messaggio già scritto.</p>
           <a class="btn btn-primary btn-block" id="send-wa" href="https://wa.me/" target="_blank" rel="noopener">Manda la risposta su WhatsApp</a>
           <button type="button" class="btn btn-ghost btn-block" id="copy-answer">Copia il testo della risposta</button>
           <pre class="answer-preview" id="answer-preview" hidden></pre></div>
         <button class="link-btn" type="button" id="rsvp-edit">Modifica la risposta</button>
       </div></section>`);
-    // Actions
     h.push(
       `<section class="actions sec">${
         isYmd(d.date)
-          ? `<a class="btn btn-ghost" href="${esc(gcalUrl(`${ev.label}: ${names}`, d, calLocation, d.eyebrow ? `${d.eyebrow} ${names}` : names))}" target="_blank" rel="noopener">📅 Aggiungi al calendario</a>`
+          ? `<a class="btn btn-ghost" href="${esc(gcalUrl(`${ev.label}: ${names}`, d, calLocation, d.eyebrow ? `${d.eyebrow} ${names}` : names))}" target="_blank" rel="noopener">Aggiungi al calendario</a>`
           : ''
       }${
         d.contactPhone
-          ? `<a class="btn btn-ghost" href="${esc(waLink(`Ciao${d.contactName ? ' ' + d.contactName : ''}! Ti scrivo per l’invito ${eventPhrase(ev, d)}: `, d.contactPhone))}" target="_blank" rel="noopener">💬 Scrivi ${
+          ? `<a class="btn btn-ghost" href="${esc(waLink(`Ciao${d.contactName ? ' ' + d.contactName : ''}! Ti scrivo per l’invito ${eventPhrase(ev, d)}: `, d.contactPhone))}" target="_blank" rel="noopener">Scrivi ${
               d.contactName ? 'a ' + esc(d.contactName) : 'agli organizzatori'
             }</a>`
           : ''
-      }</section>`,
+      }</section></article>`,
     );
-    if (d.signature) h.push(`<section class="sign sec"><p class="signature">${esc(d.signature)}</p></section>`);
-    if (orn.bottom) h.push(`<div class="orn-wrap orn-bottom-wrap">${orn.bottom}</div>`);
     h.push('</main></div>');
     h.push(
       mode === 'view'
-        ? `<footer class="made-with"><span>Creato con <strong>Confetto</strong> · versione di prova</span><br><button type="button" class="s-link" data-act="start">Crea anche tu il tuo invito →</button></footer>`
+        ? `<footer class="made-with"><span>Creato con <strong>Confetto</strong> · versione di prova</span><br><button type="button" class="s-link" data-act="start">Crea anche tu il tuo invito</button></footer>`
         : '<footer class="made-with"><span>Creato con <strong>Confetto</strong></span></footer>',
     );
     h.push('</div>');
@@ -432,31 +458,33 @@
   // ---------------------------------------------------------------------------
   // Screens
   // ---------------------------------------------------------------------------
-  const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true" class="s-logo-mark"><ellipse cx="20" cy="20.5" rx="10.5" ry="14" transform="rotate(-28 20 20.5)" fill="#fff6f2" stroke="#b8475f" stroke-width="2"/><ellipse cx="16" cy="15" rx="2.6" ry="5.2" transform="rotate(-28 16 15)" fill="#f2c6cf"/></svg>`;
+  const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true" class="s-logo-mark"><ellipse cx="20" cy="20.5" rx="9.5" ry="13" transform="rotate(-30 20 20.5)" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M14.6 13.4C16.4 11.2 19 10.2 21.4 10.6" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" transform="rotate(-30 20 20.5)"/></svg>`;
   const header = (right = '') =>
-    `<header class="s-top"><div class="s-wrap s-top-in"><button type="button" class="s-logo" data-act="home" aria-label="Torna all’inizio">${LOGO}<span>confetto</span></button><span class="s-badge">versione di prova</span><span class="s-top-right">${right}</span></div></header>`;
+    `<header class="s-top"><div class="s-wrap s-top-in"><button type="button" class="s-logo" data-act="home" aria-label="Torna all’inizio">${LOGO}<span>Confetto</span></button><span class="s-badge">versione di prova</span><span class="s-top-right">${right}</span></div></header>`;
 
   function renderChoose() {
     const groups = DATA.groups
       .map(
-        (g) => `<section class="s-group"><h2 class="s-group-title">${esc(g.label)}</h2><div class="s-grid">${EVENTS.filter((e) => e.group === g.id)
+        (g) => `<section class="s-group"><h2 class="s-group-title"><span>${esc(g.label)}</span></h2><div class="s-grid">${EVENTS.filter((e) => e.group === g.id)
           .map(
             (e) =>
-              `<button type="button" class="s-occ" data-act="pick" data-ev="${e.id}"><span class="s-occ-emoji" aria-hidden="true">${e.emoji}</span><span class="s-occ-label">${esc(e.label)}</span></button>`,
+              `<button type="button" class="s-occ" data-act="pick" data-ev="${e.id}"><span class="s-occ-icon">${e.icon}</span><span class="s-occ-label">${esc(e.label)}</span></button>`,
           )
           .join('')}</div></section>`,
       )
       .join('');
     const ai = state.sample
-      ? `<section class="s-ai" id="ai-box"><h2 class="s-ai-title">✨ Oppure raccontamelo con parole tue</h2>
+      ? `<section class="s-ai" id="ai-box"><p class="s-kicker">Su misura</p><h2 class="s-ai-title">Oppure raccontamelo con parole tue</h2>
           <label class="s-field" for="ai-text"><span class="s-label">Cosa vuoi festeggiare? Scrivi tutto quello che sai: chi, quando, dove.</span>
           <textarea id="ai-text" rows="3" maxlength="800" placeholder="Es. Festa a sorpresa per i 40 anni di Marco, sabato 14 marzo alle 21 al Bar Centrale di Bologna. Tema anni ’80."></textarea></label>
           <button type="button" class="s-btn s-btn-primary" data-act="ai">Prepara il mio invito</button><p class="s-ai-msg" id="ai-msg" role="status" aria-live="polite"></p></section>`
       : '';
     app.innerHTML = `${header()}<main class="s-wrap s-choose">
-      <p class="s-kicker">Inviti digitali con conferme di presenza</p>
-      <h1 class="s-h1">Che cosa festeggi?</h1>
-      <p class="s-lead">Scegli l’occasione, oppure «Altro» e scrivi tu. Ti prepariamo un invito già compilato: lo personalizzi, lo vedi dal vivo e lo mandi su WhatsApp.</p>
+      <div class="s-hero">
+        <p class="s-kicker">Inviti digitali · conferme di presenza</p>
+        <h1 class="s-h1">Che cosa <em>festeggi?</em></h1>
+        <p class="s-lead">Scegli l’occasione, oppure «Altro» e scrivi tu. Ti prepariamo un invito già compilato, su carta di cotone e oro a caldo: lo personalizzi, lo vedi dal vivo e lo mandi su WhatsApp.</p>
+      </div>
       ${ai}${groups}
       <p class="s-note">Questa è una versione di prova di Confetto: è gratis e non serve registrarsi.</p></main>`;
   }
@@ -491,55 +519,55 @@
         `<button type="button" class="s-theme${t.id === state.theme ? ' on' : ''}" data-act="theme" data-theme="${t.id}" aria-pressed="${t.id === state.theme}"><span class="s-theme-thumb" style="background:${t.swatches[0]}"><img src="${THUMBS[t.id]}" alt="" width="120" height="160"></span><span class="s-theme-name">${esc(t.name)}</span></button>`,
     ).join('');
     const who = state.ev === 'matrimonio' ? 'Gli sposi' : ev.couple ? 'La coppia' : ['festa', 'cena', 'natale', 'aziendale', 'altro', 'inaugurazione', 'genderreveal'].includes(state.ev) ? 'L’evento' : 'Chi festeggiamo';
-    app.innerHTML = `${header('<button type="button" class="s-btn s-btn-primary s-btn-sm" data-act="make-link">Crea il link →</button>')}
+    app.innerHTML = `${header('<button type="button" class="s-btn s-btn-primary s-btn-sm" data-act="make-link">Crea il link</button>')}
     <main class="s-wrap s-editor">
       <div class="s-form">
         <button type="button" class="s-back" data-act="choose">← Cambia occasione</button>
-        <p class="s-kicker">${ev.emoji} ${esc(ev.label)}</p>
+        <p class="s-kicker s-kicker-icon">${ev.icon}<span>${esc(ev.label)}</span></p>
         <h1 class="s-h2">Personalizza il tuo invito</h1>
         <p class="s-hint">Abbiamo scritto dei testi di esempio: cambiali con i tuoi. L’anteprima si aggiorna mentre scrivi.</p>
-        <section class="s-card"><h2 class="s-card-title">Stile</h2><div class="s-themes">${themes}</div>
+        <section class="s-card"><h2 class="s-card-title"><span class="s-num">I</span>Lo stile</h2><div class="s-themes">${themes}</div>
           <p class="s-label">Immagine di copertina</p>
           <div class="s-covers">
             <button type="button" class="s-chip${state.cover ? '' : ' on'}" data-act="cover" data-cover="">Nessuna</button>
             <button type="button" class="s-chip${state.cover === 'tramonto' ? ' on' : ''}" data-act="cover" data-cover="tramonto">Tramonto sul mare</button>
           </div><p class="s-hint s-hint-sm">Nel servizio completo carichi la tua foto.</p></section>
-        <section class="s-card"><h2 class="s-card-title">${who}</h2>
+        <section class="s-card"><h2 class="s-card-title"><span class="s-num">II</span>${who}</h2>
           ${field('Riga sopra il nome', 'eyebrow', d.eyebrow, 'maxlength="60" placeholder="Es. Il matrimonio di"')}
           <div class="${ev.couple ? 's-row2' : ''}">${field(esc(ev.name1Label), 'name1', d.name1, 'maxlength="60"')}${ev.couple ? field(esc(ev.name2Label), 'name2', d.name2, 'maxlength="60"') : ''}</div>
           ${field('Sottotitolo (facoltativo)', 'subtitle', d.subtitle, 'maxlength="80" placeholder="Es. compie 30 anni"')}</section>
-        <section class="s-card"><h2 class="s-card-title">Quando</h2>
+        <section class="s-card"><h2 class="s-card-title"><span class="s-num">III</span>Quando</h2>
           <div class="s-row2">${field('Data', 'date', d.date, 'type="date"')}${field('Ora', 'time', d.time, 'type="time"')}</div>
           ${toggle('Mostra il conto alla rovescia', 'showCountdown', d.showCountdown)}</section>
-        <section class="s-card"><h2 class="s-card-title">Programma e luoghi</h2>
-          <p class="s-hint">Ogni tappa avrà il tasto «Come arrivare» con la mappa.</p>
+        <section class="s-card"><h2 class="s-card-title"><span class="s-num">IV</span>Programma e luoghi</h2>
+          <p class="s-hint">Ogni tappa avrà il tasto «Indicazioni stradali» con la mappa.</p>
           <div id="program">${programRows()}</div>
           <button type="button" class="s-btn s-btn-ghost s-btn-sm" data-act="add" id="add-moment"${d.program.length >= 5 ? ' hidden' : ''}>+ Aggiungi una tappa</button></section>
-        <section class="s-card"><h2 class="s-card-title">Il messaggio</h2>
+        <section class="s-card"><h2 class="s-card-title"><span class="s-num">V</span>Il messaggio</h2>
           ${area('Testo dell’invito', 'message', d.message, 'rows="5" maxlength="1200"')}
-          <button type="button" class="s-btn s-btn-ghost s-btn-sm" data-act="suggest">✨ Suggeriscimi una frase</button>
+          <button type="button" class="s-btn s-btn-ghost s-btn-sm" data-act="suggest">Suggeriscimi una frase</button>
           ${field('Firma in fondo (facoltativa)', 'signature', d.signature, 'maxlength="120" placeholder="Es. Con affetto, Anna e Marco"')}</section>
-        <section class="s-card"><h2 class="s-card-title">Dettagli</h2>
+        <section class="s-card"><h2 class="s-card-title"><span class="s-num">VI</span>Dettagli</h2>
           ${field('Dress code (facoltativo)', 'dressCode', d.dressCode, 'maxlength="140" placeholder="Es. Elegante, colori pastello"')}
           ${area('Regali: testo (facoltativo)', 'giftText', d.giftText, 'rows="2" maxlength="400" placeholder="Es. La vostra presenza è il regalo più bello…"')}
           <div class="s-row2">${field('IBAN (facoltativo)', 'iban', d.iban, 'maxlength="42" autocomplete="off"')}${field('Intestato a', 'ibanHolder', d.ibanHolder, 'maxlength="80"')}</div>
           <p class="s-hint s-hint-sm" id="iban-hint" aria-live="polite"></p>
           ${field('Link alla lista regali (facoltativo)', 'giftLink', d.giftLink, 'maxlength="300" placeholder="https://…" inputmode="url"')}</section>
-        <section class="s-card"><h2 class="s-card-title">Conferme di presenza</h2>
+        <section class="s-card"><h2 class="s-card-title"><span class="s-num">VII</span>Conferme di presenza</h2>
           ${field('Chiedi di rispondere entro il', 'rsvpDeadline', d.rsvpDeadline, 'type="date"')}
           ${toggle('Chiedi quanti bambini', 'askChildren', d.askChildren)}
           ${toggle('Chiedi allergie e menu', 'askDiet', d.askDiet)}
           ${field('Una domanda in più (facoltativa)', 'customQuestion', d.customQuestion, 'maxlength="120" placeholder="Es. Ti serve il passaggio?"')}
           <div class="s-row2">${field('Il tuo nome', 'contactName', d.contactName, 'maxlength="40" placeholder="Es. Anna"')}${field('Il tuo WhatsApp', 'contactPhone', d.contactPhone, 'type="tel" maxlength="24" placeholder="333 123 4567" inputmode="tel"')}</div>
           <p class="s-hint s-hint-sm">Gli invitati ti manderanno la risposta su questo numero. Nel servizio completo le risposte arrivano da sole in una lista.</p></section>
-        <button type="button" class="s-btn s-btn-primary s-btn-lg s-btn-block" data-act="make-link">Crea il link dell’invito →</button>
+        <button type="button" class="s-btn s-btn-primary s-btn-lg s-btn-block" data-act="make-link">Crea il link dell’invito</button>
       </div>
       <aside class="s-preview" id="preview-pane" aria-label="Anteprima">
-        <div class="s-preview-head"><span class="s-live">● Anteprima dal vivo</span><button type="button" class="s-link" data-act="replay">↺ Rivedi la busta</button><button type="button" class="s-link s-close" data-act="close-preview">Chiudi ✕</button></div>
+        <div class="s-preview-head"><span class="s-live">Anteprima dal vivo</span><button type="button" class="s-link" data-act="replay">Rivedi la busta</button><button type="button" class="s-link s-close" data-act="close-preview">Chiudi</button></div>
         <div class="s-phone"><div class="s-screen" id="screen"></div></div>
       </aside>
     </main>
-    <div class="s-bar"><button type="button" class="s-btn s-btn-ghost" data-act="open-preview">👁 Anteprima</button><button type="button" class="s-btn s-btn-primary" data-act="make-link">Crea il link</button></div>`;
+    <div class="s-bar"><button type="button" class="s-btn s-btn-ghost" data-act="open-preview">Anteprima</button><button type="button" class="s-btn s-btn-primary" data-act="make-link">Crea il link</button></div>`;
     checkIban();
     renderPreview();
   }
@@ -562,15 +590,16 @@
   function renderShare(link) {
     const ev = EV[state.ev];
     const d = state.data;
-    const text = `Ciao! 💌 Ti invito ${eventPhrase(ev, d)}, ${dateLong(d.date)}. Apri l’invito e fammi sapere se ci sarai: ${link}`;
+    const text = `Ciao! Ti invito ${eventPhrase(ev, d)}, ${dateLong(d.date)}. Apri l’invito e fammi sapere se ci sarai: ${link}`;
     app.innerHTML = `${header()}<main class="s-wrap s-share">
       <div class="s-share-card">
-        <p class="s-big">🎉</p>
-        <h1 class="s-h2">Il tuo invito è pronto!</h1>
+        <div class="t-${state.theme} s-seal-wrap"><span class="s-seal">${mono(d)}</span></div>
+        <p class="s-kicker">Tutto pronto</p>
+        <h1 class="s-h2">Il tuo invito è <em>pronto</em></h1>
         <p class="s-lead">Questo è il link da mandare: dentro c’è tutto l’invito. Chi lo apre vede la busta, l’invito e può confermare.</p>
         <div class="s-copy"><input id="share-link" readonly value="${esc(link)}" aria-label="Link dell’invito"><button type="button" class="s-btn s-btn-ghost s-btn-sm" data-act="copy" data-target="share-link">Copia</button></div>
         <div class="s-actions"><a class="s-btn s-btn-wa" href="${esc(waLink(text))}" target="_blank" rel="noopener">Manda su WhatsApp</a>
-        <button type="button" class="s-btn s-btn-ghost" data-act="view">👁 Guardalo come un invitato</button></div>
+        <button type="button" class="s-btn s-btn-ghost" data-act="view">Guardalo come un invitato</button></div>
         <div class="s-personal"><h2 class="s-card-title">Link con il nome dell’invitato</h2>
           <p class="s-hint">Scrivi un nome: la busta dirà «Un invito per…» e il modulo sarà già compilato.</p>
           <label class="s-field" for="guest-name"><span class="s-label">Nome dell’invitato</span><input id="guest-name" maxlength="40" placeholder="Es. Zia Carla e Zio Paolo"></label>
@@ -584,7 +613,7 @@
       const name = input.value.trim();
       const l = linkFor(name);
       document.getElementById('guest-link').value = l;
-      const t = name ? `Ciao ${name}! 💌 Ti invito ${eventPhrase(ev, d)}, ${dateLong(d.date)}. Apri l’invito e fammi sapere se ci sarai: ${l}` : text;
+      const t = name ? `Ciao ${name}! Ti invito ${eventPhrase(ev, d)}, ${dateLong(d.date)}. Apri l’invito e fammi sapere se ci sarai: ${l}` : text;
       document.getElementById('guest-wa').href = waLink(t);
     });
   }
@@ -624,7 +653,7 @@
       return;
     }
     const ok = validIban(v);
-    hint.textContent = ok ? '✓ IBAN corretto' : 'Controlla l’IBAN: sembra esserci un errore di battitura';
+    hint.textContent = ok ? 'IBAN corretto' : 'Controlla l’IBAN: sembra esserci un errore di battitura';
     hint.className = `s-hint s-hint-sm ${ok ? 's-good' : 's-bad'}`;
   }
 
@@ -680,15 +709,15 @@
     if (!answer) return '';
     const ev = EV[state.ev];
     const d = state.data;
-    const lines = [`Ciao${d.contactName ? ' ' + d.contactName : ''}! Rispondo all’invito ${eventPhrase(ev, d)} 💌`];
+    const lines = [`Ciao${d.contactName ? ' ' + d.contactName : ''}! Rispondo all’invito ${eventPhrase(ev, d)}.`];
     if (answer.yes) {
       const parts = [`${answer.adults} ${answer.adults === 1 ? 'adulto' : 'adulti'}`];
       if (answer.children) parts.push(`${answer.children} ${answer.children === 1 ? 'bambino' : 'bambini'}`);
-      lines.push(`✅ Ci sarò (${parts.join(', ')})`);
+      lines.push(`✅ Parteciperò con piacere (${parts.join(', ')})`);
       if (answer.diet) lines.push(`Allergie e menu: ${answer.diet}`);
       if (answer.extra) lines.push(`${d.customQuestion} ${answer.extra}`);
     } else {
-      lines.push('❌ Purtroppo non potrò esserci');
+      lines.push('❌ Purtroppo non potrò partecipare');
     }
     if (answer.message) lines.push(`Messaggio: ${answer.message}`);
     lines.push(`— ${answer.name}`);
@@ -708,8 +737,8 @@
     const fd = new FormData(form);
     const name = String(fd.get('name') || '').trim();
     const attending = fd.get('attending');
-    if (!name) return fail('Scrivi il tuo nome, così sappiamo chi sei 🙂');
-    if (!attending) return fail('Dicci se ci sarai: tocca «Ci sarò» oppure «Non potrò esserci»');
+    if (!name) return fail('Scrivi il tuo nome, così sappiamo chi sei');
+    if (!attending) return fail('Dicci se ci sarai: scegli «Parteciperò con piacere» oppure «Non potrò partecipare»');
     const yes = attending === 'yes';
     const adults = yes ? Number(fd.get('adults')) || 0 : 0;
     const children = yes ? Number(fd.get('children')) || 0 : 0;
@@ -749,7 +778,7 @@
     const prompt = `Sei l'assistente di Confetto, un servizio italiano di inviti digitali. Dalla descrizione dell'utente prepara i testi di un invito in italiano.
 Rispondi solo con un oggetto JSON con queste chiavi:
 {"event": uno tra ${JSON.stringify(EVENTS.map((e) => e.id))},
- "theme": uno tra ${JSON.stringify(THEMES.map((t) => t.id))} (ulivo=elegante naturale, avorio=classico oro, limoni=estate italiana, notte=sera elegante, alloro=laurea, cielo=bambini azzurro, cipria=rosa delicato, spiga=comunione, coriandoli=festa colorata),
+ "theme": uno tra ${JSON.stringify(THEMES.map((t) => t.id))} (ulivo=rami d'ulivo, elegante e naturale; avorio=classico avorio e oro; limoni=estate italiana, Amalfi; notte=sera elegante blu e oro; alloro=laurea; cielo=bambini, azzurro; cipria=rosa delicato con rose; spiga=comunione e cresima; coriandoli=festa elegante nero e oro),
  "eyebrow": "riga breve sopra il nome, es. Il matrimonio di / Festa per i 40 anni di",
  "name1": "nome del festeggiato o titolo dell'evento", "name2": "secondo nome solo per una coppia, altrimenti stringa vuota",
  "subtitle": "breve sottotitolo o stringa vuota", "date": "YYYY-MM-DD o stringa vuota", "time": "HH:MM o stringa vuota",
@@ -870,7 +899,7 @@ Descrizione dell'utente: """${text.slice(0, 800)}"""`;
     const copyBtn = e.target.closest('[data-copy]');
     if (copyBtn) {
       const ok = await copyText(copyBtn.dataset.copy, copyBtn.closest('.iban-box')?.querySelector('.iban'));
-      return toast(ok ? 'IBAN copiato ✓' : 'IBAN selezionato: copialo dal menu');
+      return toast(ok ? 'IBAN copiato' : 'IBAN selezionato: copialo dal menu');
     }
     if (e.target.closest('#rsvp-edit')) {
       document.getElementById('rsvp-done').hidden = true;
@@ -882,7 +911,7 @@ Descrizione dell'utente: """${text.slice(0, 800)}"""`;
       pre.textContent = answerText();
       pre.hidden = false;
       const ok = await copyText(answerText(), pre);
-      return toast(ok ? 'Testo copiato ✓ Incollalo dove vuoi' : 'Testo selezionato: copialo dal menu');
+      return toast(ok ? 'Testo copiato: incollalo dove vuoi' : 'Testo selezionato: copialo dal menu');
     }
     const act = e.target.closest('[data-act]');
     if (!act) return;
@@ -955,7 +984,7 @@ Descrizione dell'utente: """${text.slice(0, 800)}"""`;
     if (a === 'copy') {
       const input = document.getElementById(act.dataset.target);
       const ok = await copyText(input.value, input);
-      return toast(ok ? 'Link copiato ✓' : 'Link selezionato: copialo dal menu');
+      return toast(ok ? 'Link copiato' : 'Link selezionato: copialo dal menu');
     }
     if (a === 'view') {
       state.fromLink = false;

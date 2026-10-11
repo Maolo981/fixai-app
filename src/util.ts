@@ -126,6 +126,14 @@ export const formatDateShort = (ymd: string) => (isValidYmd(ymd) ? fmtShort.form
 /** "12 giugno" */
 export const formatDayMonth = (ymd: string) => (isValidYmd(ymd) ? fmtDayMonth.format(ymdToUtcDate(ymd)) : '');
 
+/** Pieces of the long date for the engraved date block: { weekday: "sabato", day: "12", month: "giugno", year: "2027" }. */
+export function formatDateParts(ymd: string): { weekday: string; day: string; month: string; year: string } | null {
+  if (!isValidYmd(ymd)) return null;
+  const parts = fmtLong.formatToParts(ymdToUtcDate(ymd));
+  const get = (type: string) => parts.find((x) => x.type === type)?.value ?? '';
+  return { weekday: get('weekday'), day: get('day'), month: get('month'), year: get('year') };
+}
+
 /** "11:00" -> "ore 11:00" */
 export const formatTime = (hm: string) => (isValidHm(hm) ? `ore ${hm}` : '');
 
