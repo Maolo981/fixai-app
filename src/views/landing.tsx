@@ -60,7 +60,7 @@ export function LandingPage({ origin }: { origin: string }) {
   return (
     <Layout
       title={`${BRAND.name} · Inviti digitali con conferma presenza per matrimoni, battesimi e feste`}
-      description="Crea in 5 minuti un invito digitale elegante per matrimonio, battesimo, comunione, laurea o compleanno. Mandalo su WhatsApp e ricevi le conferme di presenza in automatico."
+      description="Crea in 5 minuti un invito digitale elegante per matrimonio, battesimo, comunione, laurea, compleanno o qualsiasi festa. Mandalo su WhatsApp e ricevi le conferme di presenza in automatico."
       canonical={`${origin}/`}
       ogImage={`${origin}/og/brand.png`}
       scripts={['/js/site.js']}
@@ -79,8 +79,8 @@ export function LandingPage({ origin }: { origin: string }) {
                 Il tuo invito arriva su WhatsApp. <em>Le conferme arrivano da sole.</em>
               </h1>
               <p class="lead">
-                Matrimoni, battesimi, comunioni, lauree e compleanni: crei un invito elegante in 5 minuti, lo mandi a tutti con un link e vedi
-                in tempo reale chi viene, quanti sono e cosa mangiano.
+                Matrimoni, battesimi, comunioni, compleanni, cene, eventi aziendali e qualsiasi festa: crei un invito elegante in 5 minuti, lo
+                mandi a tutti con un link e vedi in tempo reale chi viene, quanti sono e cosa mangiano.
               </p>
               <div class="hero-cta">
                 <a class="btn btn-primary btn-lg" href="/crea">

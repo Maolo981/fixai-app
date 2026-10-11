@@ -25,7 +25,15 @@ export type EventType =
   | 'laurea'
   | 'babyshower'
   | 'anniversario'
-  | 'festa';
+  | 'festa'
+  | 'cena'
+  | 'addio'
+  | 'genderreveal'
+  | 'pensione'
+  | 'natale'
+  | 'inaugurazione'
+  | 'aziendale'
+  | 'altro';
 
 export type ThemeId =
   | 'avorio'

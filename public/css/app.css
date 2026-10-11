@@ -153,8 +153,10 @@ code{font-size:.9em;background:var(--cream);padding:1px 6px;border-radius:6px}
 
 /* create */
 .create-page{padding-top:40px;padding-bottom:40px}
-.event-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:32px auto 20px;max-width:900px}
-@media (min-width:720px){.event-grid{grid-template-columns:repeat(5,1fr)}}
+.event-group{max-width:960px;margin:28px auto 0}
+.event-group-title{font:600 13px var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+.event-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:0 0 8px}
+@media (min-width:720px){.event-grid{grid-template-columns:repeat(4,1fr)}}
 .event-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:22px 10px 18px;background:var(--surface);border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font:inherit;color:var(--ink);box-shadow:var(--shadow);transition:transform .15s,border-color .2s}
 .event-card:hover,.event-card.preselected{border-color:var(--primary);transform:translateY(-2px)}
 .event-emoji{font-size:34px;line-height:1}
