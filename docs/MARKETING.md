@@ -79,7 +79,7 @@ Registra lo schermo del telefono (iPhone: Centro di Controllo → Registrazione 
 3. Frasi per inviti di battesimo (carosello, con i testi delle pagine `/frasi/...`)
 4. «3 errori nelle conferme di presenza che fanno impazzire il catering»
 5. Tutorial: «Come mandare un link diverso a ogni invitato»
-6. Il tema Limoni di Amalfi con un sottofondo estivo
+6. Il tema Amalfi (limoni ad acquerello) con un sottofondo estivo
 7. Laurea: la corona d'alloro che si anima («per la festa di laurea di tua sorella»)
 8. Il conto alla rovescia: «-100 giorni al sì»
 9. Recensione di un cliente vero, con il suo permesso
@@ -174,7 +174,7 @@ Possiamo darvi un codice sconto da girare alle famiglie che prenotano da voi?
 | Febbraio–Aprile | **Comunioni e cresime** (aprile–giugno): parrocchie, catechisti, gruppi di mamme |
 | Aprile–Luglio | Matrimoni autunnali, feste di laurea (sessioni estive) |
 | Settembre–Novembre | Matrimoni dell'anno dopo, 18 anni, feste di laurea (sessioni autunnali), battesimi |
-| Novembre–Dicembre | Feste di Natale e Capodanno (tema Notte stellata), cene aziendali |
+| Novembre–Dicembre | Feste di Natale e Capodanno (tema Mezzanotte), cene aziendali |
 
 Compleanni e battesimi vanno tutto l'anno.
 

@@ -82,7 +82,7 @@ Il cliente crea l'invito, lo vede completo e lo personalizza gratis. Finché non
 - saluto personalizzato con il nome dell'invitato
 - foto, conto alla rovescia, messaggio, programma con il tasto «Come arrivare» (Google Maps)
 - dress code, lista nozze, IBAN con il tasto «Copia»
-- conferma di presenza: ci sarò / non potrò esserci, adulti, bambini, allergie e menu, una domanda personalizzata (es. «Ti serve la navetta?») e un messaggio per gli sposi
+- conferma di presenza: «Parteciperò con piacere» / «Non potrò partecipare», adulti, bambini, allergie e menu, una domanda personalizzata (es. «Ti serve la navetta?») e un messaggio per gli sposi
 - risposta modificabile in qualsiasi momento
 - «Aggiungi al calendario» per iPhone, Android e Google Calendar
 - anteprima bella del link su WhatsApp, con foto oppure con l'immagine della busta
@@ -90,7 +90,7 @@ Il cliente crea l'invito, lo vede completo e lo personalizza gratis. Finché non
 **Per chi organizza:**
 
 - editor con anteprima dal vivo e salvataggio automatico
-- 9 stili: Ulivo, Avorio & Oro, Limoni di Amalfi, Notte stellata, Alloro, Cielo, Cipria, Grano, Coriandoli
+- 9 stili da cartoleria di lusso (carta di cotone, oro a caldo, acquerelli, sigillo in ceralacca): Avorio e oro, Ulivo, Amalfi, Mezzanotte, Alloro, Cielo, Cipria, Grano, Gala
 - frasi già pronte per ogni occasione, foto ridimensionata automaticamente
 - dashboard: persone confermate, adulti e bambini, chi non viene, dediche
 - **lista invitati con link personali**, anche incollando l'elenco intero: «Invia su WhatsApp», stato «aperto / non aperto / ha risposto», **promemoria** solo a chi manca
@@ -227,7 +227,9 @@ Testi pronti da copiare (post, messaggi ai partner, scheda Etsy, parole chiave) 
 src/
   index.tsx        tutte le rotte (sito, invito pubblico, area di gestione, webhook, admin, cron)
   config.ts        BRAND, PREZZI, occasioni, testi di esempio e frasi suggerite
-  themes.ts        i 9 stili e gli ornamenti SVG generati dal codice
+  themes.ts        i 9 stili: acquerelli, oro, sigilli e fodere delle buste generati dal codice
+  art.ts           strumenti di disegno (pennellate, foglie, acquerello, carta, ceralacca)
+  icons.ts         icone a tratto sottile per occasioni e interfaccia
   db.ts            accesso a D1 (inviti, invitati, risposte, ordini, rate limit, pulizia)
   model.ts         validazione dei dati dell'invito
   stripe.ts        Checkout, verifica sessione, firma del webhook
