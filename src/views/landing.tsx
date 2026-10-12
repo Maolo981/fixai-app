@@ -1,9 +1,11 @@
 import { raw } from 'hono/html';
 import { BRAND, EVENTS, PRICES, RETENTION_DAYS_AFTER_EVENT } from '../config';
 import { type UiIcon, occasionIcon, uiIcon } from '../icons';
-import { THEMES } from '../themes';
+import { FEATURED_THEMES, THEMES, THEME_BY_ID } from '../themes';
 import { euro } from '../util';
+import { LIMITS } from '../model';
 import { Layout } from './layout';
+import { PhotoStylesSection } from './styles';
 
 export const FAQ: { q: string; a: string }[] = [
   {
@@ -17,6 +19,14 @@ export const FAQ: { q: string; a: string }[] = [
   {
     q: 'Posso modificare l’invito dopo averlo mandato?',
     a: 'Sì, tutte le volte che vuoi: orari, indirizzi, testo, foto. Il link resta lo stesso e gli invitati vedono sempre la versione aggiornata.',
+  },
+  {
+    q: 'Posso mettere una mia foto?',
+    a: `Sì. Carichi la foto dal telefono e scegli come mostrarla: ad arco, tonda, in cornice, come una polaroid o grande in cima all’invito. Puoi aggiungere anche una galleria con fino a ${LIMITS.gallery} foto, che gli invitati ingrandiscono con un tocco.`,
+  },
+  {
+    q: 'Quanti stili ci sono? Posso cambiarlo dopo?',
+    a: `Sono ${THEMES.length}, dai classici con l’oro ai fiori ad acquerello, dalla montagna ai palloncini per i bambini. Lo stile si cambia con un tocco quando vuoi, anche dopo aver mandato l’invito: il link resta lo stesso.`,
   },
   {
     q: 'Come vedo chi ha confermato?',
@@ -185,10 +195,12 @@ export function LandingPage({ origin, telegram }: { origin: string; telegram?: b
 
         <section class="section" id="esempi">
           <div class="container">
-            <h2 class="h2 center">Nove stili, <em>tutti made in Italy</em></h2>
+            <h2 class="h2 center">
+              {THEMES.length} stili, <em>tutti made in Italy</em>
+            </h2>
             <p class="lead center narrow">Tocca uno stile per aprire un invito di esempio, proprio come lo vedranno i tuoi ospiti.</p>
             <div class="themes-grid">
-              {THEMES.map((t) => (
+              {FEATURED_THEMES.map((id) => THEME_BY_ID[id]).map((t) => (
                 <a class="theme-card" href={`/demo/${t.id}`}>
                   <img src={`/img/themes/${t.id}.webp`} alt={`Invito stile ${t.name}`} loading="lazy" width={390} height={520} />
                   <span class="theme-meta">
@@ -198,10 +210,17 @@ export function LandingPage({ origin, telegram }: { origin: string; telegram?: b
                 </a>
               ))}
             </div>
+            <p class="center more-styles">
+              <a class="btn btn-secondary btn-lg" href="/stili">
+                Vedi tutti i {THEMES.length} stili
+              </a>
+            </p>
           </div>
         </section>
 
-        <section class="section alt">
+        <PhotoStylesSection alt />
+
+        <section class="section">
           <div class="container">
             <h2 class="h2 center">Carta, foto su WhatsApp o {BRAND.name}?</h2>
             <div class="table-wrap">

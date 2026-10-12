@@ -1,4 +1,4 @@
-import type { EventType, InviteData, ThemeId } from './types';
+import type { EventType, InviteData, PhotoStyle, ThemeId } from './types';
 import { addDays, sampleSaturday } from './util';
 
 /** Change these before launch (they appear in emails, privacy policy and terms). */
@@ -691,6 +691,15 @@ export function priceFor(eventType: EventType) {
 }
 
 /** Complete, ready-to-render sample content for a new invitation of this type. */
+/** Ways to show the main photo (editor picker; the first is the default). */
+export const PHOTO_STYLES: { id: PhotoStyle; label: string }[] = [
+  { id: 'arco', label: 'Ad arco' },
+  { id: 'cerchio', label: 'Tonda' },
+  { id: 'cornice', label: 'In cornice' },
+  { id: 'polaroid', label: 'Polaroid' },
+  { id: 'grande', label: 'Grande' },
+];
+
 export function defaultInviteData(eventType: EventType, from?: string): InviteData {
   const ev = EVENT_BY_ID[eventType];
   const date = sampleSaturday(eventType === 'matrimonio' ? 240 : 60, from);
@@ -730,6 +739,7 @@ export function defaultInviteData(eventType: EventType, from?: string): InviteDa
     notice: '',
     noticeAt: '',
     showWeather: true,
+    photoStyle: 'arco',
     ...d,
   };
 }

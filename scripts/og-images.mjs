@@ -1,15 +1,21 @@
 // Generates the static images used by the site (run with the dev server on BASE_URL):
 //   public/img/themes/<theme>.webp      theme cards on the landing page
 //   public/img/themes/<theme>-sm.webp   theme picker in the editor
-//   public/og/<theme>.png               WhatsApp/Facebook preview of invitations without a photo
+//   public/img/foto/<style>.webp        the ways to show your photo (landing page)
+//   public/og/<theme>.jpg               WhatsApp/Facebook preview of invitations without a photo
 //   public/og/brand.png                 preview of the landing page
-// Usage: BASE_URL=http://127.0.0.1:8787 node scripts/og-images.mjs
+// Usage: BASE_URL=http://127.0.0.1:8787 node scripts/og-images.mjs [theme…]   (no theme: all of them)
 import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:8787';
-const THEMES = ['ulivo', 'avorio', 'limoni', 'notte', 'alloro', 'cielo', 'cipria', 'spiga', 'coriandoli'];
+// every style has an example page listed in the sitemap
+const sitemap = await (await fetch(`${BASE}/sitemap.xml`)).text();
+const ALL = [...new Set([...sitemap.matchAll(/\/demo\/([a-z]+)</g)].map((m) => m[1]))];
+const THEMES = process.argv.length > 2 ? process.argv.slice(2).filter((t) => ALL.includes(t)) : ALL;
+const PHOTO_STYLES = ['arco', 'cerchio', 'cornice', 'polaroid', 'grande'];
 mkdirSync('public/img/themes', { recursive: true });
+mkdirSync('public/img/foto', { recursive: true });
 mkdirSync('public/og', { recursive: true });
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' });
@@ -37,26 +43,75 @@ async function toWebp(page, png, width, quality = 0.82) {
   return Buffer.from(out.split(',')[1], 'base64');
 }
 
+/** Fits a tall screenshot into a w×h picture (the proportions of the other thumbnails), on the table colour. */
+async function fitWebp(page, png, w, h, bg, quality = 0.8) {
+  const dataUrl = `data:image/png;base64,${png.toString('base64')}`;
+  const out = await page.evaluate(
+    async ({ dataUrl, w, h, bg, quality }) => {
+      const img = new Image();
+      img.src = dataUrl;
+      await img.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+      const k = Math.min(w / img.naturalWidth, h / img.naturalHeight);
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, (w - img.naturalWidth * k) / 2, 0, img.naturalWidth * k, img.naturalHeight * k);
+      return canvas.toDataURL('image/webp', quality);
+    },
+    { dataUrl, w, h, bg, quality },
+  );
+  return Buffer.from(out.split(',')[1], 'base64');
+}
+
 const ctx = await browser.newContext({ viewport: { width: 390, height: 520 }, deviceScaleFactor: 2, reducedMotion: 'reduce' });
 const page = await ctx.newPage();
 const scratch = await ctx.newPage();
 await scratch.goto(`${BASE}/robots.txt`);
 for (const t of THEMES) {
   await page.goto(`${BASE}/demo/${t}?busta=0`, { waitUntil: 'networkidle' });
-  await page.evaluate(() => document.fonts.ready);
-  const png = await page.screenshot({ type: 'png' });
-  writeFileSync(`public/img/themes/${t}.webp`, await toWebp(scratch, png, 0, 0.8));
-  writeFileSync(`public/img/themes/${t}-sm.webp`, await toWebp(scratch, png, 240, 0.8));
+  // styles painted along the bottom of the card (mountains, meadow) show the whole card, a little smaller
+  const foot = await page.evaluate(async () => {
+    await document.fonts.ready;
+    const sheet = document.querySelector('.sheet-main');
+    return document.querySelector('.art-foot') ? { bottom: sheet.getBoundingClientRect().bottom + window.scrollY, bg: getComputedStyle(document.body).backgroundColor } : null;
+  });
+  if (foot) {
+    await page.setViewportSize({ width: 390, height: Math.ceil(foot.bottom + 22) });
+    const png = await page.screenshot({ type: 'png' });
+    writeFileSync(`public/img/themes/${t}.webp`, await fitWebp(scratch, png, 780, 1040, foot.bg));
+    writeFileSync(`public/img/themes/${t}-sm.webp`, await fitWebp(scratch, png, 240, 320, foot.bg));
+    await page.setViewportSize({ width: 390, height: 520 });
+  } else {
+    const png = await page.screenshot({ type: 'png' });
+    writeFileSync(`public/img/themes/${t}.webp`, await toWebp(scratch, png, 0, 0.8));
+    writeFileSync(`public/img/themes/${t}-sm.webp`, await toWebp(scratch, png, 240, 0.8));
+  }
   console.log('theme', t);
 }
 
+if (process.argv.length <= 2) {
+  const tall = await (await browser.newContext({ viewport: { width: 390, height: 700 }, deviceScaleFactor: 2, reducedMotion: 'reduce' })).newPage();
+  for (const st of PHOTO_STYLES) {
+    await tall.goto(`${BASE}/demo/cipria?busta=0&foto=${st}`, { waitUntil: 'networkidle' });
+    await tall.evaluate(() => document.fonts.ready);
+    const png = await tall.screenshot({ type: 'png' });
+    writeFileSync(`public/img/foto/${st}.webp`, await toWebp(scratch, png, 480, 0.8));
+    console.log('photo', st);
+  }
+}
+
+// JPEG: the paper texture makes these previews heavy as PNG
 const og = await browser.newContext({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
 const ogPage = await og.newPage();
 for (const t of THEMES) {
   await ogPage.goto(`${BASE}/demo/${t}?og=1`, { waitUntil: 'networkidle' });
   await ogPage.addStyleTag({ content: '.env-hint{display:none}.env{animation:none}.env-guest{font-size:58px}.env-screen{gap:40px}' });
   await ogPage.evaluate(() => document.fonts.ready);
-  await ogPage.screenshot({ path: `public/og/${t}.png` });
+  await ogPage.screenshot({ path: `public/og/${t}.jpg`, type: 'jpeg', quality: 84 });
   console.log('og', t);
 }
 

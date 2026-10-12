@@ -112,6 +112,22 @@ body.s-lock{overflow:hidden}
 .s-covers{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}
 .s-chip{border:1px solid var(--s-line-strong);border-radius:999px;background:rgba(255,255,255,.5);padding:7px 14px;font:500 15px var(--s-sans);color:var(--s-ink);cursor:pointer}
 .s-chip.on{background:var(--s-ink);border-color:var(--s-ink);color:#f7f0e3}
+.s-chip-sm{padding:5px 12px;font-size:14px}
+.s-cats{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 16px}
+.s-chip-photo{display:inline-flex;align-items:center;gap:7px;padding-left:5px}
+.s-chip-photo img{width:24px;height:30px;object-fit:cover;border-radius:12px 12px 0 0}
+.s-chip-upload{position:relative;overflow:hidden;border-style:dashed;color:var(--s-gold-ink)}
+.s-chip-upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.s-chip-upload:focus-within{outline:2px solid var(--s-gold);outline-offset:3px}
+.s-pstyles{margin:2px 0 10px}
+.s-label-sm{font-size:14px;margin:0 0 8px}
+.s-pstyle-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.s-pstyle{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;padding:0;cursor:pointer;font:500 13px/1.25 var(--s-sans);color:var(--s-ink)}
+.s-pstyle-icon{display:grid;place-items:center;width:100%;height:58px;border:1px solid var(--s-line-strong);border-radius:8px;background:rgba(255,255,255,.6);color:var(--s-gold-ink);transition:border-color .2s,box-shadow .2s}
+.s-pstyle-icon svg{width:28px;height:34px;fill:rgba(168,132,63,.45)}
+.s-pstyle.on .s-pstyle-icon{border-color:var(--s-gold-ink);box-shadow:0 0 0 1px var(--s-gold-ink)}
+.s-pstyle:focus-visible{outline:none}
+.s-pstyle:focus-visible .s-pstyle-icon{outline:2px solid var(--s-gold);outline-offset:2px}
 .s-moment{border:1px solid var(--s-line);border-left:3px solid var(--s-gold);border-radius:6px;padding:14px 14px 4px;margin-bottom:12px;background:rgba(255,255,255,.55);position:relative}
 .s-row-time{display:grid;grid-template-columns:132px minmax(0,1fr);gap:10px}
 .s-moment-tools{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin:-6px 0 6px}

@@ -192,6 +192,26 @@ export function paperGrain(o: { size?: number; amount?: number; cloud?: number; 
   );
 }
 
+/** Kraft paper: dark specks, short light and dark fibres and a faint mottle (for brown papers). */
+export function kraftGrain(o: { size?: number; seed?: number } = {}): string {
+  const { size = 240, seed = 5 } = o;
+  // alpha = gain * noise + offset: only the peaks of the noise survive, as specks or (stretched) fibres
+  const layer = (id: string, freq: string, oct: number, rgb: string, gain: number, offset: number, s: number) =>
+    `<filter id="${id}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="${freq}" numOctaves="${oct}" seed="${s}" stitchTiles="stitch"/>` +
+    `<feColorMatrix values="0 0 0 0 ${rgb.split(' ')[0]} 0 0 0 0 ${rgb.split(' ')[1]} 0 0 0 0 ${rgb.split(' ')[2]} ${gain} 0 0 0 ${offset}"/></filter>`;
+  const rect = (id: string) => `<rect width="${size}" height="${size}" filter="url(#${id})"/>`;
+  return svgDoc(
+    size,
+    size,
+    rect('m') + rect('d') + rect('f') + rect('l') + rect('k'),
+    layer('m', '.02', 3, '.25 .15 .05', 0.6, -0.26, seed) +
+      layer('d', '.9', 2, '.2 .12 .04', 0.7, -0.3, seed + 1) +
+      layer('f', '.07 .9', 2, '.3 .2 .08', 2, -1.16, seed + 2) +
+      layer('l', '.9 .07', 2, '1 .97 .9', 2, -1.19, seed + 3) +
+      layer('k', '.5', 1, '.12 .08 .03', 7, -4.6, seed + 4),
+  );
+}
+
 /** Woven linen for the table the cards lie on (neutral, works on light and dark colours). */
 export function linen(size = 200, seed = 9, strength = 1): string {
   const a = (n: number) => r1(n * strength * 100) / 100;
@@ -203,6 +223,28 @@ export function linen(size = 200, seed = 9, strength = 1): string {
     size,
     `<rect width="${size}" height="${size}" filter="url(#h)"/><rect width="${size}" height="${size}" filter="url(#v)"/><rect width="${size}" height="${size}" filter="url(#s)"/>`,
     layer('h', '.12 1.6', '000', 0.45, seed) + layer('v', '1.6 .12', '111', 0.35, seed + 1) + layer('s', '.8', '000', 0.2, seed + 2),
+  );
+}
+
+/**
+ * Marble: white stone with soft grey veins (contours of a stretched fractal noise) and fine grain.
+ * Seamless tile, used as the paper texture of the marble theme.
+ */
+export function marble(o: { size?: number; seed?: number; vein?: string } = {}): string {
+  const { size = 420, seed = 7, vein = '.38 .37 .36' } = o;
+  const [r, g, b] = vein.split(' ');
+  const veins = (id: string, freq: string, oct: number, table: string, blur: number, s: number) =>
+    `<filter id="${id}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="${freq}" numOctaves="${oct}" seed="${s}" stitchTiles="stitch"/>` +
+    `<feColorMatrix values="0 0 0 0 ${r} 0 0 0 0 ${g} 0 0 0 0 ${b} 1 0 0 0 0"/><feComponentTransfer><feFuncA type="table" tableValues="${table}"/></feComponentTransfer>` +
+    `<feGaussianBlur stdDeviation="${blur}"/></filter>`;
+  return svgDoc(
+    size,
+    size,
+    `<rect width="${size}" height="${size}" filter="url(#a)"/><rect width="${size}" height="${size}" filter="url(#b)"/><rect width="${size}" height="${size}" filter="url(#g)"/>`,
+    veins('a', '.004 .009', 5, '0 0 0 0 0 0 0 .05 .1 .05 0 0 0 0 0 0 0', 3, seed) +
+      veins('b', '.005 .012', 6, '0 0 0 0 0 0 0 0 0 0 .32 0 0 0 0 0 0 0 0 0 0 0', 0.3, seed + 4) +
+      `<filter id="g" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="${seed + 9}" stitchTiles="stitch"/>` +
+      `<feColorMatrix values="0 0 0 0 .2 0 0 0 0 .2 0 0 0 0 .2 .16 0 0 0 -.06"/></filter>`,
   );
 }
 

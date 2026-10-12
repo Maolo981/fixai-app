@@ -1,6 +1,6 @@
 import { defaultInviteData } from './config';
 import { isTheme } from './themes';
-import type { EventType, GiftItem, Invitation, InvitationRow, InviteData, Person, ProgramItem, StayItem, StoryItem, TableReveal, ThemeId } from './types';
+import type { EventType, GiftItem, Invitation, InvitationRow, InviteData, Person, PhotoStyle, ProgramItem, StayItem, StoryItem, TableReveal, ThemeId } from './types';
 import { daysUntil, isValidHm, isValidYmd, nowIso, randomString, romeYmd, str } from './util';
 
 export const LIMITS = {
@@ -96,6 +96,8 @@ function cleanStory(v: unknown): StoryItem[] {
 }
 
 const TABLE_REVEALS: TableReveal[] = ['never', 'day', 'always'];
+const PHOTO_STYLE_IDS: PhotoStyle[] = ['arco', 'cerchio', 'cornice', 'polaroid', 'grande'];
+export const isPhotoStyle = (v: unknown): v is PhotoStyle => PHOTO_STYLE_IDS.includes(v as PhotoStyle);
 const isIso = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(v);
 
 /** Accepts untrusted input and returns a complete, valid InviteData. */
@@ -174,6 +176,7 @@ export function sanitizeInviteData(input: unknown, eventType: EventType, previou
     notice,
     noticeAt,
     showWeather: bool(src.showWeather, base.showWeather ?? true),
+    photoStyle: isPhotoStyle(src.photoStyle) ? src.photoStyle : base.photoStyle ?? 'arco',
   };
 }
 

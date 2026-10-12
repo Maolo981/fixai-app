@@ -1,10 +1,10 @@
 import { raw } from 'hono/html';
 import type { AiTone } from '../ai';
-import { BRAND, EVENT_BY_ID } from '../config';
+import { BRAND, EVENT_BY_ID, PHOTO_STYLES } from '../config';
 import { uiIcon } from '../icons';
 import { LIMITS, displayNames, parseGallery } from '../model';
-import { THEMES } from '../themes';
-import type { GiftItem, Invitation, ProgramItem, StayItem, StoryItem } from '../types';
+import { THEMES, THEME_CATEGORIES, themesFor } from '../themes';
+import type { GiftItem, Invitation, PhotoStyle, ProgramItem, StayItem, StoryItem } from '../types';
 import { AppHeader } from './app-header';
 import { Layout } from './layout';
 
@@ -174,16 +174,15 @@ function StoryRow({ s }: { s: StoryItem }) {
 }
 
 /** Colours of each theme for the WhatsApp preview image drawn in the browser (paper, names, accent). */
-const OG_COLORS: Record<string, [string, string, string]> = {
-  avorio: ['#fbf7ef', '#2b241d', '#7a5a1e'],
-  ulivo: ['#fafaf4', '#25301f', '#56653a'],
-  limoni: ['#fffefa', '#1d3463', '#1f4e8c'],
-  notte: ['#161c33', '#f6e8c4', '#e4c98b'],
-  alloro: ['#fbf6ee', '#2d2522', '#8f1d22'],
-  cielo: ['#fcfdfe', '#22304a', '#36608f'],
-  cipria: ['#fffaf8', '#45292a', '#93514a'],
-  spiga: ['#fcf8ef', '#352b20', '#7a5a1e'],
-  coriandoli: ['#fbf8f1', '#1f1a17', '#7a5a1e'],
+const OG_COLORS = Object.fromEntries(THEMES.map((t) => [t.id, [t.palette.paper, t.palette.names, t.palette.accent]]));
+
+/** Little drawings of the photo styles (40×48). */
+const PHOTO_ICONS: Record<PhotoStyle, string> = {
+  arco: '<svg viewBox="0 0 40 48"><path d="M9 44V21a11 11 0 0 1 22 0v23Z"/><path d="M6 46V21a14 14 0 0 1 28 0v25" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
+  cerchio: '<svg viewBox="0 0 40 48"><circle cx="20" cy="24" r="12"/><circle cx="20" cy="24" r="15.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
+  cornice: '<svg viewBox="0 0 40 48"><rect x="10" y="10" width="20" height="28"/><rect x="6" y="6" width="28" height="36" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
+  polaroid: '<svg viewBox="0 0 40 48"><g transform="rotate(-7 20 24)"><rect x="7" y="7" width="26" height="33" fill="#fff" stroke="currentColor" stroke-width="1"/><rect x="10" y="10" width="20" height="21"/></g></svg>',
+  grande: '<svg viewBox="0 0 40 48"><rect x="6" y="3" width="28" height="42" fill="none" stroke="currentColor" stroke-width="1"/><path d="M6 3h28v24H6Z"/><path d="M13 33h14M15 37h10" stroke="currentColor" stroke-width="1.4"/></svg>',
 };
 
 export function EditorPage({ inv, isNew, aiTones }: { inv: Invitation; isNew: boolean; aiTones: Record<AiTone, { label: string }> | null }) {
@@ -231,9 +230,22 @@ export function EditorPage({ inv, isNew, aiTones }: { inv: Invitation; isNew: bo
           >
             <section class="ed-card">
               <h2 class="ed-title">Stile</h2>
-              <div class="theme-picker">
-                {THEMES.map((t) => (
-                  <label class="theme-opt">
+              <div class="theme-cats" role="group" aria-label="Filtra gli stili">
+                <button type="button" class="chip-btn on" data-theme-cat="consigliati" aria-pressed="true">
+                  Consigliati per {ev.label.toLowerCase()}
+                </button>
+                <button type="button" class="chip-btn" data-theme-cat="tutti" aria-pressed="false">
+                  Tutti ({THEMES.length})
+                </button>
+                {THEME_CATEGORIES.map((c) => (
+                  <button type="button" class="chip-btn" data-theme-cat={c.id} aria-pressed="false">
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              <div class="theme-picker" id="theme-picker">
+                {themesFor(inv.event_type).map(({ theme: t, recommended }) => (
+                  <label class="theme-opt" data-cat={t.category} data-rec={recommended ? '1' : '0'} hidden={!recommended && inv.theme !== t.id}>
                     <input type="radio" name="theme" value={t.id} checked={inv.theme === t.id} />
                     <span class="theme-thumb" style={`background:${t.swatches[0]}`}>
                       <img src={`/img/themes/${t.id}-sm.webp`} alt="" loading="lazy" width={120} height={160} />
@@ -333,6 +345,20 @@ export function EditorPage({ inv, isNew, aiTones }: { inv: Invitation; isNew: bo
                 </div>
               </div>
               <p class="ed-hint">Appare in alto nell’invito e nell’anteprima del link su WhatsApp. Meglio se verticale.</p>
+              <fieldset class="ps-field" id="photo-styles" hidden={!coverUrl}>
+                <legend>Come mostrarla</legend>
+                <div class="ps-picker">
+                  {PHOTO_STYLES.map((s) => (
+                    <label class="ps-opt">
+                      <input type="radio" name="photoStyle" value={s.id} checked={d.photoStyle === s.id} />
+                      <span class="ps-icon" aria-hidden="true">
+                        {raw(PHOTO_ICONS[s.id])}
+                      </span>
+                      <span class="ps-name">{s.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               <h3 class="ed-subtitle">{couple ? 'Galleria: le vostre foto' : 'Galleria di foto'}</h3>
               <div class="gallery-ed" id="gallery" data-upload={`${base}/galleria`} data-remove={`${base}/galleria/rimuovi`} data-max={LIMITS.gallery}>
                 {gallery.map((k) => (

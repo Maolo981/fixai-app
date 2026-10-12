@@ -1,4 +1,4 @@
-import { defaultInviteData } from './config';
+import { EVENT_BY_ID, defaultInviteData } from './config';
 import { THEME_BY_ID } from './themes';
 import type { EventType, GiftClaimRow, GiftItem, Invitation, RideRow, ThemeId } from './types';
 import { addDays, nowIso } from './util';
@@ -27,11 +27,25 @@ const SAMPLE_GIFTS: Partial<Record<EventType, GiftItem[]>> = {
 /** A fully populated, never-saved invitation used for /demo pages and the landing page. */
 export function demoInvitation(theme: ThemeId, eventType?: EventType): Invitation {
   const ev = eventType ?? THEME_BY_ID[theme].demoEvent;
-  const data = defaultInviteData(ev);
+  let data = defaultInviteData(ev);
+  // each style shows its own example names (unless a specific occasion is asked)
+  const demo = eventType ? undefined : THEME_BY_ID[theme].demo;
+  if (demo) {
+    const { phrase, ...fields } = demo;
+    // the sample names of the occasion also appear in the message, places and signature: swap them everywhere
+    let json = JSON.stringify(data);
+    for (const k of ['name1', 'name2'] as const) {
+      const from = data[k];
+      const to = fields[k];
+      if (from && to) json = json.replace(new RegExp(`\\b${from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g'), to);
+    }
+    data = { ...JSON.parse(json), ...fields };
+    if (phrase !== undefined) data.message = EVENT_BY_ID[ev].phrases[phrase].replaceAll('{nome}', data.name1);
+  }
   data.rsvpDeadline = addDays(data.date, -30);
   if (ev === 'matrimonio' || ev === 'anniversario') {
     data.iban = 'IT60X0542811101000000123456';
-    data.ibanHolder = ev === 'matrimonio' ? 'Anna Rossi e Marco Bianchi' : 'Paola e Roberto Verdi';
+    data.ibanHolder = ev === 'matrimonio' ? `${data.name1} Rossi e ${data.name2} Bianchi` : `${data.name1} e ${data.name2} Verdi`;
     data.contactName = data.name1;
     data.contactPhone = '+39 333 123 4567';
   }

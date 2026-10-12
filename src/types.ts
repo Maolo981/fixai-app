@@ -58,7 +58,34 @@ export type ThemeId =
   | 'cielo'
   | 'cipria'
   | 'spiga'
-  | 'coriandoli';
+  | 'coriandoli'
+  | 'smeraldo'
+  | 'bordeaux'
+  | 'marmo'
+  | 'essenziale'
+  | 'pizzo'
+  | 'peonie'
+  | 'lavanda'
+  | 'girasoli'
+  | 'prato'
+  | 'ortensie'
+  | 'glicine'
+  | 'ciliegio'
+  | 'rustico'
+  | 'sicilia'
+  | 'vigneto'
+  | 'eucalipto'
+  | 'riviera'
+  | 'tropicale'
+  | 'montagna'
+  | 'autunno'
+  | 'inverno'
+  | 'arcobaleno'
+  | 'palloncini'
+  | 'farfalle'
+  | 'bollicine'
+  | 'fuochi'
+  | 'natale';
 
 export interface ProgramItem {
   time: string;
@@ -94,6 +121,9 @@ export interface StoryItem {
 }
 
 export type TableReveal = 'never' | 'day' | 'always';
+
+/** How the main photo is shown: arch, round, framed, polaroid, or big across the top of the card. */
+export type PhotoStyle = 'arco' | 'cerchio' | 'cornice' | 'polaroid' | 'grande';
 
 /** Everything the host can edit, stored as JSON in invitations.data */
 export interface InviteData {
@@ -137,6 +167,7 @@ export interface InviteData {
   notice: string;
   noticeAt: string;
   showWeather: boolean;
+  photoStyle: PhotoStyle;
 }
 
 export interface InvitationRow {

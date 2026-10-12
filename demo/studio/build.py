@@ -21,7 +21,10 @@ bundle = DIST / 'extract.mjs'
 subprocess.run([str(ROOT / 'node_modules/.bin/esbuild'), str(HERE / 'extract.ts'), '--bundle', '--platform=node', '--format=esm',
                 f'--outfile={bundle}', '--log-level=warning'], check=True)
 data = json.loads(subprocess.run(['node', str(bundle)], check=True, capture_output=True, text=True).stdout)
-theme_css = '\n'.join(t.pop('css') for t in data['themes'])
+# The drawing code of the styles, run in the browser (window.ConfettoThemes).
+themes_js = DIST / 'themes.js'
+subprocess.run([str(ROOT / 'node_modules/.bin/esbuild'), str(HERE / 'themes-entry.ts'), '--bundle', '--format=iife', '--minify', '--target=es2020',
+                f'--outfile={themes_js}', '--log-level=warning'], check=True)
 
 invite_css = (ROOT / 'public/css/invite.css').read_text(encoding='utf-8').replace('body.inv{', '.inv{')
 studio_css = (HERE / 'studio.css').read_text(encoding='utf-8')
@@ -54,7 +57,6 @@ page = f"""<title>Confetto Studio</title>
 <link rel="stylesheet" href="{fonts}">
 <style>
 {invite_css}
-{theme_css}
 {ui_css}
 {studio_css}
 </style>
@@ -63,6 +65,9 @@ page = f"""<title>Confetto Studio</title>
 <script type="application/json" id="studio-data" data-base="{BASE_URL}">{as_json(data)}</script>
 <script type="application/json" id="studio-covers">{as_json(covers)}</script>
 <script type="application/json" id="studio-thumbs">{as_json(thumbs)}</script>
+<script>
+{themes_js.read_text(encoding='utf-8')}
+</script>
 <script>
 {script}
 </script>

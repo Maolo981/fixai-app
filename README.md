@@ -19,7 +19,7 @@ Il prodotto è completo e testato: sito, editor, invito animato, dashboard, paga
 | **Obiettivo "il giusto"** | 3 inviti al giorno ≈ **2.200 € al mese** di incasso |
 | **Lavoro richiesto** | Niente magazzino né spedizioni, nessun servizio da erogare a mano. Il tuo tempo va nel marketing. |
 
-> **Versione di prova da far vedere a tutti:** [Confetto Studio](https://claude.ai/artifact/YLJQyivx9o7tEuhcGyDcBj). Scegli qualsiasi occasione, personalizzi l'invito con l'anteprima dal vivo e ottieni un link da mandare su WhatsApp. Gira tutta nel browser: la risposta degli invitati arriva su WhatsApp a chi organizza, invece che nella dashboard. Sorgenti in `demo/studio/`, si rigenera con `npm run demo:studio`.
+> **Versione di prova da far vedere a tutti:** [Confetto Studio](https://claude.ai/artifact/YLJQyivx9o7tEuhcGyDcBj). Scegli qualsiasi occasione e uno dei 36 stili, aggiungi la tua foto (ad arco, tonda, in cornice, polaroid o grande), personalizzi l'invito con l'anteprima dal vivo e ottieni un link da mandare su WhatsApp. Gira tutta nel browser: la risposta degli invitati arriva su WhatsApp a chi organizza, invece che nella dashboard. Sorgenti in `demo/studio/`, si rigenera con `npm run demo:studio`.
 
 ---
 
@@ -78,11 +78,16 @@ Il cliente crea l'invito, lo vede completo e lo personalizza gratis. Finché non
 
 Stile da cartoleria di lusso (carta di cotone, acquerelli, oro a caldo, sigillo di ceralacca) ma **testi semplici e leggibili**: titoli in Cormorant Garamond, tutto il resto in Jost, a grandezza comoda anche per i nonni.
 
+**36 stili** in quattro famiglie, tutti disegnati dal codice (niente immagini da comprare): *classici ed eleganti* (avorio e oro, smeraldo, bordeaux, marmo, pizzo, essenziale…), *fiori* (rose, peonie, lavanda, girasoli, ortensie, glicine, ciliegio, prato fiorito), *natura e viaggi* (ulivo, Amalfi, Sicilia, vigneto, eucalipto, riviera, tropicale, montagna, autunno, inverno, rustico su carta kraft) e *feste e bambini* (cielo, arcobaleno, palloncini, farfalle, bollicine, fuochi d'artificio, Natale…). Ogni stile ha la sua carta, i suoi colori, il suo sigillo di ceralacca e la fodera della busta.
+
+![Alcuni dei 36 stili](docs/screenshots/temi.webp)
+
 **Per gli invitati** (nessuna app, si apre da WhatsApp):
 
 - busta animata con sigillo di ceralacca e iniziali, poi una pioggia di coriandoli
 - saluto personalizzato con il nome dell'invitato e, se vuoi, **il suo tavolo**
-- foto di copertina, **galleria di foto** (fino a 8), **la vostra storia** a tappe, conto alla rovescia, messaggio
+- **la tua foto mostrata in 5 modi**: ad arco, tonda con cornice d'oro, in cornice, polaroid con lo scotch, oppure grande in cima all'invito che sfuma nella carta
+- **galleria di foto** (fino a 8), **la vostra storia** a tappe, conto alla rovescia, messaggio
 - programma con «Indicazioni stradali» (Google Maps) e **meteo** del giorno nei 14 giorni prima
 - **tappe riservate**: chi è invitato solo alla cerimonia non vede il ricevimento
 - dress code, **dove dormire** (hotel consigliati), **bacheca dei passaggi** tra invitati
@@ -96,7 +101,7 @@ Stile da cartoleria di lusso (carta di cotone, acquerelli, oro a caldo, sigillo 
 
 **Per chi organizza:**
 
-- editor con anteprima dal vivo e salvataggio automatico, 9 stili, frasi già pronte per ogni occasione
+- editor con anteprima dal vivo e salvataggio automatico, 36 stili (prima quelli **consigliati per l'occasione**, poi filtri per famiglia), frasi già pronte per ogni occasione
 - **testi scritti dall'AI** (facoltativo, con chiave Claude): «più elegante», «più semplice», «più simpatico», «più breve» o «scrivine uno nuovo»
 - dashboard: persone confermate, adulti e bambini, **totale dei menu**, chi non viene, dediche e **canzoni** proposte
 - **lista invitati con link personali**, anche incollando l'elenco intero o scegliendo **dalla rubrica** del telefono (Android): gruppi (famiglia, amici, colleghi), tavoli, invitati solo alle tappe aperte a tutti, filtri, «Invia su WhatsApp», stato «aperto / ha risposto», **promemoria** solo a chi manca
@@ -112,7 +117,7 @@ Stile da cartoleria di lusso (carta di cotone, acquerelli, oro a caldo, sigillo 
 
 - pagamenti **Stripe Checkout** (carte, Apple Pay, Google Pay e codici sconto), con conferma sia dal ritorno del browser sia dal webhook
 - **area `/admin`** protetta da password: incasso totale e degli ultimi 30 giorni, conversione da bozza a pagato, grafico degli ultimi 14 giorni, ultimi 100 inviti
-- **pagine SEO** per ogni occasione (`/inviti/battesimo`…) e raccolte di **frasi** (`/frasi/matrimonio`…) per farti trovare su Google
+- **pagine SEO** per ogni occasione (`/inviti/battesimo`…), raccolte di **frasi** (`/frasi/matrimonio`…) e la vetrina **`/stili`** con tutti gli stili, per farti trovare su Google
 - privacy: dati cancellati in automatico 6 mesi dopo l'evento e bozze abbandonate dopo 60 giorni; font ospitati in casa (niente Google Fonts); nessun cookie di profilazione
 - sicurezza: link di gestione segreti e impossibili da indovinare, protezione anti-spam e limiti di frequenza, Content-Security-Policy, CSV protetto dalle formule Excel
 - statistiche visite facoltative e senza cookie (Cloudflare Web Analytics)
@@ -127,7 +132,7 @@ Stile da cartoleria di lusso (carta di cotone, acquerelli, oro a caldo, sigillo 
 | **La tua area admin** | **Lista regali nell'invito** |
 | ![Admin](docs/screenshots/admin.webp) | ![Lista regali nell'invito](docs/screenshots/lista-regali.webp) |
 
-![Alcuni stili](docs/screenshots/temi.webp)
+![La foto in 5 modi: ad arco, tonda, in cornice, polaroid, grande](docs/screenshots/foto.webp)
 
 ---
 
@@ -257,8 +262,13 @@ Testi pronti da copiare (post, messaggi ai partner, scheda Etsy, parole chiave) 
 src/
   index.tsx        tutte le rotte (sito, invito pubblico, area di gestione, webhook, admin, cron)
   config.ts        BRAND, PREZZI, occasioni, testi di esempio e frasi suggerite
-  themes.ts        i 9 stili: acquerelli, oro, sigilli e fodere delle buste generati dal codice
-  art.ts           strumenti di disegno (pennellate, foglie, acquerello, carta, ceralacca)
+  themes.ts        i 36 stili: colori, ricette dei decori, fodere delle buste e CSS di ogni stile
+  art.ts           strumenti di disegno (pennellate, foglie, acquerello, carta, marmo, kraft, ceralacca)
+  paint.ts         kit di pittura condiviso (foglie, rametti, petali, fiocchi, forme in oro)
+  foil.ts          decori in oro a caldo (divisori, corone, angoli, cieli, pizzo)
+  motifs.ts        acquerelli dei fiori (rose, peonie, lavanda, girasoli, ortensie, glicine, ciliegio…)
+  nature.ts        acquerelli natura (arance, vite, eucalipto, tenda al mare, tropicale, montagne, autunno, pino)
+  party.ts         feste (arcobaleno, palloncini, farfalle, calici, fuochi d'artificio, agrifoglio, neve)
   icons.ts         icone a tratto sottile per occasioni e interfaccia
   db.ts            accesso a D1 (inviti, invitati, risposte, ordini, rate limit, pulizia)
   model.ts         validazione dei dati dell'invito
@@ -285,7 +295,7 @@ npm run db:migrate:local
 npm run dev                        # http://localhost:8787
 ```
 
-**Test** (38 controlli end-to-end: creazione, editor, foto e galleria, testi AI, pagamento Stripe simulato, webhook firmato, link personali, tappe riservate, menu, tavoli, lista regali e collette, passaggi, link di sola lettura, Telegram, meteo, save the date, stampa, CSV, admin, pulizia GDPR):
+**Test** (40 controlli end-to-end: creazione, editor, foto nei 5 modi e galleria, tutti i 36 stili, testi AI, pagamento Stripe simulato, webhook firmato, link personali, tappe riservate, menu, tavoli, lista regali e collette, passaggi, link di sola lettura, Telegram, meteo, save the date, stampa, CSV, admin, pulizia GDPR):
 
 ```bash
 npm test                           # richiede Chromium: CHROMIUM=/percorso/chrome npm test
@@ -296,7 +306,7 @@ npm run typecheck
 
 - prezzi e nome: `src/config.ts`
 - testi del sito: `src/views/landing.tsx`
-- nuovo stile: aggiungilo in `src/themes.ts` e in `public/css/invite.css` (classe `.t-nome`), poi rigenera le immagini con `npm run dev` e, in un altro terminale, `npm run og`
+- nuovo stile: aggiungi il nome in `src/types.ts` (`ThemeId`), i colori e la ricetta dei decori in `src/themes.ts` (i disegni stanno in `motifs.ts`, `nature.ts`, `party.ts`), poi rigenera le immagini con `npm run dev` e, in un altro terminale, `npm run og -- nome`
 
 ---
 

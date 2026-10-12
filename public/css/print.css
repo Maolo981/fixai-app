@@ -16,12 +16,10 @@
 .print-card .art-div{margin:12px auto}
 .print-card .d-day{font-size:44px}
 .print-message{margin:14px auto 0;max-width:30ch;font-size:15px;line-height:1.5;white-space:pre-line}
-.print-qr{display:flex;align-items:center;gap:14px;margin:18px auto 0;padding:12px 14px;border:1px solid var(--rule);border-radius:var(--radius);text-align:left;max-width:330px;background:rgba(255,255,255,.55)}
-.t-notte .print-qr{background:#fbf7ef;color:#1f1a16}
-.t-notte .print-qr strong{color:#1f1a16}
+.print-qr{display:flex;align-items:center;gap:14px;margin:18px auto 0;padding:12px 14px;border:1px solid var(--rule);border-radius:var(--radius);text-align:left;max-width:330px;background:#fffdf8;color:#2a231d}
 .print-qr svg{flex:none;display:block}
 .print-qr p{margin:0;font-size:13px;line-height:1.45}
-.print-qr strong{display:block;font-size:15px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.print-qr strong{display:block;font-size:15px;font-weight:600;color:#2a231d;margin-bottom:2px}
 .print-url{display:block;font-weight:600;word-break:break-all}
 
 /* guest cards: 2 × 4 per A4 */
@@ -58,8 +56,7 @@
 .finder-form{display:grid;gap:14px;max-width:380px;margin:18px auto 0;text-align:left}
 .finder-msg{margin:18px auto 0;max-width:34ch;color:var(--muted)}
 .finder-results{list-style:none;margin:20px auto 0;padding:0;max-width:380px;display:grid;gap:10px;text-align:left}
-.finder-results li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--rule);border-radius:var(--radius);background:rgba(255,255,255,.55)}
-.t-notte .finder-results li{background:rgba(255,255,255,.05)}
+.finder-results li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--rule);border-radius:var(--radius);background:var(--box,rgba(255,255,255,.55))}
 .finder-results span{font-weight:500}
 .finder-results strong{flex:none;font-family:var(--f-display);font-weight:600;font-size:24px;line-height:1.1;color:var(--accent)}
 .finder .link-btn{display:inline-block;margin-top:22px}

@@ -9,7 +9,7 @@ import { BRAND, EVENTS, EVENT_BY_ID, EVENT_BY_SLUG, defaultInviteData, isEventTy
 import * as db from './db';
 import { demoExtras, demoInvitation } from './demo';
 import { sendActivated, sendAdminLink, sendRecovery, sendRsvpNotification } from './email';
-import { LIMITS, displayNames, parseGallery, parseInvitation, parsePeople, peopleSummary, publicPath, sanitizeInviteData, sanitizePeople, sanitizeTheme, tableRevealActive, visibleProgram } from './model';
+import { LIMITS, displayNames, isPhotoStyle, parseGallery, parseInvitation, parsePeople, peopleSummary, publicPath, sanitizeInviteData, sanitizePeople, sanitizeTheme, tableRevealActive, visibleProgram } from './model';
 import { createCheckoutSession, retrieveCheckoutSession, sessionIsPaid, stripeConfigured, verifyWebhook, type CheckoutSession } from './stripe';
 import { rsvpTelegramText, sendTelegram, telegramConfigured } from './telegram';
 import { THEMES, isTheme } from './themes';
@@ -23,6 +23,7 @@ import { InvitePage, rideSummary, rideWaText } from './views/invite';
 import { LandingPage } from './views/landing';
 import { AdminPage, ErrorPage, EventLandingPage, NotFoundPage, PhrasesPage, PrivacyPage, RecoverPage, TermsPage } from './views/pages';
 import { GuestCardsPage, PrintPage, TableFinderPage, TableauPage, groupTables } from './views/print';
+import { StylesPage } from './views/styles';
 
 type App = { Bindings: Env };
 type Ctx = Context<App>;
@@ -36,6 +37,8 @@ const app = new Hono<App>();
 const render = (c: Ctx, node: JSX.Element, status: 200 | 404 | 500 | 403 | 400 = 200) => c.html(html`<!doctype html>${node}`, status);
 const originOf = (c: Ctx) => (c.env.PUBLIC_URL || new URL(c.req.url).origin).replace(/\/$/, '');
 const notFound = (c: Ctx) => render(c, <NotFoundPage />, 404);
+/** Sample photo of the example invitations (an illustration of a couple at sunset). */
+const DEMO_PHOTO = '/img/demo/tramonto.jpg';
 
 async function clientKey(c: Ctx): Promise<string> {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
@@ -156,7 +159,11 @@ app.use('*', async (c, next) => {
 
 app.get('/', (c) => render(c, <LandingPage origin={originOf(c)} telegram={telegramConfigured(c.env)} />));
 
-app.get('/crea', (c) => render(c, <CreatePage origin={originOf(c)} preselect={c.req.query('tipo')} />));
+app.get('/crea', (c) => {
+  const stile = c.req.query('stile');
+  return render(c, <CreatePage origin={originOf(c)} preselect={c.req.query('tipo')} theme={isTheme(stile) ? stile : undefined} />);
+});
+app.get('/stili', (c) => render(c, <StylesPage origin={originOf(c)} />));
 
 app.post('/crea', async (c) => {
   const form = await c.req.parseBody();
@@ -164,7 +171,9 @@ app.post('/crea', async (c) => {
   if (!isEventType(type)) return c.redirect('/crea', 303);
   if (!(await db.rateLimit(c.env.DB, `create:${await clientKey(c)}`, 30, 3600)))
     return render(c, <ErrorPage text="Hai creato molti inviti in poco tempo. Riprova tra un’ora." />, 400);
-  const row = await db.createInvitation(c.env.DB, type, EVENT_BY_ID[type].theme, defaultInviteData(type));
+  // a style chosen on /stili comes along, otherwise the occasion's own
+  const theme = isTheme(form.theme) ? form.theme : EVENT_BY_ID[type].theme;
+  const row = await db.createInvitation(c.env.DB, type, theme, defaultInviteData(type));
   return c.redirect(`/gestisci/${row.admin_token}/modifica?nuovo=1`, 303);
 });
 
@@ -187,6 +196,9 @@ app.get('/demo/:theme', (c) => {
     // Used by scripts/og-images.mjs: generic envelope without demo names.
     inv.data = { ...inv.data, name1: '♥', name2: '' };
   }
+  // ?foto=<style>: the example invitation with a sample photo shown in that style
+  const photo = c.req.query('foto');
+  if (isPhotoStyle(photo)) inv.data = { ...inv.data, photoStyle: photo };
   const extras = c.req.query('og') === '1' ? { claims: [], rides: [] } : demoExtras(inv);
   return render(
     c,
@@ -199,6 +211,7 @@ app.get('/demo/:theme', (c) => {
       rsvp={{ open: true }}
       claims={extras.claims}
       rides={extras.rides}
+      coverUrl={isPhotoStyle(photo) ? DEMO_PHOTO : undefined}
     />,
   );
 });
@@ -235,7 +248,7 @@ app.get('/robots.txt', (c) =>
 
 app.get('/sitemap.xml', (c) => {
   const o = originOf(c);
-  const urls = ['/', '/crea', ...EVENTS.map((e) => `/inviti/${e.slug}`), ...EVENTS.map((e) => `/frasi/${e.slug}`), ...THEMES.map((t) => `/demo/${t.id}`), '/privacy', '/termini'];
+  const urls = ['/', '/crea', '/stili', ...EVENTS.map((e) => `/inviti/${e.slug}`), ...EVENTS.map((e) => `/frasi/${e.slug}`), ...THEMES.map((t) => `/demo/${t.id}`), '/privacy', '/termini'];
   const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((u) => `<url><loc>${o}${u}</loc></url>`).join('')}</urlset>`;
   return c.body(body, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
 });

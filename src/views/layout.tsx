@@ -40,7 +40,7 @@ export function SiteHeader() {
       <div class="container header-inner">
         <Logo />
         <nav class="nav" aria-label="Principale">
-          <a href="/#esempi">Esempi</a>
+          <a href="/stili">Stili</a>
           <a href="/#prezzi">Prezzi</a>
           <a href="/#domande">Domande</a>
         </nav>

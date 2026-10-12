@@ -13,7 +13,22 @@
   const THEMES = DATA.themes;
   const EV = Object.fromEntries(EVENTS.map((e) => [e.id, e]));
   const TH = Object.fromEntries(THEMES.map((t) => [t.id, t]));
+  const CATEGORIES = DATA.categories;
+  const PHOTO_STYLES = DATA.photoStyles;
+  const PS = new Set(PHOTO_STYLES.map((p) => p.id));
   const app = document.getElementById('app');
+
+  // Each style's paper, colours and artwork are drawn here on first use (same code as the product).
+  const ART = window.ConfettoThemes;
+  const themeCss = new Set();
+  function useTheme(id) {
+    if (themeCss.has(id)) return;
+    themeCss.add(id);
+    const el = document.createElement('style');
+    el.dataset.theme = id;
+    el.textContent = ART.themeInlineCss(id);
+    document.head.appendChild(el);
+  }
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---------------------------------------------------------------------------
@@ -186,7 +201,10 @@
     step: 'choose', // choose | edit | share | view
     ev: 'matrimonio',
     theme: 'ulivo',
-    cover: '',
+    cover: '', // '' | 'tramonto' | 'mine'
+    photo: '', // the photo uploaded by the user (small JPEG data URL)
+    photoStyle: 'arco',
+    themeCat: 'consigliati',
     data: null,
     guest: '',
     fromLink: false,
@@ -215,7 +233,8 @@
   function startEditing(evId) {
     state.ev = evId;
     state.theme = EV[evId].theme;
-    state.cover = '';
+    state.cover = state.photo ? 'mine' : '';
+    state.themeCat = 'consigliati';
     state.data = defaultsFor(evId);
     state.guest = '';
     go('edit');
@@ -251,9 +270,15 @@
     const prog = d.program.filter((x) => x.time || x.title || x.place || x.address);
     if (prog.length) o.p = prog.map((x) => [x.time, x.title, x.place, x.address]);
     o.f = (d.askChildren ? 1 : 0) | (d.askDiet ? 2 : 0) | (d.showCountdown ? 4 : 0) | (d.askNames ? 8 : 0) | (d.askSong ? 16 : 0);
-    if (state.cover) o.c = state.cover;
+    if (state.cover === 'mine' && state.photo) {
+      o.c = 'mine';
+      o.ph = state.photo.slice(state.photo.indexOf(',') + 1);
+    } else if (state.cover) o.c = state.cover;
+    if (o.c) o.ps = state.photoStyle;
     return o;
   }
+  /** A JPEG sent in a link: plain base64, of a sensible size. */
+  const photoFromLink = (b64) => (typeof b64 === 'string' && b64.length < 60000 && /^\/9j\/[A-Za-z0-9+/]+=*$/.test(b64) ? `data:image/jpeg;base64,${b64}` : '');
   function unpack(o) {
     if (!o || o.v !== 1 || !EV[o.e]) return null;
     const d = { program: [] };
@@ -276,7 +301,15 @@
     d.showCountdown = Boolean(f & 4);
     d.askNames = Boolean(f & 8);
     d.askSong = Boolean(f & 16);
-    return { ev: o.e, theme: TH[o.t] ? o.t : EV[o.e].theme, cover: COVERS[o.c] ? o.c : '', data: d };
+    const photo = o.c === 'mine' ? photoFromLink(o.ph) : '';
+    return {
+      ev: o.e,
+      theme: TH[o.t] ? o.t : EV[o.e].theme,
+      cover: photo ? 'mine' : COVERS[o.c] ? o.c : '',
+      photo,
+      photoStyle: PS.has(o.ps) ? o.ps : 'arco',
+      data: d,
+    };
   }
   const b64url = (bytes) => {
     let s = '';
@@ -369,14 +402,18 @@
   function renderInvite(mode, withEnvelope) {
     const ev = EV[state.ev];
     const th = TH[state.theme];
-    const orn = th.orn;
+    useTheme(th.id);
+    const orn = ART.ornaments(th.id);
     const d = state.data;
     const names = displayNames(d);
     const start = isYmd(d.date) ? romeToUtc(d.date, d.time || '12:00') : null;
     const program = d.program.filter((x) => x.time || x.title || x.place || x.address);
     const firstPlace = program.find((x) => x.place)?.place || '';
     const twoNames = ev.couple && d.name2;
-    const cover = state.cover && COVERS[state.cover];
+    const cover = state.cover === 'mine' ? state.photo : state.cover && COVERS[state.cover];
+    const coverAlt = state.cover === 'mine' ? `Foto di ${names}` : 'Illustrazione: il mare al tramonto';
+    const bigPhoto = Boolean(cover) && state.photoStyle === 'grande';
+    const figure = (style) => `<figure class="cover cover-${style}"><img src="${esc(cover)}" alt="${esc(coverAlt)}" width="480" height="600"></figure>`;
     const guest = state.guest;
     const who = d.contactName || 'chi ti ha invitato';
     const calLocation = [program[0]?.place, program[0]?.address].filter(Boolean).join(', ');
@@ -398,11 +435,13 @@
     h.push('<div class="page"><main class="card"><article class="sheet sheet-main">');
     if (orn.scatter) h.push(orn.scatter);
     h.push('<header class="hero sec">');
-    if (orn.top) h.push(orn.top);
+    // the big photo takes the place of the artwork at the top of the card
+    if (bigPhoto) h.push(figure('grande'));
+    else if (orn.top) h.push(orn.top);
     h.push('<div class="hero-body">');
-    if (orn.crest) h.push(`<div class="crest" aria-hidden="true"><span class="crest-mono">${mono(d)}</span></div>`);
+    if (orn.crest && !bigPhoto) h.push(`<div class="crest" aria-hidden="true"><span class="crest-mono">${mono(d)}</span></div>`);
     if (guest) h.push(`<p class="for-guest">Un invito speciale per <strong>${esc(guest)}</strong></p>`);
-    if (cover) h.push(`<figure class="cover"><img src="${cover}" alt="Illustrazione: il mare al tramonto" width="480" height="600"></figure>`);
+    if (cover && !bigPhoto) h.push(figure(state.photoStyle));
     if (d.eyebrow) h.push(`<p class="eyebrow">${esc(d.eyebrow)}</p>`);
     h.push(
       `<h1 class="names ${nsClass(d)}">${
@@ -414,7 +453,9 @@
     if (dp) h.push(`<p class="date"><span class="d-wd">${esc(dp.weekday)}</span> <span class="d-day">${esc(dp.day)}</span> <span class="d-mo">${esc(dp.month)}</span> <span class="d-yr">${esc(dp.year)}</span></p>`);
     if (d.time) h.push(`<p class="time">ore ${esc(d.time)}</p>`);
     if (firstPlace) h.push(`<p class="place">${esc(firstPlace)}</p>`);
-    h.push('</div></header></article>');
+    h.push('</div>');
+    if (orn.foot) h.push(orn.foot);
+    h.push('</header></article>');
     if (hasDetails) {
       h.push('<article class="sheet sheet-details">');
       if (showCountdown) {
@@ -567,13 +608,80 @@
       .join('');
   }
 
+  /** Styles for the picker: the ones suited to this occasion first. */
+  function themeButtons() {
+    const fit = (t) => t.events.indexOf(state.ev);
+    let list = THEMES;
+    // made for this occasion, best fit first
+    if (state.themeCat === 'consigliati') list = THEMES.filter((t) => fit(t) >= 0).sort((a, b) => fit(a) - fit(b));
+    else if (state.themeCat !== 'tutti') list = THEMES.filter((t) => t.category === state.themeCat);
+    if (!list.some((t) => t.id === state.theme) && state.themeCat === 'consigliati') list = [TH[state.theme], ...list];
+    return list
+      .map(
+        (t) =>
+          `<button type="button" class="s-theme${t.id === state.theme ? ' on' : ''}" data-act="theme" data-theme="${t.id}" aria-pressed="${t.id === state.theme}"><span class="s-theme-thumb" style="background:${t.swatches[0]}"><img src="${THUMBS[t.id]}" alt="" width="120" height="160" loading="lazy"></span><span class="s-theme-name">${esc(t.name)}</span></button>`,
+      )
+      .join('');
+  }
+  function coverChips() {
+    const chip = (id, label) => `<button type="button" class="s-chip${state.cover === id ? ' on' : ''}" data-act="cover" data-cover="${id}">${label}</button>`;
+    return (
+      chip('', 'Nessuna') +
+      (state.photo ? `<button type="button" class="s-chip s-chip-photo${state.cover === 'mine' ? ' on' : ''}" data-act="cover" data-cover="mine"><img src="${esc(state.photo)}" alt="">La tua foto</button>` : '') +
+      chip('tramonto', 'Esempio: tramonto') +
+      `<label class="s-chip s-chip-upload"><input type="file" accept="image/*" id="photo-input">${state.photo ? 'Cambia foto' : 'Carica la tua foto'}</label>`
+    );
+  }
+  const PHOTO_ICONS = {
+    arco: '<svg viewBox="0 0 40 48"><path d="M9 44V21a11 11 0 0 1 22 0v23Z"/><path d="M6 46V21a14 14 0 0 1 28 0v25" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
+    cerchio: '<svg viewBox="0 0 40 48"><circle cx="20" cy="24" r="12"/><circle cx="20" cy="24" r="15.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
+    cornice: '<svg viewBox="0 0 40 48"><rect x="10" y="10" width="20" height="28"/><rect x="6" y="6" width="28" height="36" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
+    polaroid: '<svg viewBox="0 0 40 48"><g transform="rotate(-7 20 24)"><rect x="7" y="7" width="26" height="33" fill="#fff" stroke="currentColor" stroke-width="1"/><rect x="10" y="10" width="20" height="21"/></g></svg>',
+    grande: '<svg viewBox="0 0 40 48"><rect x="6" y="3" width="28" height="42" fill="none" stroke="currentColor" stroke-width="1"/><path d="M6 3h28v24H6Z"/><path d="M13 33h14M15 37h10" stroke="currentColor" stroke-width="1.4"/></svg>',
+  };
+  const photoStyleButtons = () =>
+    PHOTO_STYLES.map(
+      (p) =>
+        `<button type="button" class="s-pstyle${state.photoStyle === p.id ? ' on' : ''}" data-act="photo-style" data-style="${p.id}" aria-pressed="${state.photoStyle === p.id}"><span class="s-pstyle-icon" aria-hidden="true">${PHOTO_ICONS[p.id] || ''}</span><span>${esc(p.label)}</span></button>`,
+    ).join('');
+
+  /** The user's photo, cropped to a portrait and squeezed into a small JPEG so it can travel in the link. */
+  const MAX_PHOTO = 30000;
+  async function photoFromFile(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      const [W, H] = [img.naturalWidth, img.naturalHeight];
+      const ratio = 4 / 5;
+      const [sw, sh] = W / H > ratio ? [H * ratio, H] : [W, W / ratio];
+      const canvas = document.createElement('canvas');
+      let w = 400;
+      for (let attempt = 0; attempt < 5; attempt++, w = Math.round(w * 0.82)) {
+        canvas.width = w;
+        canvas.height = Math.round(w / ratio);
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh, 0, 0, canvas.width, canvas.height);
+        for (const q of [0.74, 0.64, 0.54, 0.45]) {
+          const data = canvas.toDataURL('image/jpeg', q);
+          if (data.length <= MAX_PHOTO) return data;
+        }
+      }
+      throw new Error('too big');
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
   function renderEditor() {
     const ev = EV[state.ev];
     const d = state.data;
-    const themes = THEMES.map(
-      (t) =>
-        `<button type="button" class="s-theme${t.id === state.theme ? ' on' : ''}" data-act="theme" data-theme="${t.id}" aria-pressed="${t.id === state.theme}"><span class="s-theme-thumb" style="background:${t.swatches[0]}"><img src="${THUMBS[t.id]}" alt="" width="120" height="160"></span><span class="s-theme-name">${esc(t.name)}</span></button>`,
-    ).join('');
+    const themes = themeButtons();
+    const cats = [{ id: 'consigliati', label: `Consigliati per ${ev.label.toLowerCase()}` }, { id: 'tutti', label: `Tutti (${THEMES.length})` }, ...CATEGORIES]
+      .map((c) => `<button type="button" class="s-chip s-chip-sm${state.themeCat === c.id ? ' on' : ''}" data-act="cat" data-cat="${c.id}" aria-pressed="${state.themeCat === c.id}">${esc(c.label)}</button>`)
+      .join('');
     const who = state.ev === 'matrimonio' ? 'Gli sposi' : ev.couple ? 'La coppia' : ['festa', 'cena', 'natale', 'aziendale', 'altro', 'inaugurazione', 'genderreveal'].includes(state.ev) ? 'L’evento' : 'Chi festeggiamo';
     app.innerHTML = `${header('<button type="button" class="s-btn s-btn-primary s-btn-sm" data-act="make-link">Crea il link</button>')}
     <main class="s-wrap s-editor">
@@ -582,12 +690,13 @@
         <p class="s-kicker s-kicker-icon">${ev.icon}<span>${esc(ev.label)}</span></p>
         <h1 class="s-h2">Personalizza il tuo invito</h1>
         <p class="s-hint">Abbiamo scritto dei testi di esempio: cambiali con i tuoi. L’anteprima si aggiorna mentre scrivi.</p>
-        <section class="s-card"><h2 class="s-card-title"><span class="s-num">I</span>Lo stile</h2><div class="s-themes">${themes}</div>
-          <p class="s-label">Immagine di copertina</p>
-          <div class="s-covers">
-            <button type="button" class="s-chip${state.cover ? '' : ' on'}" data-act="cover" data-cover="">Nessuna</button>
-            <button type="button" class="s-chip${state.cover === 'tramonto' ? ' on' : ''}" data-act="cover" data-cover="tramonto">Tramonto sul mare</button>
-          </div><p class="s-hint s-hint-sm">Nel servizio completo carichi la tua foto.</p></section>
+        <section class="s-card"><h2 class="s-card-title"><span class="s-num">I</span>Lo stile</h2>
+          <div class="s-cats" role="group" aria-label="Filtra gli stili">${cats}</div>
+          <div class="s-themes" id="themes">${themes}</div>
+          <p class="s-label">La foto</p>
+          <div class="s-covers" id="covers">${coverChips()}</div>
+          <div class="s-pstyles" id="photo-styles"${state.cover ? '' : ' hidden'}><p class="s-label s-label-sm">Come mostrarla</p><div class="s-pstyle-row">${photoStyleButtons()}</div></div>
+          <p class="s-hint s-hint-sm">La foto resta sul tuo telefono finché non crei il link: viaggia dentro il link, rimpicciolita.</p></section>
         <section class="s-card"><h2 class="s-card-title"><span class="s-num">II</span>${who}</h2>
           ${field('Riga sopra il nome', 'eyebrow', d.eyebrow, 'maxlength="60" placeholder="Es. Il matrimonio di"')}
           <div class="${ev.couple ? 's-row2' : ''}">${field(esc(ev.name1Label), 'name1', d.name1, 'maxlength="60"')}${ev.couple ? field(esc(ev.name2Label), 'name2', d.name2, 'maxlength="60"') : ''}</div>
@@ -648,6 +757,7 @@
   }
 
   function renderShare(link) {
+    useTheme(state.theme);
     const ev = EV[state.ev];
     const d = state.data;
     const text = `Ciao! Ti invito ${eventPhrase(ev, d)}, ${dateLong(d.date)}. Apri l’invito e fammi sapere se ci sarai: ${link}`;
@@ -845,7 +955,7 @@
     const prompt = `Sei l'assistente di Confetto, un servizio italiano di inviti digitali. Dalla descrizione dell'utente prepara i testi di un invito in italiano.
 Rispondi solo con un oggetto JSON con queste chiavi:
 {"event": uno tra ${JSON.stringify(EVENTS.map((e) => e.id))},
- "theme": uno tra ${JSON.stringify(THEMES.map((t) => t.id))} (ulivo=rami d'ulivo, elegante e naturale; avorio=classico avorio e oro; limoni=estate italiana, Amalfi; notte=sera elegante blu e oro; alloro=laurea; cielo=bambini, azzurro; cipria=rosa delicato con rose; spiga=comunione e cresima; coriandoli=festa elegante nero e oro),
+ "theme": uno tra ${JSON.stringify(THEMES.map((t) => t.id))} (${THEMES.map((t) => `${t.id}=${t.desc}`).join('; ')}),
  "eyebrow": "riga breve sopra il nome, es. Il matrimonio di / Festa per i 40 anni di",
  "name1": "nome del festeggiato o titolo dell'evento", "name2": "secondo nome solo per una coppia, altrimenti stringa vuota",
  "subtitle": "breve sottotitolo o stringa vuota", "date": "YYYY-MM-DD o stringa vuota", "time": "HH:MM o stringa vuota",
@@ -953,7 +1063,22 @@ Descrizione dell'utente: """${text.slice(0, 800)}"""`;
     }
     if (f && e.target.dataset.pp === 'name') delete e.target.dataset.auto;
   });
-  document.addEventListener('change', (e) => {
+  document.addEventListener('change', async (e) => {
+    if (e.target.id === 'photo-input') {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      try {
+        state.photo = await photoFromFile(file);
+      } catch {
+        return toast('Non riesco a leggere questa foto: prova con un’altra (JPG o PNG)');
+      }
+      state.cover = 'mine';
+      document.getElementById('covers').innerHTML = coverChips();
+      document.getElementById('photo-styles').hidden = false;
+      renderPreview();
+      return toast('Foto aggiunta: scegli come mostrarla');
+    }
     const f = e.target.closest('#rsvp-form');
     if (f && e.target.name === 'attending') f.classList.toggle('is-no', e.target.value === 'no');
     if (f && (e.target.name === 'adults' || e.target.name === 'children')) refreshPeople(f);
@@ -1008,9 +1133,27 @@ Descrizione dell'utente: """${text.slice(0, 800)}"""`;
       });
       return renderPreview();
     }
+    if (a === 'cat') {
+      state.themeCat = act.dataset.cat;
+      document.querySelectorAll('[data-act="cat"]').forEach((b) => {
+        b.classList.toggle('on', b === act);
+        b.setAttribute('aria-pressed', String(b === act));
+      });
+      document.getElementById('themes').innerHTML = themeButtons();
+      return;
+    }
     if (a === 'cover') {
       state.cover = act.dataset.cover;
       document.querySelectorAll('[data-act="cover"]').forEach((b) => b.classList.toggle('on', b === act));
+      document.getElementById('photo-styles').hidden = !state.cover;
+      return renderPreview();
+    }
+    if (a === 'photo-style') {
+      state.photoStyle = act.dataset.style;
+      document.querySelectorAll('[data-act="photo-style"]').forEach((b) => {
+        b.classList.toggle('on', b === act);
+        b.setAttribute('aria-pressed', String(b === act));
+      });
       return renderPreview();
     }
     if (a === 'add') {

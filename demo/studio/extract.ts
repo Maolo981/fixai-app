@@ -1,7 +1,7 @@
-import { EVENTS, EVENT_GROUPS, defaultInviteData, priceFor } from '../../src/config';
+import { EVENTS, EVENT_GROUPS, PHOTO_STYLES, defaultInviteData, priceFor } from '../../src/config';
 import { dataUri, linen, paperGrain } from '../../src/art';
 import { occasionIcon } from '../../src/icons';
-import { THEMES, ornaments, themeInlineCss } from '../../src/themes';
+import { THEMES, THEME_CATEGORIES } from '../../src/themes';
 
 const out = {
   groups: EVENT_GROUPS,
@@ -24,7 +24,10 @@ const out = {
       defaults,
     };
   }),
-  themes: THEMES.map((t) => ({ id: t.id, name: t.name, desc: t.desc, swatches: t.swatches, demoEvent: t.demoEvent, orn: ornaments(t.id), css: themeInlineCss(t.id) })),
+  // the artwork itself is drawn in the browser (themes-entry.ts)
+  themes: THEMES.map((t) => ({ id: t.id, name: t.name, desc: t.desc, category: t.category, events: t.events, swatches: t.swatches, demoEvent: t.demoEvent })),
+  categories: THEME_CATEGORIES,
+  photoStyles: PHOTO_STYLES,
   // textures for the Studio's own pages (the same cotton paper and linen as the invitations)
   ui: { grain: dataUri(paperGrain()), linen: dataUri(linen(200, 9, 0.6)) },
 };

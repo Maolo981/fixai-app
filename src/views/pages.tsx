@@ -3,7 +3,7 @@ import { BRAND, EVENTS, PRICES, RETENTION_DAYS_AFTER_EVENT, type EventDef, price
 import type { AdminRow } from '../db';
 import { adminOverview } from '../db';
 import { displayNames } from '../model';
-import { THEMES, THEME_BY_ID } from '../themes';
+import { THEME_BY_ID, themesFor } from '../themes';
 import type { InviteData } from '../types';
 import { euro, formatDateShort, formatDateTimeIt } from '../util';
 import { occasionIcon } from '../icons';
@@ -16,13 +16,16 @@ import { Layout, MessagePage } from './layout';
 
 export function EventLandingPage({ ev, origin }: { ev: EventDef; origin: string }) {
   const theme = THEME_BY_ID[ev.theme];
-  const others = THEMES.filter((t) => t.id !== ev.theme).slice(0, 3);
+  const others = themesFor(ev.id)
+    .filter((x) => x.recommended && x.theme.id !== ev.theme)
+    .slice(0, 6)
+    .map((x) => x.theme);
   return (
     <Layout
       title={`${ev.seoTitle} · ${BRAND.name}`}
       description={ev.seoIntro}
       canonical={`${origin}/inviti/${ev.slug}`}
-      ogImage={`${origin}/og/${ev.theme}.png`}
+      ogImage={`${origin}/og/${ev.theme}.jpg`}
       jsonLd={{
         '@context': 'https://schema.org',
         '@type': 'Product',
@@ -99,7 +102,7 @@ export function EventLandingPage({ ev, origin }: { ev: EventDef; origin: string 
         </section>
         <section class="section alt">
           <div class="container">
-            <h2 class="h2 center">Altri stili che piacciono</h2>
+            <h2 class="h2 center">Altri stili per {ev.label === 'Altro' ? 'la tua festa' : ev.label.toLowerCase()}</h2>
             <div class="themes-grid small-grid">
               {others.map((t) => (
                 <a class="theme-card" href={`/demo/${t.id}?ev=${ev.id}`}>
@@ -111,6 +114,9 @@ export function EventLandingPage({ ev, origin }: { ev: EventDef; origin: string 
                 </a>
               ))}
             </div>
+            <p class="center more-styles">
+              <a href="/stili">Tutti gli stili →</a>
+            </p>
           </div>
         </section>
         <section class="section">

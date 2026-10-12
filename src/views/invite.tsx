@@ -21,6 +21,8 @@ export interface InviteViewProps {
   /** reservations of the gift registry (statuses only are shown to guests) */
   claims?: GiftClaimRow[];
   rides?: RideRow[];
+  /** photo shown when the invitation has none of its own (demo pages) */
+  coverUrl?: string;
 }
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -434,8 +436,10 @@ export function InvitePage(p: InviteViewProps) {
   const names = displayNames(d);
   const dateLong = formatDateLong(d.date);
   const start = romeToUtc(d.date, d.time || '12:00');
-  const coverUrl = inv.cover_key ? `/media/${inv.cover_key}` : null;
-  const ogImage = coverUrl ? origin + coverUrl : inv.og_key ? `${origin}/media/${inv.og_key}` : `${origin}/og/${inv.theme}.png`;
+  const coverUrl = inv.cover_key ? `/media/${inv.cover_key}` : (p.coverUrl ?? null);
+  // the big photo takes the place of the artwork at the top of the card
+  const bigPhoto = Boolean(coverUrl) && d.photoStyle === 'grande';
+  const ogImage = coverUrl ? origin + coverUrl : inv.og_key ? `${origin}/media/${inv.og_key}` : `${origin}/og/${inv.theme}.jpg`;
   const program = visibleProgram(d, p.guest, mode !== 'live');
   const firstPlace = program.find((x) => x.place)?.place ?? '';
   const pageUrl = origin + p.basePath + (p.guest ? `/${p.guest.code}` : '');
@@ -550,9 +554,15 @@ export function InvitePage(p: InviteViewProps) {
             <article class={`sheet sheet-main${std ? ' sheet-std' : ''}`}>
               {orn.scatter && raw(orn.scatter)}
               <header class="hero sec">
-                {orn.top && raw(orn.top)}
+                {bigPhoto ? (
+                  <figure class="cover cover-grande">
+                    <img src={coverUrl!} alt={`Foto di ${names}`} width={600} height={750} />
+                  </figure>
+                ) : (
+                  orn.top && raw(orn.top)
+                )}
                 <div class="hero-body">
-                  {orn.crest && (
+                  {orn.crest && !bigPhoto && (
                     <div class="crest" aria-hidden="true">
                       <span class="crest-mono">
                         <Monogram d={d} />
@@ -569,8 +579,8 @@ export function InvitePage(p: InviteViewProps) {
                       Il tuo tavolo: <strong>{p.guest.table_name}</strong>
                     </p>
                   )}
-                  {coverUrl && (
-                    <figure class="cover">
+                  {coverUrl && !bigPhoto && (
+                    <figure class={`cover cover-${d.photoStyle}`}>
                       <img src={coverUrl} alt={`Foto di ${names}`} width={600} height={750} />
                     </figure>
                   )}
@@ -589,6 +599,7 @@ export function InvitePage(p: InviteViewProps) {
                     </>
                   )}
                 </div>
+                {orn.foot && raw(orn.foot)}
               </header>
             </article>
 

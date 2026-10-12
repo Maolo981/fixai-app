@@ -30,7 +30,11 @@
   function collect() {
     const data = {};
     for (const el of form.elements) {
-      if (!el.name || el.type === 'radio' || el.type === 'file') continue;
+      if (!el.name || el.name === 'theme' || el.type === 'file') continue;
+      if (el.type === 'radio') {
+        if (el.checked) data[el.name] = el.value;
+        continue;
+      }
       data[el.name] = el.type === 'checkbox' ? el.checked : el.value;
     }
     data.program = [...programEl.querySelectorAll('[data-moment]')].map(readRow);
@@ -39,6 +43,23 @@
     });
     return { theme: form.querySelector('input[name="theme"]:checked')?.value, data };
   }
+
+  // ---------- style picker: recommended for the occasion, all, or one category ----------
+  const picker = document.getElementById('theme-picker');
+  const catChips = document.querySelectorAll('[data-theme-cat]');
+  catChips.forEach((chip) =>
+    chip.addEventListener('click', () => {
+      const cat = chip.dataset.themeCat;
+      catChips.forEach((c) => {
+        c.classList.toggle('on', c === chip);
+        c.setAttribute('aria-pressed', String(c === chip));
+      });
+      picker.querySelectorAll('.theme-opt').forEach((opt) => {
+        const checked = opt.querySelector('input').checked;
+        opt.hidden = !(cat === 'tutti' || (cat === 'consigliati' ? opt.dataset.rec === '1' || checked : opt.dataset.cat === cat));
+      });
+    }),
+  );
 
   // ---------- live preview (double-buffered iframe: no white flash) ----------
   let previewSeq = 0;
@@ -305,6 +326,7 @@
   const coverInput = document.getElementById('cover-input');
   const coverImg = document.getElementById('cover-preview');
   const coverRemove = document.getElementById('cover-remove');
+  const photoStyles = document.getElementById('photo-styles');
   coverInput?.addEventListener('change', async () => {
     const file = coverInput.files[0];
     if (!file) return;
@@ -314,6 +336,8 @@
       coverImg.src = data.url;
       coverImg.hidden = false;
       coverRemove.hidden = false;
+      coverInput.nextSibling.textContent = 'Cambia la foto principale';
+      if (photoStyles) photoStyles.hidden = false;
       setStatus('saved', 'Foto caricata');
       refreshPreview();
     } catch (err) {
@@ -328,6 +352,8 @@
     coverImg.hidden = true;
     coverImg.removeAttribute('src');
     coverRemove.hidden = true;
+    coverInput.nextSibling.textContent = 'Carica la foto principale';
+    if (photoStyles) photoStyles.hidden = true;
     refreshPreview();
   });
 

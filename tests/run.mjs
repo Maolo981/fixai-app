@@ -240,6 +240,29 @@ await step('cover photo upload (resized in the browser) and type check', async (
   await page.screenshot({ path: `${OUT}/02-editor-desktop.png`, fullPage: false });
 });
 
+await step('photo styles: the picker appears with a photo and restyles the preview', async () => {
+  const { page } = host;
+  await page.waitForSelector('#photo-styles:not([hidden])');
+  for (const style of ['polaroid', 'cerchio', 'grande', 'arco']) {
+    await page.click(`label.ps-opt:has(input[value="${style}"])`);
+    await page.waitForSelector('#save-status[data-state="saved"]', { timeout: 10000 });
+    await page.frameLocator('#preview').locator(`.cover-${style} img`).waitFor({ timeout: 10000 });
+  }
+  const demo = await (await fetch(`${BASE}/demo/ulivo?busta=0&foto=grande`)).text();
+  assert(demo.includes('class="cover cover-grande"') && !demo.includes('class="art art-top"'), 'the big photo should replace the artwork at the top');
+});
+
+await step('every style renders its example invitation', async () => {
+  const sitemap = await (await fetch(`${BASE}/sitemap.xml`)).text();
+  const ids = [...new Set([...sitemap.matchAll(/\/demo\/([a-z]+)</g)].map((m) => m[1]))];
+  assert(ids.length >= 30, `expected 30+ styles in the sitemap, got ${ids.length}`);
+  for (const id of ids) {
+    const res = await fetch(`${BASE}/demo/${id}?busta=0`);
+    const html = await res.text();
+    assert(res.status === 200 && html.includes(`t-${id}`) && html.includes('--paper:'), `style ${id} does not render`);
+  }
+});
+
 await step('editor: registry, story, stays, rides, menus, notice, tables and private steps', async () => {
   const { page } = host;
   // the reception is only for guests invited to everything
