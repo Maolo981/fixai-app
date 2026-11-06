@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import httpx
+import numpy as np
 import pytest
+import rasterio
 from fastapi.testclient import TestClient
+from pyproj import Transformer
+from rasterio.transform import from_origin
 
 from app.config import Impostazioni
 from app.main import crea_app
+from app.services.altimetria import SorgenteDtm
 from app.services.geocodifica import ClientGeocodifica
 
 TERRENO_BERGAMO = {
@@ -18,10 +23,39 @@ TERRENO_BERGAMO = {
 }
 
 
+MOTIVO_SENZA_DTM = "Il file del DTM non è installato sul server."
+
+
 @pytest.fixture()
 def client():
+    """Client senza DTM: l'altimetria deve risultare non disponibile."""
     with TestClient(crea_app()) as c:
+        c.app.state.dtm = None
+        c.app.state.motivo_dtm = MOTIVO_SENZA_DTM
         yield c
+
+
+@pytest.fixture()
+def dtm_sintetico(tmp_path):
+    """DTM sintetico (UTM 32N, 5 m) attorno al terreno di prova: piano che sale verso Est del 12%."""
+    x, y = Transformer.from_crs("EPSG:4326", "EPSG:32632", always_xy=True).transform(9.66975, 45.6945)
+    x0, y0 = round(x) - 1000.0, round(y) + 1000.0
+    colonne = x0 + (np.arange(400) + 0.5) * 5
+    z = np.tile(200 + 0.12 * (colonne - x0), (400, 1)).astype(np.float32)
+    percorso = tmp_path / "dtm.tif"
+    with rasterio.open(
+        percorso, "w", driver="GTiff", width=400, height=400, count=1, dtype="float32",
+        crs="EPSG:32632", transform=from_origin(x0, y0, 5, 5), nodata=-3.4028234663852886e38,
+    ) as ds:
+        ds.write(z, 1)
+    return SorgenteDtm(percorso)
+
+
+@pytest.fixture()
+def client_con_dtm(client, dtm_sintetico):
+    client.app.state.dtm = dtm_sintetico
+    client.app.state.motivo_dtm = None
+    return client
 
 
 def test_salute(client):
@@ -31,9 +65,17 @@ def test_salute(client):
 
 
 def test_capacita_dichiara_cosa_non_e_disponibile(client):
-    funzioni = {f["chiave"]: f["stato"] for f in client.get("/api/v1/capacita").json()["funzioni"]}
-    assert funzioni["superficie_perimetro"] == "implementata"
-    assert funzioni["altimetria"] == "non_disponibile"
+    funzioni = {f["chiave"]: f for f in client.get("/api/v1/capacita").json()["funzioni"]}
+    assert funzioni["superficie_perimetro"]["stato"] == "implementata"
+    assert funzioni["altimetria"]["stato"] == "non_disponibile"
+    assert funzioni["altimetria"]["note"] == MOTIVO_SENZA_DTM
+    assert funzioni["report_pdf"]["stato"] == "non_disponibile"
+
+
+def test_capacita_con_dtm(client_con_dtm):
+    funzioni = {f["chiave"]: f["stato"] for f in client_con_dtm.get("/api/v1/capacita").json()["funzioni"]}
+    assert funzioni["altimetria"] == funzioni["pendenza"] == funzioni["esposizione"] == "implementata"
+    assert funzioni["mappa_pendenze"] == "non_disponibile"
     assert funzioni["report_pdf"] == "non_disponibile"
 
 
@@ -53,8 +95,12 @@ def test_analisi_geometria_valida(client):
     assert 440 < dati["perimetro"]["m"] < 470
     assert dati["area_pilota"] == {"nome": "Lombardia", "stato": "interno"}
     assert dati["controllo_utm32"]["epsg"] == 32632
-    # Nessun dato altimetrico inventato
-    assert dati["altimetria"] == {"disponibile": False, "messaggio": "Dati altimetrici non disponibili"}
+    # Senza DTM nessun dato altimetrico inventato
+    alt = dati["altimetria"]
+    assert alt["disponibile"] is False
+    assert alt["messaggio"] == "Dati altimetrici non disponibili"
+    assert alt["motivo"] == MOTIVO_SENZA_DTM
+    assert alt["quote"] is None and alt["pendenza"] is None and alt["esposizione"] is None
     assert "non sostituiscono" in dati["nota_legale"]
     assert dati["avvertenze"] == []
 
@@ -100,3 +146,32 @@ def test_ricerca_servizio_non_disponibile_risponde_503(client):
 
 def test_ricerca_query_troppo_corta(client):
     assert client.get("/api/v1/ricerca", params={"q": "a"}).status_code == 422
+
+
+def test_analisi_altimetrica_con_dtm(client_con_dtm):
+    dati = client_con_dtm.post("/api/v1/analisi/geometria", json={"geometria": TERRENO_BERGAMO}).json()
+    alt = dati["altimetria"]
+    assert alt["disponibile"] is True
+    assert alt["pendenza"]["media_percento"] == pytest.approx(12.0, abs=1e-3)
+    assert alt["pendenza"]["media_gradi"] == pytest.approx(6.843, abs=1e-3)
+    assert alt["esposizione"]["prevalente"] == "O"
+    # Il terreno è largo ~117 m in direzione Est-Ovest: dislivello ~ 0,12 x 112 m
+    assert 12 < alt["quote"]["dislivello"] < 14.5
+    assert alt["quote"]["minima"] < alt["quote"]["media"] < alt["quote"]["massima"]
+    # Il punto più basso è a Ovest di quello più alto
+    assert alt["quote"]["punto_minimo"]["lon"] < alt["quote"]["punto_massimo"]["lon"]
+    assert alt["celle"]["copertura_percento"] == 100
+    # Circa 13.000 m² / 25 m² per cella
+    assert 480 < alt["celle"]["interne"] < 560
+    assert "CC BY 4.0" in alt["fonte"]["attribuzione"]
+    assert sum(c["percentuale_celle"] for c in alt["pendenza"]["classi"]) == pytest.approx(100)
+
+
+def test_analisi_fuori_copertura_dtm(client_con_dtm):
+    torino = {
+        "type": "Polygon",
+        "coordinates": [[[7.67, 45.06], [7.68, 45.06], [7.68, 45.07], [7.67, 45.07], [7.67, 45.06]]],
+    }
+    alt = client_con_dtm.post("/api/v1/analisi/geometria", json={"geometria": torino}).json()["altimetria"]
+    assert alt["disponibile"] is False
+    assert "fuori" in alt["motivo"]

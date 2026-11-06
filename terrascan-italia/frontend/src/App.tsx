@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { BarraRicerca } from "./components/BarraRicerca";
 import { MappaTerreno } from "./components/MappaTerreno";
@@ -45,6 +45,12 @@ export default function App() {
     }
   }, []);
 
+  const puntiQuota = useMemo(() => {
+    if (analisi.stato !== "completata") return null;
+    const quote = analisi.risultato.altimetria.quote;
+    return quote ? { minimo: quote.punto_minimo, massimo: quote.punto_massimo } : null;
+  }, [analisi]);
+
   return (
     <div className={`app ${pannelloAperto ? "app--pannello-aperto" : ""}`}>
       <header className="testata">
@@ -57,12 +63,12 @@ export default function App() {
         </div>
         <BarraRicerca onDestinazione={setDestinazione} />
         <span className="badge-fase" title="Versione di sviluppo">
-          Fase 1 · Area pilota Lombardia
+          Fase 2 · Area pilota Lombardia
         </span>
       </header>
 
       <main className="corpo">
-        <MappaTerreno destinazione={destinazione} onGeometria={suGeometria} />
+        <MappaTerreno destinazione={destinazione} onGeometria={suGeometria} puntiQuota={puntiQuota} />
         <button
           type="button"
           className="interruttore-pannello"

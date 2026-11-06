@@ -53,9 +53,76 @@ class AreaPilota(BaseModel):
     stato: Literal["interno", "parziale", "esterno"]
 
 
+class PuntoQuota(BaseModel):
+    lon: float
+    lat: float
+    quota: float
+
+
+class Quote(BaseModel):
+    minima: float
+    massima: float
+    media: float
+    dislivello: float
+    punto_minimo: PuntoQuota
+    punto_massimo: PuntoQuota
+    nota: str
+
+
+class ClassePendenza(BaseModel):
+    da_percento: float
+    a_percento: float | None = Field(description="None = nessun limite superiore")
+    percentuale_celle: float
+
+
+class Pendenza(BaseModel):
+    media_percento: float
+    media_gradi: float
+    massima_percento: float
+    massima_gradi: float
+    classi: list[ClassePendenza]
+    metodo: str
+
+
+class SettoreEsposizione(BaseModel):
+    settore: str
+    percentuale_celle: float
+
+
+class Esposizione(BaseModel):
+    prevalente: str
+    settori: list[SettoreEsposizione]
+    soglia_pianeggiante_percento: float
+    metodo: str
+
+
+class CelleDtm(BaseModel):
+    interne: int
+    valide: int
+    con_pendenza: int
+    copertura_percento: float
+    dimensione_m: float
+
+
+class FonteDtm(BaseModel):
+    nome: str
+    edizione: str
+    proprietario: str
+    licenza: str
+    attribuzione: str
+    precisione_dichiarata: str
+
+
 class StatoAltimetria(BaseModel):
     disponibile: bool
     messaggio: str
+    motivo: str | None = None
+    quote: Quote | None = None
+    pendenza: Pendenza | None = None
+    esposizione: Esposizione | None = None
+    celle: CelleDtm | None = None
+    fonte: FonteDtm | None = None
+    avvertenze: list[str] = []
 
 
 class RispostaAnalisiGeometria(BaseModel):

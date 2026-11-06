@@ -19,7 +19,8 @@ import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 
 import { caricaAreaPilota } from "../lib/api";
 import { creaMaschera } from "../lib/maschera";
-import type { Destinazione, GeoJsonPolygon } from "../lib/types";
+import { formattaQuota } from "../lib/formato";
+import type { Destinazione, GeoJsonPolygon, PuntoQuota } from "../lib/types";
 
 maplibregl.setWorkerUrl(urlWorkerMapLibre);
 
@@ -38,9 +39,11 @@ type Modalita = "static" | "polygon" | "select";
 interface Props {
   destinazione: Destinazione | null;
   onGeometria: (geometria: GeoJsonPolygon | null) => void;
+  /** Punti più basso e più alto del terreno (dal DTM), da evidenziare sulla mappa. */
+  puntiQuota?: { minimo: PuntoQuota; massimo: PuntoQuota } | null;
 }
 
-export function MappaTerreno({ destinazione, onGeometria }: Props) {
+export function MappaTerreno({ destinazione, onGeometria, puntiQuota }: Props) {
   const contenitore = useRef<HTMLDivElement>(null);
   const mappa = useRef<maplibregl.Map | null>(null);
   const disegno = useRef<TerraDraw | null>(null);
@@ -201,6 +204,21 @@ export function MappaTerreno({ destinazione, onGeometria }: Props) {
       mappa.current = null;
     };
   }, []);
+
+  // Indicatori dei punti di quota minima e massima.
+  useEffect(() => {
+    const map = mappa.current;
+    if (!map || !puntiQuota) return;
+    const crea = (punto: PuntoQuota, tipo: "min" | "max") => {
+      const el = document.createElement("div");
+      el.className = `marcatore-quota marcatore-quota--${tipo}`;
+      el.textContent = tipo === "min" ? "▼" : "▲";
+      el.title = `Quota ${tipo === "min" ? "minima" : "massima"}: ${formattaQuota(punto.quota)}`;
+      return new maplibregl.Marker({ element: el }).setLngLat([punto.lon, punto.lat]).addTo(map);
+    };
+    const marcatori = [crea(puntiQuota.minimo, "min"), crea(puntiQuota.massimo, "max")];
+    return () => marcatori.forEach((m) => m.remove());
+  }, [puntiQuota]);
 
   // Sposta la mappa sulla località cercata.
   useEffect(() => {

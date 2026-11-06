@@ -1,6 +1,6 @@
 # Verifica del dataset "DTM 5X5 – Modello digitale del terreno (ed. 2015)"
 
-Data della verifica: 6 novembre 2026.
+Data della verifica: 6 novembre 2026 (metadati) e 6 novembre 2026 (file scaricato, vedi sezione 6).
 
 **Fonte primaria:** la scheda ufficiale dei metadati ISO 19115/RNDT, scaricata dal catalogo nazionale
 (`https://geodati.gov.it/RNDT/csw`, `GetRecordById`, identificativo
@@ -88,14 +88,29 @@ Testo proposto per l'interfaccia e per i report:
 La licenza CC BY 4.0 consente anche l'uso commerciale, a condizione di citare la fonte e di indicare se i dati sono
 stati modificati.
 
-## 6. Cosa resta da verificare all'inizio della Fase 2
+## 6. Verifica sul file scaricato (Fase 2)
 
-Non è stato possibile scaricare l'archivio in questa sessione (l'host `www.cartografia.servizirl.it` non era
-abilitato nella rete dell'ambiente di sviluppo). Appena scaricato, va controllato e annotato qui:
+Archivio scaricato il 6/11/2026 da `https://www.cartografia.servizirl.it/download/DTM5_RL.zip`.
 
-- [ ] dimensione dell'archivio e impronta SHA-256 (per sapere se il file cambia nel tempo);
-- [ ] formato effettivo (GeoTIFF, ASCII Grid, ESRI Grid…), numero di file, suddivisione in fogli;
-- [ ] sistema di riferimento letto dal file (atteso EPSG:32632) e dimensione della cella (attesa 5 m);
-- [ ] tipo numerico delle quote, unità di misura, valore "nodata";
-- [ ] riferimento delle quote (datum verticale), eventualmente chiedendolo a sit_rl@regione.lombardia.it;
-- [ ] confronto a campione con punti quotati noti.
+| Voce | Valore verificato sul file |
+|---|---|
+| Dimensione dell'archivio | 3.085.490.651 byte (3,09 GB); data di ultima modifica sul server: 27/02/2025 |
+| Contenuto | `DTM5_RL.img` (intestazione), `DTM5_RL.ige` (dati, 8,28 GB non compressi), `DTM5_RL.rrd` (panoramiche), `DTM5_RL.lyr` (stile ArcGIS); file datati 6/05/2015 |
+| Formato | **ERDAS IMAGINE** (driver GDAL `HFA`), una banda |
+| Dimensioni | 46.533 colonne × 44.400 righe (circa 2,07 miliardi di celle) |
+| Cella | 5 m × 5 m |
+| Sistema di riferimento | WGS84 / UTM fuso 32N (**EPSG:32632**) – coincide con i metadati |
+| Estensione (UTM) | Est 460.001,87 – 692.666,87 m; Nord 4.944.901,25 – 5.166.901,25 m |
+| Tipo numerico | `float32` (metri, con decimali) |
+| Valore "nodata" | −3,4028235·10³⁸ (celle fuori dalla Lombardia) |
+| Statistiche interne del file | quota minima 2,36 m, massima 4.024,98 m, media 604,3 m |
+| Datum verticale | **Non dichiarato nemmeno nel file** (nessun sistema di riferimento verticale) |
+| Impronta SHA-256 dell'archivio | vedi `backend/dati-dtm/dtm5_lombardia_2015.json`, generato da `scripts/prepara_dtm.py` |
+
+Note:
+- La griglia non parte da un metro intero (origine Est 460.001,8694 m): l'analisi usa sempre la
+  georeferenziazione del file, senza ricampionare.
+- La quota minima di 2,36 m è anomala per la Lombardia (il punto più basso, lungo il Po, è intorno ai
+  10-15 m s.l.m.): va indagata, ma non influisce sui terreni che non comprendono quella cella.
+- Il servizio WMS risponde a `GetFeatureInfo` con il valore della cella (`PixelValue`): lo usiamo solo per
+  verificare a campione il file installato (`scripts/verifica_dtm_wms.py`).

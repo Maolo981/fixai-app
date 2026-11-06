@@ -689,3 +689,134 @@ button:disabled {
     display: none;
   }
 }
+
+/* ---------- analisi altimetrica (Fase 2) ---------- */
+
+.griglia-metriche {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+}
+
+.metrica--compatta {
+  border-top: 0;
+  padding: 4px 0;
+}
+
+.metrica--compatta .metrica__valore {
+  font-size: 1.25rem;
+}
+
+.sottotitolo {
+  margin: 14px 0 4px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--grigio-500);
+}
+
+.dati--senza-bordo {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.barre {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 0.78rem;
+}
+
+.barre li {
+  display: grid;
+  grid-template-columns: 72px 1fr 36px;
+  align-items: center;
+  gap: 8px;
+}
+
+.barre__etichetta {
+  color: var(--grigio-700);
+  font-variant-numeric: tabular-nums;
+}
+
+.barre__traccia {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--grigio-100);
+  overflow: hidden;
+}
+
+.barre__valore {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--arancio);
+}
+
+.barre__numero {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--grigio-700);
+}
+
+.esposizione {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.esposizione p {
+  margin: 0 0 4px;
+}
+
+.rosa {
+  width: 104px;
+  height: 104px;
+  flex-shrink: 0;
+}
+
+.rosa__cerchio {
+  fill: var(--grigio-50);
+  stroke: var(--grigio-300);
+  stroke-width: 0.8;
+}
+
+.rosa__spicchio {
+  fill: var(--verde-700);
+  fill-opacity: 0.8;
+  stroke: var(--bianco);
+  stroke-width: 0.6;
+}
+
+.rosa__testo {
+  font-size: 8px;
+  font-weight: 700;
+  fill: var(--grigio-500);
+  text-anchor: middle;
+}
+
+.marcatore-quota {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 13px;
+  border: 2px solid var(--bianco);
+  color: var(--bianco);
+  font-size: 0.7rem;
+  font-weight: 700;
+  box-shadow: var(--ombra);
+  white-space: nowrap;
+}
+
+.marcatore-quota--min {
+  background: #1d4ed8;
+}
+
+.marcatore-quota--max {
+  background: var(--rosso);
+}

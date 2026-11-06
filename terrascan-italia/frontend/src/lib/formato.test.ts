@@ -1,4 +1,8 @@
 import {
+  etichettaClasse,
+  formattaQuota,
+  formattaPendenza,
+  nomeSettore,
   formattaCatastale,
   formattaCoordinate,
   formattaEttari,
@@ -41,5 +45,19 @@ describe("formattazione italiana", () => {
 
   it("coordinate", () => {
     expect(n(formattaCoordinate(45.6944947, 9.6698727))).toBe("45,694495 N, 9,669873 E");
+  });
+});
+
+describe("formattazione dati altimetrici", () => {
+  it("quote e pendenze", () => {
+    expect(n(formattaQuota(1234.56))).toBe("1.234,6 m");
+    expect(n(formattaPendenza(12, 6.843))).toBe("12,0 % (6,8°)");
+  });
+
+  it("settori di esposizione e classi di pendenza", () => {
+    expect(nomeSettore("SO")).toBe("Sud-Ovest");
+    expect(nomeSettore("Pianeggiante")).toBe("Pianeggiante");
+    expect(etichettaClasse(10, 15)).toBe("10–15 %");
+    expect(etichettaClasse(50, null)).toBe("oltre 50 %");
   });
 });

@@ -8,6 +8,7 @@ Documentazione interattiva dell'API: http://127.0.0.1:8000/docs
 
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 
 import httpx
@@ -18,11 +19,27 @@ from fastapi.staticfiles import StaticFiles
 from app import __version__
 from app.api.rotte import router
 from app.config import CARTELLA_FRONTEND_DIST, impostazioni
+from app.services.altimetria import AltimetriaNonDisponibile, SorgenteDtm
 from app.services.geocodifica import ClientGeocodifica
+
+log = logging.getLogger("terrascan")
+
+
+def carica_dtm(app: FastAPI) -> None:
+    """Apre e verifica il DTM; se manca o non è valido l'altimetria resta disattivata."""
+    try:
+        app.state.dtm = SorgenteDtm(impostazioni.percorso_dtm)
+        app.state.motivo_dtm = None
+        log.info("DTM caricato: %s", impostazioni.percorso_dtm)
+    except AltimetriaNonDisponibile as exc:
+        app.state.dtm = None
+        app.state.motivo_dtm = str(exc)
+        log.warning("Analisi altimetrica disattivata: %s", exc)
 
 
 @asynccontextmanager
 async def ciclo_di_vita(app: FastAPI):
+    carica_dtm(app)
     async with httpx.AsyncClient(timeout=impostazioni.nominatim_timeout_s) as http:
         app.state.geocodifica = ClientGeocodifica(impostazioni, http=http)
         yield
@@ -33,7 +50,7 @@ def crea_app() -> FastAPI:
         title="TerraScan Italia API",
         version=__version__,
         description=(
-            "Analisi preliminari dei terreni. Fase 1: superficie e perimetro reali. "
+            "Analisi preliminari dei terreni. Superficie, perimetro e analisi altimetrica reali (DTM 5x5 Regione Lombardia). "
             "Le analisi non sostituiscono un rilievo tecnico certificato."
         ),
         lifespan=ciclo_di_vita,

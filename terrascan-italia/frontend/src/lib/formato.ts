@@ -48,3 +48,35 @@ export function formattaPercentuale(valore: number, decimali = 3): string {
 export function formattaCoordinate(lat: number, lon: number): string {
   return `${numero(lat, 6)} N, ${numero(lon, 6)} E`;
 }
+
+/** Quota o dislivello in metri con un decimale, es. "1.234,5 m". */
+export function formattaQuota(m: number): string {
+  return `${numero(m, 1)} m`;
+}
+
+/** Pendenza in percentuale e gradi, es. "12,0 % (6,8°)". */
+export function formattaPendenza(percento: number, gradi: number): string {
+  return `${numero(percento, 1)} % (${numero(gradi, 1)}°)`;
+}
+
+const NOMI_SETTORI: Record<string, string> = {
+  N: "Nord",
+  NE: "Nord-Est",
+  E: "Est",
+  SE: "Sud-Est",
+  S: "Sud",
+  SO: "Sud-Ovest",
+  O: "Ovest",
+  NO: "Nord-Ovest",
+  Pianeggiante: "Pianeggiante",
+};
+
+/** Nome esteso di un settore di esposizione ("SO" -> "Sud-Ovest"). */
+export function nomeSettore(sigla: string): string {
+  return NOMI_SETTORI[sigla] ?? sigla;
+}
+
+/** Etichetta di una classe di pendenza, es. "10–15 %" oppure "oltre 50 %". */
+export function etichettaClasse(da: number, a: number | null): string {
+  return a === null ? `oltre ${numero(da, 0)} %` : `${numero(da, 0)}–${numero(a, 0)} %`;
+}

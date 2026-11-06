@@ -12,6 +12,8 @@ from pathlib import Path
 CARTELLA_APP = Path(__file__).resolve().parent
 CARTELLA_DATI = CARTELLA_APP / "data"
 CARTELLA_FRONTEND_DIST = CARTELLA_APP.parents[1] / "frontend" / "dist"
+# File del DTM preparato con scripts/prepara_dtm.py (non incluso nel repository).
+PERCORSO_DTM_PREDEFINITO = CARTELLA_APP.parent / "dati-dtm" / "dtm5_lombardia_2015.tif"
 
 
 def _lista(valore: str) -> list[str]:
@@ -41,6 +43,8 @@ class Impostazioni:
     # Indirizzo email facoltativo, consigliato da Nominatim per uso intensivo.
     nominatim_email: str | None = os.getenv("TERRASCAN_NOMINATIM_EMAIL") or None
     nominatim_timeout_s: float = float(os.getenv("TERRASCAN_NOMINATIM_TIMEOUT", "10"))
+    # Percorso del DTM 5x5 di Regione Lombardia in formato GeoTIFF.
+    percorso_dtm: Path = Path(os.getenv("TERRASCAN_DTM_PATH", str(PERCORSO_DTM_PREDEFINITO)))
 
 
 impostazioni = Impostazioni()

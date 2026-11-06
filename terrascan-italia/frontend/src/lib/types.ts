@@ -20,9 +20,60 @@ export interface AnalisiGeometria {
   bbox: [number, number, number, number];
   numero_vertici: number;
   area_pilota: { nome: string; stato: "interno" | "parziale" | "esterno" };
-  altimetria: { disponibile: boolean; messaggio: string };
+  altimetria: StatoAltimetria;
   avvertenze: string[];
   nota_legale: string;
+}
+
+export interface PuntoQuota {
+  lon: number;
+  lat: number;
+  quota: number;
+}
+
+export interface StatoAltimetria {
+  disponibile: boolean;
+  messaggio: string;
+  motivo?: string | null;
+  quote?: {
+    minima: number;
+    massima: number;
+    media: number;
+    dislivello: number;
+    punto_minimo: PuntoQuota;
+    punto_massimo: PuntoQuota;
+    nota: string;
+  } | null;
+  pendenza?: {
+    media_percento: number;
+    media_gradi: number;
+    massima_percento: number;
+    massima_gradi: number;
+    classi: { da_percento: number; a_percento: number | null; percentuale_celle: number }[];
+    metodo: string;
+  } | null;
+  esposizione?: {
+    prevalente: string;
+    settori: { settore: string; percentuale_celle: number }[];
+    soglia_pianeggiante_percento: number;
+    metodo: string;
+  } | null;
+  celle?: {
+    interne: number;
+    valide: number;
+    con_pendenza: number;
+    copertura_percento: number;
+    dimensione_m: number;
+  } | null;
+  fonte?: {
+    nome: string;
+    edizione: string;
+    proprietario: string;
+    licenza: string;
+    attribuzione: string;
+    precisione_dichiarata: string;
+  } | null;
+  avvertenze?: string[];
 }
 
 export interface StatoFunzione {
