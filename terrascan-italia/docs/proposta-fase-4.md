@@ -1,5 +1,9 @@
 # Proposta – Fase 4: report PDF professionale
 
+> **Stato: realizzata** (6/11/2026) con **ReportLab** invece di WeasyPrint: si installa con un solo comando su
+> qualsiasi sistema, Windows compreso, senza librerie di sistema. Intestazione "TerraScan Italia", campi
+> facoltativi committente / riferimento / note. Esempio: [esempio-report.pdf](esempio-report.pdf).
+
 ## Obiettivo
 
 Un pulsante **"Scarica report PDF"** che produce un documento pronto da allegare a una pratica o da consegnare a

@@ -25,6 +25,8 @@ import type {
   StatoAltimetria,
   StatoRichiesta,
 } from "../lib/types";
+import type { CampiReport } from "../lib/api";
+import { SezioneReport } from "./SezioneReport";
 import { SezioneMappe, SezioneProfilo, type SceltaMappa } from "./SezioniFase3";
 
 export type StatoAnalisi =
@@ -40,6 +42,9 @@ export interface DatiFase3 {
   onSceltaMappa: (scelta: SceltaMappa) => void;
   profilo: StatoRichiesta<RispostaProfilo>;
   onPuntoProfilo: (punto: PuntoProfilo | null) => void;
+  /** Fase 4: generazione del report PDF. */
+  haLinea: boolean;
+  onReport: (campi: CampiReport, includiProfilo: boolean) => Promise<string>;
 }
 
 interface Props {
@@ -77,6 +82,9 @@ export function PannelloRisultati({ analisi, capacita, fase3 }: Props) {
           </div>
         )}
         {analisi.stato === "completata" && <Risultati r={analisi.risultato} />}
+        {analisi.stato === "completata" && fase3 && (
+          <SezioneReport haLinea={fase3.haLinea} onGenera={fase3.onReport} />
+        )}
 
         <SezioneAltimetria analisi={analisi} capacita={capacita} />
         {fase3 && altimetriaDisponibile && (

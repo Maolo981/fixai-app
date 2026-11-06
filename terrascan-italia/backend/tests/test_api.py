@@ -69,14 +69,14 @@ def test_capacita_dichiara_cosa_non_e_disponibile(client):
     assert funzioni["superficie_perimetro"]["stato"] == "implementata"
     assert funzioni["altimetria"]["stato"] == "non_disponibile"
     assert funzioni["altimetria"]["note"] == MOTIVO_SENZA_DTM
-    assert funzioni["report_pdf"]["stato"] == "non_disponibile"
+    assert funzioni["report_pdf"]["stato"] == "implementata"  # il report funziona anche senza DTM
 
 
 def test_capacita_con_dtm(client_con_dtm):
     funzioni = {f["chiave"]: f["stato"] for f in client_con_dtm.get("/api/v1/capacita").json()["funzioni"]}
     assert funzioni["altimetria"] == funzioni["pendenza"] == funzioni["esposizione"] == "implementata"
     assert funzioni["mappa_pendenze"] == funzioni["profilo"] == "implementata"
-    assert funzioni["report_pdf"] == "non_disponibile"
+    assert funzioni["report_pdf"] == "implementata"
 
 
 def test_area_pilota_restituisce_geojson(client):

@@ -51,3 +51,21 @@ describe("client API Fase 3", () => {
     expect(fetchFinto.mock.calls[1][0]).toBe("/api/v1/analisi/profilo");
   });
 });
+
+describe("report PDF", () => {
+  it("restituisce il file e il nome indicato dal server", async () => {
+    const { scaricaReport } = await import("./api");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("%PDF-1.4", {
+          status: 200,
+          headers: { "Content-Disposition": 'attachment; filename="terrascan-report-TS-1.pdf"' },
+        }),
+      ),
+    );
+    const { file, nome } = await scaricaReport(quadrato, null, { committente: "", riferimento: "", note: "" });
+    expect(nome).toBe("terrascan-report-TS-1.pdf");
+    expect(await file.text()).toBe("%PDF-1.4");
+  });
+});

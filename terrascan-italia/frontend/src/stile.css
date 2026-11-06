@@ -965,3 +965,69 @@ button:disabled {
     display: none;
   }
 }
+
+/* ---------- Fase 4: report PDF ---------- */
+
+.pulsante-principale,
+.pulsante-secondario {
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.pulsante-principale {
+  border: 0;
+  background: var(--verde-700);
+  color: var(--bianco);
+}
+
+.pulsante-principale:disabled {
+  background: var(--grigio-300);
+}
+
+.scheda--report > .pulsante-principale {
+  width: 100%;
+}
+
+.pulsante-secondario {
+  border: 1px solid var(--grigio-300);
+  background: var(--bianco);
+  color: var(--grigio-700);
+}
+
+.modulo {
+  display: grid;
+  gap: 8px;
+}
+
+.modulo label {
+  display: grid;
+  gap: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--grigio-700);
+}
+
+.modulo input[type="text"],
+.modulo textarea {
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 400;
+  padding: 7px 9px;
+  border: 1px solid var(--grigio-300);
+  border-radius: 6px;
+  resize: vertical;
+}
+
+.modulo__spunta {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400 !important;
+}
+
+.modulo__azioni {
+  display: flex;
+  gap: 8px;
+}

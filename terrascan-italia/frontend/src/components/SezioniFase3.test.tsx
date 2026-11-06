@@ -35,7 +35,7 @@ describe("SezioneProfilo", () => {
   it("mostra le statistiche del profilo ricevute dal backend", () => {
     render(<SezioneProfilo stato={{ stato: "completata", risultato: profilo }} attivo onPuntoEvidenziato={() => {}} />);
     expect(n(screen.getByTestId("profilo-lunghezza").textContent)).toBe("499,8 m");
-    expect(n(screen.getByTestId("profilo-salita").textContent)).toBe("+60,0 m / −0,0 m");
+    expect(n(screen.getByTestId("profilo-salita").textContent)).toBe("+60,0 m / 0,0 m");
     expect(screen.getByTestId("grafico-profilo")).toBeInTheDocument();
   });
 

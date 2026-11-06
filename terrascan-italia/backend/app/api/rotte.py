@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import Response
 from shapely.geometry import Polygon
 
 from app import __version__
@@ -22,6 +23,7 @@ from app.api.schemi import (
     RichiestaGeometria,
     RichiestaMappa,
     RichiestaProfilo,
+    RichiestaReport,
     RispostaMappa,
     RispostaProfilo,
     VoceLegenda,
@@ -44,6 +46,7 @@ from app.services.area_pilota import NOME_AREA_PILOTA, confine_lombardia, geomet
 from app.services.geocodifica import ATTRIBUZIONE_OSM, ServizioRicercaNonDisponibile
 from app.services.mappe import crea_mappa
 from app.services.profilo import PASSO_M, calcola_profilo
+from app.services.report import CampiUtente, DatiReport, genera_pdf
 from app.services.geometria import (
     ErroreGeometria,
     linea_da_geojson,
@@ -93,8 +96,8 @@ def _funzioni(dtm: SorgenteDtm | None, motivo_dtm: str | None) -> list[StatoFunz
         StatoFunzione(
             chiave="report_pdf",
             nome="Report PDF",
-            stato="non_disponibile",
-            note="Previsto nella Fase 4.",
+            stato="implementata",
+            note="Generato dal server con i soli risultati calcolati; sezioni senza dati dichiarate tali.",
         ),
     ]
 
@@ -161,14 +164,14 @@ def salute(request: Request) -> dict:
     return {
         "stato": "ok",
         "versione": __version__,
-        "fase": 3,
+        "fase": 4,
         "dtm_disponibile": request.app.state.dtm is not None,
     }
 
 
 @router.get("/capacita", response_model=RispostaCapacita, summary="Funzioni disponibili e non disponibili")
 def capacita(request: Request) -> RispostaCapacita:
-    return RispostaCapacita(fase=3, funzioni=_funzioni(request.app.state.dtm, request.app.state.motivo_dtm))
+    return RispostaCapacita(fase=4, funzioni=_funzioni(request.app.state.dtm, request.app.state.motivo_dtm))
 
 
 @router.get("/area-pilota", summary="Confine GeoJSON dell'area pilota (Lombardia)")
@@ -184,10 +187,16 @@ def area_pilota() -> dict:
 def analisi_geometria(richiesta: RichiestaGeometria, request: Request) -> RispostaAnalisiGeometria:
     try:
         poligono = poligono_da_geojson(richiesta.geometria)
-        misure = misura_poligono(poligono)
+        return calcola_analisi(poligono, request.app.state.dtm, request.app.state.motivo_dtm)
     except ErroreGeometria as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+
+def calcola_analisi(
+    poligono: Polygon, dtm: SorgenteDtm | None, motivo_dtm: str | None
+) -> RispostaAnalisiGeometria:
+    """Analisi completa del terreno (usata dall'API e dal report PDF). Solleva ErroreGeometria."""
+    misure = misura_poligono(poligono)
     stato = posizione_rispetto_area(poligono, geometria_lombardia())
     avvertenze: list[str] = []
     if stato == "parziale":
@@ -221,7 +230,7 @@ def analisi_geometria(richiesta: RichiestaGeometria, request: Request) -> Rispos
         bbox=list(misure.bbox),
         numero_vertici=misure.numero_vertici,
         area_pilota=AreaPilota(nome=NOME_AREA_PILOTA, stato=stato),
-        altimetria=_altimetria(request.app.state.dtm, request.app.state.motivo_dtm, poligono),
+        altimetria=_altimetria(dtm, motivo_dtm, poligono),
         avvertenze=avvertenze,
     )
 
@@ -304,6 +313,47 @@ def analisi_profilo(richiesta: RichiestaProfilo, request: Request) -> RispostaPr
         metodo=METODO_PROFILO,
         avvertenze=p.avvertenze,
         attribuzione=dtm.descrizione.attribuzione,
+    )
+
+
+@router.post(
+    "/report",
+    summary="Report PDF dell'analisi del terreno",
+    response_class=Response,
+    responses={200: {"content": {"application/pdf": {}}}},
+)
+def report_pdf(richiesta: RichiestaReport, request: Request) -> Response:
+    """Ricalcola tutto sul server (nessun valore arriva dal browser) e restituisce il PDF."""
+    try:
+        poligono = poligono_da_geojson(richiesta.geometria)
+        linea = linea_da_geojson(richiesta.linea) if richiesta.linea else None
+        analisi = calcola_analisi(poligono, request.app.state.dtm, request.app.state.motivo_dtm)
+    except ErroreGeometria as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    dtm: SorgenteDtm | None = request.app.state.dtm
+    dati = DatiReport(
+        poligono=poligono,
+        analisi=analisi,
+        linea=linea,
+        campi=CampiUtente(**richiesta.campi.model_dump()),
+    )
+    if dtm is not None and analisi.altimetria.disponibile:
+        dati.mappa_pendenze = crea_mappa(dtm, poligono, "pendenza")
+        dati.mappa_esposizioni = crea_mappa(dtm, poligono, "esposizione")
+    if linea is not None:
+        if dtm is None:
+            dati.motivo_profilo = request.app.state.motivo_dtm
+        else:
+            try:
+                dati.profilo = calcola_profilo(dtm, linea)
+            except AltimetriaNonDisponibile as exc:
+                dati.motivo_profilo = str(exc)
+    contenuto = genera_pdf(dati)
+    return Response(
+        content=contenuto,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="terrascan-report-{dati.codice}.pdf"'},
     )
 
 

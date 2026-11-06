@@ -22,6 +22,12 @@ function numero(valore: number, decimali: number) {
   }).format(valore);
 }
 
+/** "+12,3 m" / "−4,5 m", oppure "0,0 m" se il valore è nullo (mai "−0,0"). */
+function conSegno(valore: number | null | undefined, segno: string) {
+  const v = Math.abs(valore ?? 0);
+  return Math.round(v * 10) === 0 ? "0,0 m" : `${segno}${numero(v, 1)} m`;
+}
+
 export function SezioneMappe({
   scelta,
   stato,
@@ -164,7 +170,7 @@ function RisultatoProfiloVista({
         </dd>
         <dt>Salita / discesa</dt>
         <dd data-testid="profilo-salita">
-          +{numero(Math.abs(p.salita_m ?? 0), 1)} m / −{numero(Math.abs(p.discesa_m ?? 0), 1)} m
+          {conSegno(p.salita_m, "+")} / {conSegno(p.discesa_m, "−")}
         </dd>
         <dt>Pendenza media</dt>
         <dd>{numero(p.pendenza_media_percento ?? 0, 1)} %</dd>

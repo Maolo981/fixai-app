@@ -227,3 +227,18 @@ class RispostaProfilo(BaseModel):
     avvertenze: list[str] = []
     attribuzione: str | None = None
     nota_legale: str = AVVERTENZA_LEGALE
+
+
+# ------------------------------------------------------------------ Fase 4
+
+
+class CampiReport(BaseModel):
+    committente: str = Field("", max_length=120)
+    riferimento: str = Field("", max_length=120)
+    note: str = Field("", max_length=600)
+
+
+class RichiestaReport(BaseModel):
+    geometria: dict[str, Any] = Field(description="Poligono GeoJSON del terreno (lon/lat WGS84).")
+    linea: dict[str, Any] | None = Field(None, description="Linea GeoJSON del profilo (facoltativa).")
+    campi: CampiReport = CampiReport()

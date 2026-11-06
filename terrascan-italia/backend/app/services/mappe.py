@@ -72,6 +72,8 @@ class MappaTematica:
     coordinate: list[list[float]]
     legenda: list[VoceLegenda]
     celle_colorate: int
+    # Estensione dell'immagine in UTM 32N: (ovest, sud, est, nord) in metri
+    limiti_utm: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
 
     @property
     def png_base64(self) -> str:
@@ -143,4 +145,5 @@ def crea_mappa(sorgente: SorgenteDtm, poligono_wgs84: Polygon, tipo: TipoMappa) 
         coordinate=coordinate,
         legenda=legenda,
         celle_colorate=totale,
+        limiti_utm=(angoli_utm[0][0], angoli_utm[2][1], angoli_utm[2][0], angoli_utm[0][1]),
     )

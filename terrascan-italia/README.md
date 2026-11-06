@@ -6,7 +6,7 @@ Piattaforma web per l'analisi preliminare dei terreni, pensata per geometri, ing
 
 ![Profilo altimetrico ed esposizioni su un versante vitato in Valtellina](docs/img/fase3-profilo.jpg)
 
-## Stato del progetto: Fase 3
+## Stato del progetto: Fase 4
 
 | Funzione | Stato |
 |---|---|
@@ -19,7 +19,7 @@ Piattaforma web per l'analisi preliminare dei terreni, pensata per geometri, ing
 | Esposizione dei versanti (utile per i terreni agricoli) | ✅ Fase 2 |
 | Mappa delle pendenze e mappa delle esposizioni sul terreno (celle 5 × 5 m) | ✅ Fase 3 |
 | Profilo altimetrico lungo una linea, con grafico e punto evidenziato sulla mappa | ✅ Fase 3 |
-| Report PDF | ❌ Fase 4 – vedi [proposta](docs/proposta-fase-4.md) |
+| Report PDF professionale scaricabile dal sito (con campi facoltativi committente/riferimento/note) | ✅ Fase 4 – [esempio](docs/esempio-report.pdf) |
 | Login, pagamenti, abbonamenti | ❌ Esclusi per scelta |
 
 L'app non stima né simula valori altimetrici: se il DTM non è installato, se il terreno è fuori dalla Lombardia o
@@ -50,6 +50,16 @@ troppo piccolo, nel pannello compare **"Dati altimetrici non disponibili"** con 
   stessi valori dell'analisi; le celle sono mostrate nette, senza sfumature.
 - **Profilo**: campioni ogni 5 m lungo la linea, quota per interpolazione bilineare tra le 4 celle più vicine,
   distanze geodetiche. I tratti senza dato non vengono disegnati. Salita e discesa cumulate sono indicative.
+
+### Report PDF (Fase 4)
+
+- Pulsante **Scarica report PDF** nel pannello: il sito genera il documento con un clic.
+- Il server **ricalcola tutto** con gli stessi moduli dell'app (il browser invia solo il disegno e i campi
+  facoltativi): i numeri del PDF coincidono con quelli mostrati a schermo.
+- Contenuto: inquadramento (localizzazione in Lombardia e mappa del terreno con scala e Nord), superficie e
+  perimetro, analisi altimetrica con mappe di pendenze ed esposizioni, profilo (se tracciato), coordinate dei
+  vertici in WGS84 e UTM 32N, fonti, metodi e limiti. L'avvertenza legale è su ogni pagina.
+- Le sezioni senza dati riportano "Dati altimetrici non disponibili" con il motivo.
 
 ## Struttura delle cartelle
 
@@ -143,10 +153,10 @@ La documentazione interattiva dell'API è disponibile su **http://localhost:8000
 
 ```bash
 cd terrascan-italia/backend
-uv run pytest                 # 83 test (9 richiedono il DTM installato, altrimenti vengono saltati)
+uv run pytest                 # 91 test (9 richiedono il DTM installato, altrimenti vengono saltati)
 
 cd ../frontend
-npm test                      # 37 test: formattazione, coordinate, client API, pannello, grafico
+npm test                      # 40 test: formattazione, coordinate, client API, pannello, grafico, report
 npm run typecheck             # controllo dei tipi TypeScript
 ```
 
@@ -168,6 +178,7 @@ I test dei calcoli confrontano i risultati con riferimenti **indipendenti**:
 6. Con **Modifica** puoi trascinare i vertici di terreno e linea, aggiungerne cliccando sui punti intermedi o
    eliminarli con il clic destro: i valori si aggiornano subito.
 7. **Elimina** cancella terreno e profilo.
+8. **Scarica report PDF** (nel pannello): compila se vuoi committente, riferimento e note, poi *Genera e scarica*.
 
 Su smartphone il pannello dei risultati compare dal basso e si apre o chiude con il pulsante *Mostra/Nascondi risultati*.
 
@@ -199,4 +210,4 @@ Variabili d'ambiente del backend:
 - [Verifica del dataset DTM 5×5 di Regione Lombardia](docs/dati-dtm-lombardia.md)
 - [Proposta Fase 2: integrazione dei dati altimetrici](docs/proposta-fase-2.md) (realizzata)
 - [Proposta Fase 3: mappa delle pendenze e profilo altimetrico](docs/proposta-fase-3.md) (realizzata)
-- [Proposta Fase 4: report PDF](docs/proposta-fase-4.md)
+- [Proposta Fase 4: report PDF](docs/proposta-fase-4.md) (realizzata) – [report di esempio](docs/esempio-report.pdf)

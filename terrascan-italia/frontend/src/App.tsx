@@ -4,7 +4,16 @@ import { BarraRicerca } from "./components/BarraRicerca";
 import { MappaTerreno, type Sovrapposizione } from "./components/MappaTerreno";
 import { PannelloRisultati, type StatoAnalisi } from "./components/PannelloRisultati";
 import type { SceltaMappa } from "./components/SezioniFase3";
-import { analizzaGeometria, calcolaProfilo, caricaCapacita, caricaMappaTematica, ErroreApi } from "./lib/api";
+import {
+  analizzaGeometria,
+  calcolaProfilo,
+  caricaCapacita,
+  caricaMappaTematica,
+  ErroreApi,
+  salvaFile,
+  scaricaReport,
+  type CampiReport,
+} from "./lib/api";
 import type {
   Capacita,
   Destinazione,
@@ -36,6 +45,7 @@ export default function App() {
   const [mappa, setMappa] = useState<StatoRichiesta<RispostaMappa>>({ stato: "vuoto" });
   const [profilo, setProfilo] = useState<StatoRichiesta<RispostaProfilo>>({ stato: "vuoto" });
   const [puntoProfilo, setPuntoProfilo] = useState<PuntoProfilo | null>(null);
+  const [linea, setLinea] = useState<GeoJsonLineString | null>(null);
   const controllerProfilo = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -86,6 +96,7 @@ export default function App() {
   }, [terreno, sceltaMappa]);
 
   const suLinea = useCallback(async (linea: GeoJsonLineString | null) => {
+    setLinea(linea);
     controllerProfilo.current?.abort();
     setPuntoProfilo(null);
     if (!linea) {
@@ -104,6 +115,17 @@ export default function App() {
         setProfilo({ stato: "errore", messaggio: messaggioErrore(e, "Errore imprevisto nel profilo.") });
     }
   }, []);
+
+  // Fase 4: il server ricalcola tutto e restituisce il PDF, che il browser salva.
+  const generaReport = useCallback(
+    async (campi: CampiReport, includiProfilo: boolean) => {
+      if (!terreno) throw new Error("Disegna prima un terreno.");
+      const { file, nome } = await scaricaReport(terreno, includiProfilo ? linea : null, campi);
+      salvaFile(file, nome);
+      return nome;
+    },
+    [terreno, linea],
+  );
 
   const sovrapposizione = useMemo<Sovrapposizione | null>(() => {
     if (mappa.stato !== "completata" || !mappa.risultato.disponibile) return null;
@@ -159,6 +181,8 @@ export default function App() {
             onSceltaMappa: setSceltaMappa,
             profilo,
             onPuntoProfilo: setPuntoProfilo,
+            haLinea: linea !== null,
+            onReport: generaReport,
           }}
         />
       </main>
