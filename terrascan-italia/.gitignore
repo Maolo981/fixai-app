@@ -1,0 +1,14 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / build
+frontend/node_modules/
+frontend/dist/
+
+# Dati altimetrici di grandi dimensioni (Fase 2): non vanno nel repository
+backend/dati-dtm/
+*.tif
+*.zip
