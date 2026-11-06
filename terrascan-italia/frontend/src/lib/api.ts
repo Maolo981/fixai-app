@@ -4,7 +4,16 @@
  * Nessun valore viene mai calcolato o "inventato" lato client: se il backend
  * non risponde, viene sollevato un ErroreApi e l'interfaccia mostra l'errore.
  */
-import type { AnalisiGeometria, Capacita, GeoJsonPolygon, RisultatoRicerca } from "./types";
+import type {
+  AnalisiGeometria,
+  Capacita,
+  GeoJsonLineString,
+  GeoJsonPolygon,
+  RispostaMappa,
+  RispostaProfilo,
+  RisultatoRicerca,
+  TipoMappa,
+} from "./types";
 
 const BASE_API: string = import.meta.env.VITE_API_BASE ?? "";
 const TIMEOUT_MS = 15_000;
@@ -67,4 +76,20 @@ export function caricaCapacita() {
 
 export function caricaAreaPilota() {
   return richiesta<GeoJSON.FeatureCollection>("/api/v1/area-pilota");
+}
+
+function postJson<T>(percorso: string, corpo: unknown, segnale?: AbortSignal) {
+  return richiesta<T>(
+    percorso,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) },
+    segnale,
+  );
+}
+
+export function caricaMappaTematica(geometria: GeoJsonPolygon, tipo: TipoMappa, segnale?: AbortSignal) {
+  return postJson<RispostaMappa>("/api/v1/analisi/mappa", { geometria, tipo }, segnale);
+}
+
+export function calcolaProfilo(geometria: GeoJsonLineString, segnale?: AbortSignal) {
+  return postJson<RispostaProfilo>("/api/v1/analisi/profilo", { geometria }, segnale);
 }

@@ -1,7 +1,8 @@
 /**
- * Mappa interattiva (MapLibre GL JS) con disegno del perimetro del terreno
- * (Terra Draw). Il componente non calcola nulla: comunica la geometria
- * disegnata al componente padre, che la invia al backend per l'analisi.
+ * Mappa interattiva (MapLibre GL JS) con disegno del perimetro del terreno e
+ * della linea del profilo (Terra Draw). Il componente non calcola nulla:
+ * comunica le geometrie al componente padre, che le invia al backend, e
+ * visualizza i risultati ricevuti (punti di quota, mappa tematica, punto del profilo).
  */
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
@@ -11,6 +12,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import urlWorkerMapLibre from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import {
   TerraDraw,
+  TerraDrawLineStringMode,
   TerraDrawPolygonMode,
   TerraDrawSelectMode,
   ValidateNotSelfIntersecting,
@@ -18,9 +20,9 @@ import {
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 
 import { caricaAreaPilota } from "../lib/api";
-import { creaMaschera } from "../lib/maschera";
 import { formattaQuota } from "../lib/formato";
-import type { Destinazione, GeoJsonPolygon, PuntoQuota } from "../lib/types";
+import { creaMaschera } from "../lib/maschera";
+import type { Destinazione, GeoJsonLineString, GeoJsonPolygon, PuntoQuota } from "../lib/types";
 
 maplibregl.setWorkerUrl(urlWorkerMapLibre);
 
@@ -33,26 +35,40 @@ const LIMITI_NAVIGAZIONE: [number, number, number, number] = [4.5, 42.5, 15.5, 4
 
 const COLORE_TERRENO = "#ea580c";
 const COLORE_BORDO = "#9a3412";
+const COLORE_PROFILO = "#1d4ed8";
 
-type Modalita = "static" | "polygon" | "select";
+type Modalita = "static" | "polygon" | "linestring" | "select";
+
+/** Immagine georeferenziata da sovrapporre alla mappa (mappa delle pendenze o delle esposizioni). */
+export interface Sovrapposizione {
+  pngBase64: string;
+  coordinate: [number, number][];
+}
 
 interface Props {
   destinazione: Destinazione | null;
   onGeometria: (geometria: GeoJsonPolygon | null) => void;
+  onLinea?: (linea: GeoJsonLineString | null) => void;
   /** Punti più basso e più alto del terreno (dal DTM), da evidenziare sulla mappa. */
   puntiQuota?: { minimo: PuntoQuota; massimo: PuntoQuota } | null;
+  sovrapposizione?: Sovrapposizione | null;
+  /** Punto del profilo evidenziato nel grafico. */
+  puntoProfilo?: { lon: number; lat: number } | null;
 }
 
-export function MappaTerreno({ destinazione, onGeometria, puntiQuota }: Props) {
+export function MappaTerreno({ destinazione, onGeometria, onLinea, puntiQuota, sovrapposizione, puntoProfilo }: Props) {
   const contenitore = useRef<HTMLDivElement>(null);
   const mappa = useRef<maplibregl.Map | null>(null);
   const disegno = useRef<TerraDraw | null>(null);
-  const callback = useRef(onGeometria);
-  callback.current = onGeometria;
+  const callbackPoligono = useRef(onGeometria);
+  const callbackLinea = useRef(onLinea);
+  callbackPoligono.current = onGeometria;
+  callbackLinea.current = onLinea;
 
   const [pronta, setPronta] = useState(false);
   const [modalita, setModalita] = useState<Modalita>("static");
   const [haTerreno, setHaTerreno] = useState(false);
+  const [haLinea, setHaLinea] = useState(false);
   const [erroreMappa, setErroreMappa] = useState<string | null>(null);
   const [avvisoDisegno, setAvvisoDisegno] = useState<string | null>(null);
 
@@ -74,7 +90,7 @@ export function MappaTerreno({ destinazione, onGeometria, puntiQuota }: Props) {
     map.addControl(
       new maplibregl.AttributionControl({
         compact: true,
-        customAttribution: "Confine regionale © ISTAT (CC BY 3.0)",
+        customAttribution: "Confine regionale © ISTAT (CC BY 3.0) · DTM 5×5 © Regione Lombardia (CC BY 4.0)",
       }),
       "bottom-right",
     );
@@ -134,6 +150,16 @@ export function MappaTerreno({ destinazione, onGeometria, puntiQuota }: Props) {
               closingPointOutlineWidth: 2,
             },
           }),
+          new TerraDrawLineStringMode({
+            styles: {
+              lineStringColor: COLORE_PROFILO,
+              lineStringWidth: 3.5,
+              closingPointColor: "#ffffff",
+              closingPointOutlineColor: COLORE_PROFILO,
+              closingPointWidth: 6,
+              closingPointOutlineWidth: 2,
+            },
+          }),
           new TerraDrawSelectMode({
             flags: {
               polygon: {
@@ -142,13 +168,22 @@ export function MappaTerreno({ destinazione, onGeometria, puntiQuota }: Props) {
                   coordinates: { midpoints: true, draggable: true, deletable: true },
                 },
               },
+              linestring: {
+                feature: {
+                  draggable: false,
+                  coordinates: { midpoints: true, draggable: true, deletable: true },
+                },
+              },
             },
-            validation: (feature) => ValidateNotSelfIntersecting(feature),
+            validation: (feature) =>
+              feature.geometry.type === "Polygon" ? ValidateNotSelfIntersecting(feature) : { valid: true },
             styles: {
               selectedPolygonColor: COLORE_TERRENO,
               selectedPolygonFillOpacity: 0.28,
               selectedPolygonOutlineColor: COLORE_BORDO,
               selectedPolygonOutlineWidth: 3,
+              selectedLineStringColor: COLORE_PROFILO,
+              selectedLineStringWidth: 4,
               selectionPointColor: "#ffffff",
               selectionPointOutlineColor: COLORE_BORDO,
               selectionPointWidth: 6,
@@ -163,19 +198,38 @@ export function MappaTerreno({ destinazione, onGeometria, puntiQuota }: Props) {
       draw.start();
       disegno.current = draw;
 
-      const poligoni = () =>
-        draw.getSnapshot().filter((f) => f.geometry.type === "Polygon" && f.properties.mode === "polygon");
+      // Solo geometrie completate: quelle ancora in costruzione hanno "currentlyDrawing".
+      const elementi = (tipo: "Polygon" | "LineString", modo: "polygon" | "linestring") =>
+        draw
+          .getSnapshot()
+          .filter((f) => f.geometry.type === tipo && f.properties.mode === modo && !f.properties.currentlyDrawing);
 
+      // Si comunica una geometria solo se è cambiata, così una modifica alla linea
+      // non ricalcola l'analisi del terreno (e viceversa).
+      let ultimoPoligono = "";
+      let ultimaLinea = "";
       const comunica = () => {
-        const [primo] = poligoni();
-        setHaTerreno(Boolean(primo));
-        callback.current(primo ? (primo.geometry as GeoJsonPolygon) : null);
+        const [poligono] = elementi("Polygon", "polygon");
+        const [linea] = elementi("LineString", "linestring");
+        setHaTerreno(Boolean(poligono));
+        setHaLinea(Boolean(linea));
+        const jsonPoligono = poligono ? JSON.stringify(poligono.geometry) : "";
+        const jsonLinea = linea ? JSON.stringify(linea.geometry) : "";
+        if (jsonPoligono !== ultimoPoligono) {
+          ultimoPoligono = jsonPoligono;
+          callbackPoligono.current(poligono ? (poligono.geometry as GeoJsonPolygon) : null);
+        }
+        if (jsonLinea !== ultimaLinea) {
+          ultimaLinea = jsonLinea;
+          callbackLinea.current?.(linea ? (linea.geometry as GeoJsonLineString) : null);
+        }
       };
 
       draw.on("finish", (id, contesto) => {
-        if (contesto.mode !== "polygon") return;
-        // Fase 1: un solo terreno alla volta; i precedenti vengono rimossi.
-        const altri = poligoni()
+        if (contesto.mode !== "polygon" && contesto.mode !== "linestring") return;
+        // Un solo terreno e una sola linea alla volta: i precedenti vengono rimossi.
+        const [tipo, modo] = contesto.mode === "polygon" ? (["Polygon", "polygon"] as const) : (["LineString", "linestring"] as const);
+        const altri = elementi(tipo, modo)
           .map((f) => f.id)
           .filter((x): x is string | number => x !== undefined && x !== id);
         if (altri.length) draw.removeFeatures(altri);
@@ -220,6 +274,45 @@ export function MappaTerreno({ destinazione, onGeometria, puntiQuota }: Props) {
     return () => marcatori.forEach((m) => m.remove());
   }, [puntiQuota]);
 
+  // Mappa tematica (pendenze / esposizioni) sotto i disegni.
+  useEffect(() => {
+    const map = mappa.current;
+    if (!map || !pronta) return;
+    if (map.getLayer("mappa-tematica")) map.removeLayer("mappa-tematica");
+    if (map.getSource("mappa-tematica")) map.removeSource("mappa-tematica");
+    if (!sovrapposizione) return;
+    const [a, b, c, d] = sovrapposizione.coordinate;
+    map.addSource("mappa-tematica", {
+      type: "image",
+      url: `data:image/png;base64,${sovrapposizione.pngBase64}`,
+      coordinates: [a, b, c, d],
+    });
+    // Sotto i livelli di Terra Draw, così perimetro e vertici restano visibili.
+    const primoDisegno = map.getStyle().layers.find((l) => l.id.startsWith("td-"))?.id;
+    map.addLayer(
+      {
+        id: "mappa-tematica",
+        type: "raster",
+        source: "mappa-tematica",
+        // "nearest": ogni cella del DTM resta un quadrato netto, senza sfumature inventate.
+        paint: { "raster-opacity": 0.85, "raster-resampling": "nearest", "raster-fade-duration": 0 },
+      },
+      primoDisegno,
+    );
+  }, [sovrapposizione, pronta]);
+
+  // Punto del profilo evidenziato nel grafico.
+  useEffect(() => {
+    const map = mappa.current;
+    if (!map || !puntoProfilo) return;
+    const el = document.createElement("div");
+    el.className = "marcatore-profilo";
+    const marcatore = new maplibregl.Marker({ element: el }).setLngLat([puntoProfilo.lon, puntoProfilo.lat]).addTo(map);
+    return () => {
+      marcatore.remove();
+    };
+  }, [puntoProfilo]);
+
   // Sposta la mappa sulla località cercata.
   useEffect(() => {
     const map = mappa.current;
@@ -247,8 +340,10 @@ export function MappaTerreno({ destinazione, onGeometria, puntiQuota }: Props) {
     draw.setMode("static");
     setModalita("static");
     setHaTerreno(false);
+    setHaLinea(false);
     setAvvisoDisegno(null);
-    callback.current(null);
+    callbackPoligono.current(null);
+    callbackLinea.current?.(null);
   };
 
   return (
@@ -267,14 +362,32 @@ export function MappaTerreno({ destinazione, onGeometria, puntiQuota }: Props) {
         </button>
         <button
           type="button"
-          className={`strumento ${modalita === "select" ? "strumento--attivo" : ""}`}
+          className={`strumento ${modalita === "linestring" ? "strumento--attivo strumento--profilo" : ""}`}
+          onClick={() => impostaModalita("linestring")}
+          disabled={!pronta}
+          aria-pressed={modalita === "linestring"}
+        >
+          <IconaProfilo /> <span>Profilo</span>
+        </button>
+        <button
+          type="button"
+          className={`strumento strumento--compatto ${modalita === "select" ? "strumento--attivo" : ""}`}
+          aria-label="Modifica"
+          title="Modifica"
           onClick={() => impostaModalita("select")}
-          disabled={!pronta || !haTerreno}
+          disabled={!pronta || (!haTerreno && !haLinea)}
           aria-pressed={modalita === "select"}
         >
           <IconaModifica /> <span>Modifica</span>
         </button>
-        <button type="button" className="strumento" onClick={elimina} disabled={!pronta || !haTerreno}>
+        <button
+          type="button"
+          className="strumento strumento--compatto"
+          aria-label="Elimina terreno e profilo"
+          title="Elimina terreno e profilo"
+          onClick={elimina}
+          disabled={!pronta || (!haTerreno && !haLinea)}
+        >
           <IconaCestino /> <span>Elimina</span>
         </button>
       </div>
@@ -285,9 +398,15 @@ export function MappaTerreno({ destinazione, onGeometria, puntiQuota }: Props) {
           <kbd>Esc</kbd> annulla.
         </div>
       )}
-      {modalita === "select" && haTerreno && !avvisoDisegno && (
+      {modalita === "linestring" && (
         <div className="suggerimento" role="status">
-          Trascina i vertici per correggere il perimetro; clicca sui punti intermedi per aggiungerne.
+          Clicca i punti della linea del profilo. Per terminare clicca di nuovo sull'ultimo punto o premi
+          <kbd>Invio</kbd>. <kbd>Esc</kbd> annulla.
+        </div>
+      )}
+      {modalita === "select" && (haTerreno || haLinea) && !avvisoDisegno && (
+        <div className="suggerimento" role="status">
+          Clicca su terreno o linea e trascina i vertici per correggerli; clicca sui punti intermedi per aggiungerne.
           Clic destro su un vertice per eliminarlo.
         </div>
       )}
@@ -308,6 +427,15 @@ function IconaPoligono() {
       {[[5, 18], [8, 6], [18, 4], [20, 15]].map(([x, y]) => (
         <circle key={`${x}-${y}`} cx={x} cy={y} r="2.2" fill="currentColor" />
       ))}
+    </svg>
+  );
+}
+
+function IconaProfilo() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M3 19 L8 11 L12 14 L17 6 L21 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M3 21 H21" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
 }

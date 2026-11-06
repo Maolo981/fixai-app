@@ -183,3 +183,32 @@ def posizione_rispetto_area(poligono: Polygon, area: dict) -> StatoAreaPilota:
     if confine.intersects(poligono):
         return "parziale"
     return "esterno"
+
+
+MAX_VERTICI_LINEA = 1000
+
+
+def linea_da_geojson(geometria: dict):
+    """Converte e valida una geometria GeoJSON di tipo LineString (lon/lat WGS84)."""
+    from shapely.geometry import LineString
+
+    if not isinstance(geometria, dict) or geometria.get("type") != "LineString":
+        raise ErroreGeometria("È richiesta una geometria GeoJSON di tipo 'LineString'.")
+    posizioni = geometria.get("coordinates")
+    if not isinstance(posizioni, list) or len(posizioni) < 2:
+        raise ErroreGeometria("La linea del profilo deve avere almeno 2 punti.")
+    if len(posizioni) > MAX_VERTICI_LINEA:
+        raise ErroreGeometria(f"Troppi punti nella linea ({len(posizioni)}); il massimo è {MAX_VERTICI_LINEA}.")
+    punti: list[tuple[float, float]] = []
+    for posizione in posizioni:
+        if not isinstance(posizione, (list, tuple)) or len(posizione) < 2:
+            raise ErroreGeometria("Coordinata non valida nella linea.")
+        lon, lat = posizione[0], posizione[1]
+        if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in (lon, lat)):
+            raise ErroreGeometria("Coordinata non numerica nella linea.")
+        if not (math.isfinite(lon) and math.isfinite(lat) and -180 <= lon <= 180 and -90 <= lat <= 90):
+            raise ErroreGeometria("Coordinata fuori intervallo nella linea (attese lon/lat WGS84).")
+        punti.append((float(lon), float(lat)))
+    if len(set(punti)) < 2:
+        raise ErroreGeometria("La linea del profilo deve avere almeno 2 punti distinti.")
+    return LineString(punti)

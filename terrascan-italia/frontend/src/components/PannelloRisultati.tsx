@@ -16,7 +16,16 @@ import {
   formattaMetriQuadri,
   formattaPercentuale,
 } from "../lib/formato";
-import type { AnalisiGeometria, Capacita, StatoAltimetria } from "../lib/types";
+import type {
+  AnalisiGeometria,
+  Capacita,
+  PuntoProfilo,
+  RispostaMappa,
+  RispostaProfilo,
+  StatoAltimetria,
+  StatoRichiesta,
+} from "../lib/types";
+import { SezioneMappe, SezioneProfilo, type SceltaMappa } from "./SezioniFase3";
 
 export type StatoAnalisi =
   | { stato: "vuoto" }
@@ -24,9 +33,19 @@ export type StatoAnalisi =
   | { stato: "errore"; messaggio: string }
   | { stato: "completata"; risultato: AnalisiGeometria };
 
+/** Stato e azioni della Fase 3 (mappe tematiche e profilo), forniti dal componente padre. */
+export interface DatiFase3 {
+  sceltaMappa: SceltaMappa;
+  mappa: StatoRichiesta<RispostaMappa>;
+  onSceltaMappa: (scelta: SceltaMappa) => void;
+  profilo: StatoRichiesta<RispostaProfilo>;
+  onPuntoProfilo: (punto: PuntoProfilo | null) => void;
+}
+
 interface Props {
   analisi: StatoAnalisi;
   capacita: Capacita | null;
+  fase3?: DatiFase3;
 }
 
 const ETICHETTA_AREA_PILOTA = {
@@ -38,7 +57,9 @@ const ETICHETTA_AREA_PILOTA = {
 const AVVERTENZA_PREDEFINITA =
   "Le analisi sono preliminari e indicative: non sostituiscono un rilievo topografico o una perizia tecnica eseguiti da un professionista abilitato.";
 
-export function PannelloRisultati({ analisi, capacita }: Props) {
+export function PannelloRisultati({ analisi, capacita, fase3 }: Props) {
+  const altimetriaDisponibile = analisi.stato === "completata" && analisi.risultato.altimetria.disponibile;
+  const profiloAttivo = capacita?.funzioni.some((f) => f.chiave === "profilo" && f.stato === "implementata") ?? false;
   return (
     <aside className="pannello" aria-label="Risultati dell'analisi">
       <div className="pannello__contenuto">
@@ -58,6 +79,12 @@ export function PannelloRisultati({ analisi, capacita }: Props) {
         {analisi.stato === "completata" && <Risultati r={analisi.risultato} />}
 
         <SezioneAltimetria analisi={analisi} capacita={capacita} />
+        {fase3 && altimetriaDisponibile && (
+          <SezioneMappe scelta={fase3.sceltaMappa} stato={fase3.mappa} onScelta={fase3.onSceltaMappa} />
+        )}
+        {fase3 && (
+          <SezioneProfilo stato={fase3.profilo} attivo={profiloAttivo} onPuntoEvidenziato={fase3.onPuntoProfilo} />
+        )}
         {capacita && <StatoFunzioni capacita={capacita} />}
       </div>
       <footer className="pannello__avvertenza">

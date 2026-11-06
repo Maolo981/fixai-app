@@ -172,6 +172,25 @@ def _in_utm(poligono: Polygon) -> Polygon:
     return shapely.transform(poligono, converti)
 
 
+@dataclass(frozen=True)
+class FinestraDtm:
+    """Porzione del DTM letta in memoria (quote in metri, NaN dove manca il dato)."""
+
+    z: np.ndarray
+    trasformazione: rasterio.Affine
+    cella_x: float
+    cella_y: float
+
+
+@dataclass(frozen=True)
+class GriglieTerreno:
+    finestra: FinestraDtm
+    interne: np.ndarray  # True per le celle il cui centro è dentro il perimetro
+    valide: np.ndarray  # interne e con quota
+    pendenza: np.ndarray  # %
+    esposizione: np.ndarray  # gradi da Nord
+
+
 class SorgenteDtm:
     """Accesso in sola lettura al file del DTM, con verifica delle sue caratteristiche."""
 
@@ -208,24 +227,12 @@ class SorgenteDtm:
             raise AltimetriaNonDisponibile("Il DTM deve avere una sola banda di quote.")
         self.risoluzione_m = rx
 
-    def analizza(self, poligono_wgs84: Polygon) -> RisultatoAltimetria:
-        poligono = _in_utm(poligono_wgs84)
-        if poligono.area > AREA_MASSIMA_M2:
-            raise AltimetriaNonDisponibile(
-                f"Il terreno supera {AREA_MASSIMA_M2 / 1e6:.0f} km²: l'analisi altimetrica è limitata a "
-                "superfici inferiori."
-            )
-        b = self.bounds
-        if not poligono.intersects(shapely.box(b.left, b.bottom, b.right, b.top)):
-            raise AltimetriaNonDisponibile("Il terreno è fuori dall'area coperta dal DTM della Lombardia.")
-
+    def leggi_finestra(self, limiti_utm: tuple[float, float, float, float], margine: int = 1) -> FinestraDtm:
+        """Legge le quote del riquadro UTM indicato (più un margine in celle); nodata -> NaN."""
         with rasterio.open(self.percorso) as ds:
             finestra = (
-                from_bounds(*poligono.bounds, transform=ds.transform)
-                .round_offsets(op="floor")
-                .round_lengths(op="ceil")
+                from_bounds(*limiti_utm, transform=ds.transform).round_offsets(op="floor").round_lengths(op="ceil")
             )
-            margine = 1
             finestra = Window(
                 finestra.col_off - margine,
                 finestra.row_off - margine,
@@ -235,25 +242,49 @@ class SorgenteDtm:
             dati = ds.read(1, window=finestra, masked=True)
             trasformazione = ds.window_transform(finestra)
             cella_x, cella_y = ds.res
-
         z = dati.astype(np.float64).filled(np.nan)
         z[~np.isfinite(z)] = np.nan
+        return FinestraDtm(z=z, trasformazione=trasformazione, cella_x=cella_x, cella_y=cella_y)
 
+    def controlla_copertura(self, geometria_utm) -> None:
+        b = self.bounds
+        if not geometria_utm.intersects(shapely.box(b.left, b.bottom, b.right, b.top)):
+            raise AltimetriaNonDisponibile("Il terreno è fuori dall'area coperta dal DTM della Lombardia.")
+
+    def griglie(self, poligono_wgs84: Polygon) -> GriglieTerreno:
+        """Quote, pendenza, esposizione e maschera delle celle interne per il terreno.
+
+        È la base comune dell'analisi (Fase 2) e delle mappe (Fase 3): stessi dati, stesso metodo.
+        """
+        poligono = _in_utm(poligono_wgs84)
+        if poligono.area > AREA_MASSIMA_M2:
+            raise AltimetriaNonDisponibile(
+                f"Il terreno supera {AREA_MASSIMA_M2 / 1e6:.0f} km²: l'analisi altimetrica è limitata a "
+                "superfici inferiori."
+            )
+        self.controlla_copertura(poligono)
+        f = self.leggi_finestra(poligono.bounds)
         interne = geometry_mask(
-            [poligono], out_shape=z.shape, transform=trasformazione, all_touched=False, invert=True
+            [poligono], out_shape=f.z.shape, transform=f.trasformazione, all_touched=False, invert=True
         )
-        celle_interne = int(interne.sum())
-        if celle_interne == 0:
+        if not interne.any():
             raise AltimetriaNonDisponibile(
                 "Il terreno è troppo piccolo: non contiene il centro di nessuna cella del DTM (5 x 5 m)."
             )
-        valide = interne & np.isfinite(z)
-        celle_valide = int(valide.sum())
-        if celle_valide == 0:
+        valide = interne & np.isfinite(f.z)
+        if not valide.any():
             raise AltimetriaNonDisponibile("Il DTM non contiene quote valide all'interno del terreno.")
+        pendenza, esposizione = pendenza_esposizione_horn(f.z, f.cella_x, f.cella_y)
+        return GriglieTerreno(finestra=f, interne=interne, valide=valide, pendenza=pendenza, esposizione=esposizione)
 
+    def analizza(self, poligono_wgs84: Polygon) -> RisultatoAltimetria:
+        g = self.griglie(poligono_wgs84)
+        z, interne, valide = g.finestra.z, g.interne, g.valide
+        pendenza, esposizione = g.pendenza, g.esposizione
+        trasformazione, cella_x = g.finestra.trasformazione, g.finestra.cella_x
+        celle_interne = int(interne.sum())
+        celle_valide = int(valide.sum())
         quote = z[valide]
-        pendenza, esposizione = pendenza_esposizione_horn(z, cella_x, cella_y)
         con_pendenza = interne & np.isfinite(pendenza)
         celle_con_pendenza = int(con_pendenza.sum())
 

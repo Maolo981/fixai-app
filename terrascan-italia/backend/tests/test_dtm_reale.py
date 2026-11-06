@@ -81,3 +81,25 @@ def test_analisi_di_un_terreno_reale_in_pianura(dtm):
     assert r.celle_valide == r.celle_interne == 3600
     assert 110 < r.quota_minima <= r.quota_media <= r.quota_massima < 130
     assert r.pendenza_media_percento < 5
+
+
+def test_profilo_sul_lago_di_como_e_piatto(dtm):
+    from shapely.geometry import LineString
+
+    from app.services.profilo import calcola_profilo
+
+    x, y = _A_UTM.transform(9.272, 45.997)
+    linea = LineString([_A_WGS.transform(x - 100, y), _A_WGS.transform(x + 100, y)])
+    p = calcola_profilo(dtm, linea)
+    assert p.copertura_percento == 100
+    assert all(pt.quota_m == pytest.approx(198.0, abs=0.05) for pt in p.punti)
+    assert p.salita_m < 0.05 and p.discesa_m < 0.05
+
+
+def test_mappa_pendenze_reale_valtellina(dtm):
+    from app.services.mappe import crea_mappa
+
+    m = crea_mappa(dtm, quadrato(9.885, 46.179, 150), "esposizione")
+    voci = {v.etichetta: v.percentuale_celle for v in m.legenda}
+    # Versante vitato sopra Sondrio: esposizione prevalente a Sud
+    assert max(voci, key=voci.get) == "Sud"

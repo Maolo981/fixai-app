@@ -4,9 +4,9 @@ Piattaforma web per l'analisi preliminare dei terreni, pensata per geometri, ing
 
 > **Avvertenza.** Le analisi sono preliminari e indicative: non sostituiscono un rilievo topografico o una perizia tecnica eseguiti da un professionista abilitato.
 
-![Analisi di un versante vitato in Valtellina](docs/img/fase2-valtellina.jpg)
+![Profilo altimetrico ed esposizioni su un versante vitato in Valtellina](docs/img/fase3-profilo.jpg)
 
-## Stato del progetto: Fase 2
+## Stato del progetto: Fase 3
 
 | Funzione | Stato |
 |---|---|
@@ -17,8 +17,9 @@ Piattaforma web per l'analisi preliminare dei terreni, pensata per geometri, ing
 | Quota minima, massima e media, dislivello, punti più basso e più alto | ✅ Fase 2, DTM 5×5 Regione Lombardia |
 | Pendenza media e massima, distribuzione per classi | ✅ Fase 2 |
 | Esposizione dei versanti (utile per i terreni agricoli) | ✅ Fase 2 |
-| Mappa delle pendenze, profilo altimetrico | ❌ Fase 3 – vedi [proposta](docs/proposta-fase-3.md) |
-| Report PDF | ❌ Fase 4 |
+| Mappa delle pendenze e mappa delle esposizioni sul terreno (celle 5 × 5 m) | ✅ Fase 3 |
+| Profilo altimetrico lungo una linea, con grafico e punto evidenziato sulla mappa | ✅ Fase 3 |
+| Report PDF | ❌ Fase 4 – vedi [proposta](docs/proposta-fase-4.md) |
 | Login, pagamenti, abbonamenti | ❌ Esclusi per scelta |
 
 L'app non stima né simula valori altimetrici: se il DTM non è installato, se il terreno è fuori dalla Lombardia o
@@ -42,6 +43,13 @@ troppo piccolo, nel pannello compare **"Dati altimetrici non disponibili"** con 
 - Il dato installato è stato verificato: tutte le celle sono identiche all'originale, 30 punti su 30 coincidono con
   il servizio WMS ufficiale della Regione e i laghi risultano piatti alla quota nota.
   Dettagli in [docs/dati-dtm-lombardia.md](docs/dati-dtm-lombardia.md).
+
+### Mappe e profilo (Fase 3)
+
+- **Mappe tematiche**: ogni pixel è una cella del DTM (5 × 5 m) il cui centro cade nel terreno, colorata con gli
+  stessi valori dell'analisi; le celle sono mostrate nette, senza sfumature.
+- **Profilo**: campioni ogni 5 m lungo la linea, quota per interpolazione bilineare tra le 4 celle più vicine,
+  distanze geodetiche. I tratti senza dato non vengono disegnati. Salita e discesa cumulate sono indicative.
 
 ## Struttura delle cartelle
 
@@ -135,10 +143,10 @@ La documentazione interattiva dell'API è disponibile su **http://localhost:8000
 
 ```bash
 cd terrascan-italia/backend
-uv run pytest                 # 61 test (7 richiedono il DTM installato, altrimenti vengono saltati)
+uv run pytest                 # 83 test (9 richiedono il DTM installato, altrimenti vengono saltati)
 
 cd ../frontend
-npm test                      # 29 test: formattazione, coordinate, client API, pannello
+npm test                      # 37 test: formattazione, coordinate, client API, pannello, grafico
 npm run typecheck             # controllo dei tipi TypeScript
 ```
 
@@ -154,8 +162,12 @@ I test dei calcoli confrontano i risultati con riferimenti **indipendenti**:
 2. Premi **Disegna terreno** e clicca sulla mappa i vertici del perimetro.
 3. **Chiudi** il perimetro cliccando sul primo vertice. Superficie, perimetro, quote, pendenza ed esposizione
    compaiono nel pannello a destra; sulla mappa i simboli ▼ e ▲ indicano il punto più basso e quello più alto.
-4. Con **Modifica** puoi trascinare i vertici, aggiungerne cliccando sui punti intermedi o eliminarli con il clic destro: i valori si aggiornano subito.
-5. **Elimina** cancella il terreno disegnato.
+4. Nel pannello, **Mappa sul terreno** colora il terreno per *Pendenze* o *Esposizioni*, con la legenda.
+5. Premi **Profilo**, clicca i punti di una linea e termina cliccando di nuovo sull'ultimo punto (o con *Invio*):
+   compare il grafico quota/distanza. Passando sul grafico, il punto corrispondente si illumina sulla mappa.
+6. Con **Modifica** puoi trascinare i vertici di terreno e linea, aggiungerne cliccando sui punti intermedi o
+   eliminarli con il clic destro: i valori si aggiornano subito.
+7. **Elimina** cancella terreno e profilo.
 
 Su smartphone il pannello dei risultati compare dal basso e si apre o chiude con il pulsante *Mostra/Nascondi risultati*.
 
@@ -186,4 +198,5 @@ Variabili d'ambiente del backend:
 
 - [Verifica del dataset DTM 5×5 di Regione Lombardia](docs/dati-dtm-lombardia.md)
 - [Proposta Fase 2: integrazione dei dati altimetrici](docs/proposta-fase-2.md) (realizzata)
-- [Proposta Fase 3: mappa delle pendenze e profilo altimetrico](docs/proposta-fase-3.md)
+- [Proposta Fase 3: mappa delle pendenze e profilo altimetrico](docs/proposta-fase-3.md) (realizzata)
+- [Proposta Fase 4: report PDF](docs/proposta-fase-4.md)

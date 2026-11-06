@@ -38,3 +38,16 @@ describe("client API", () => {
     expect(errore.message).toContain("non raggiungibile");
   });
 });
+
+describe("client API Fase 3", () => {
+  it("richiede la mappa tematica e il profilo con il corpo corretto", async () => {
+    const { caricaMappaTematica, calcolaProfilo } = await import("./api");
+    const fetchFinto = vi.fn().mockImplementation(() => Promise.resolve(new Response("{}", { status: 200 })));
+    vi.stubGlobal("fetch", fetchFinto);
+    await caricaMappaTematica(quadrato, "esposizione");
+    await calcolaProfilo({ type: "LineString", coordinates: [[9, 45], [9.01, 45]] });
+    expect(fetchFinto.mock.calls[0][0]).toBe("/api/v1/analisi/mappa");
+    expect(JSON.parse(fetchFinto.mock.calls[0][1].body)).toEqual({ geometria: quadrato, tipo: "esposizione" });
+    expect(fetchFinto.mock.calls[1][0]).toBe("/api/v1/analisi/profilo");
+  });
+});

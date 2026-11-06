@@ -75,7 +75,7 @@ def test_capacita_dichiara_cosa_non_e_disponibile(client):
 def test_capacita_con_dtm(client_con_dtm):
     funzioni = {f["chiave"]: f["stato"] for f in client_con_dtm.get("/api/v1/capacita").json()["funzioni"]}
     assert funzioni["altimetria"] == funzioni["pendenza"] == funzioni["esposizione"] == "implementata"
-    assert funzioni["mappa_pendenze"] == "non_disponibile"
+    assert funzioni["mappa_pendenze"] == funzioni["profilo"] == "implementata"
     assert funzioni["report_pdf"] == "non_disponibile"
 
 
@@ -175,3 +175,57 @@ def test_analisi_fuori_copertura_dtm(client_con_dtm):
     alt = client_con_dtm.post("/api/v1/analisi/geometria", json={"geometria": torino}).json()["altimetria"]
     assert alt["disponibile"] is False
     assert "fuori" in alt["motivo"]
+
+
+LINEA_BERGAMO = {"type": "LineString", "coordinates": [[9.6690, 45.6945], [9.6705, 45.6945]]}
+
+
+def test_mappa_pendenze_senza_dtm(client):
+    r = client.post("/api/v1/analisi/mappa", json={"geometria": TERRENO_BERGAMO, "tipo": "pendenza"})
+    assert r.status_code == 200
+    dati = r.json()
+    assert dati["disponibile"] is False
+    assert dati["immagine_png_base64"] is None
+
+
+def test_mappa_pendenze_con_dtm(client_con_dtm):
+    dati = client_con_dtm.post(
+        "/api/v1/analisi/mappa", json={"geometria": TERRENO_BERGAMO, "tipo": "pendenza"}
+    ).json()
+    assert dati["disponibile"] is True
+    import base64
+
+    assert base64.b64decode(dati["immagine_png_base64"])[:8] == b"\x89PNG\r\n\x1a\n"
+    assert len(dati["coordinate"]) == 4
+    voci = {v["etichetta"]: v["percentuale_celle"] for v in dati["legenda"]}
+    assert voci["10–15 %"] == pytest.approx(100)
+
+
+def test_mappa_esposizioni_con_dtm(client_con_dtm):
+    dati = client_con_dtm.post(
+        "/api/v1/analisi/mappa", json={"geometria": TERRENO_BERGAMO, "tipo": "esposizione"}
+    ).json()
+    assert {v["etichetta"]: v["percentuale_celle"] for v in dati["legenda"]}["Ovest"] == pytest.approx(100)
+
+
+def test_mappa_tipo_non_valido(client_con_dtm):
+    r = client_con_dtm.post("/api/v1/analisi/mappa", json={"geometria": TERRENO_BERGAMO, "tipo": "colori"})
+    assert r.status_code == 422
+
+
+def test_profilo_con_dtm(client_con_dtm):
+    dati = client_con_dtm.post("/api/v1/analisi/profilo", json={"geometria": LINEA_BERGAMO}).json()
+    assert dati["disponibile"] is True
+    # Linea Ovest -> Est di ~117 m su un piano che sale del 12 % verso Est
+    assert 115 < dati["lunghezza_m"] < 119
+    assert dati["salita_m"] == pytest.approx(0.12 * dati["lunghezza_m"], rel=2e-3)
+    assert dati["discesa_m"] == pytest.approx(0, abs=1e-6)
+    assert dati["punti"][0]["distanza_m"] == 0
+    assert "bilineare" in dati["metodo"]
+
+
+def test_profilo_senza_dtm_e_linea_non_valida(client):
+    dati = client.post("/api/v1/analisi/profilo", json={"geometria": LINEA_BERGAMO}).json()
+    assert dati["disponibile"] is False and dati["punti"] == []
+    r = client.post("/api/v1/analisi/profilo", json={"geometria": {"type": "LineString", "coordinates": [[9, 45]]}})
+    assert r.status_code == 422

@@ -20,6 +20,12 @@ from app.api.schemi import (
     PuntoQuota,
     Quote,
     RichiestaGeometria,
+    RichiestaMappa,
+    RichiestaProfilo,
+    RispostaMappa,
+    RispostaProfilo,
+    VoceLegenda,
+    PuntoProfilo as PuntoProfiloSchema,
     RispostaAnalisiGeometria,
     RispostaCapacita,
     RispostaRicerca,
@@ -36,8 +42,11 @@ from app.services.altimetria import (
 )
 from app.services.area_pilota import NOME_AREA_PILOTA, confine_lombardia, geometria_lombardia
 from app.services.geocodifica import ATTRIBUZIONE_OSM, ServizioRicercaNonDisponibile
+from app.services.mappe import crea_mappa
+from app.services.profilo import PASSO_M, calcola_profilo
 from app.services.geometria import (
     ErroreGeometria,
+    linea_da_geojson,
     misura_poligono,
     poligono_da_geojson,
     posizione_rispetto_area,
@@ -79,12 +88,8 @@ def _funzioni(dtm: SorgenteDtm | None, motivo_dtm: str | None) -> list[StatoFunz
         StatoFunzione(chiave="altimetria", nome="Quote e dislivello", stato=stato, note=nota_dtm),
         StatoFunzione(chiave="pendenza", nome="Pendenza", stato=stato, note=nota_dtm),
         StatoFunzione(chiave="esposizione", nome="Esposizione dei versanti", stato=stato, note=nota_dtm),
-        StatoFunzione(
-            chiave="mappa_pendenze",
-            nome="Mappa delle pendenze e profilo altimetrico",
-            stato="non_disponibile",
-            note="Prevista nella Fase 3.",
-        ),
+        StatoFunzione(chiave="mappa_pendenze", nome="Mappe di pendenze ed esposizioni", stato=stato, note=nota_dtm),
+        StatoFunzione(chiave="profilo", nome="Profilo altimetrico", stato=stato, note=nota_dtm),
         StatoFunzione(
             chiave="report_pdf",
             nome="Report PDF",
@@ -156,14 +161,14 @@ def salute(request: Request) -> dict:
     return {
         "stato": "ok",
         "versione": __version__,
-        "fase": 2,
+        "fase": 3,
         "dtm_disponibile": request.app.state.dtm is not None,
     }
 
 
 @router.get("/capacita", response_model=RispostaCapacita, summary="Funzioni disponibili e non disponibili")
 def capacita(request: Request) -> RispostaCapacita:
-    return RispostaCapacita(fase=2, funzioni=_funzioni(request.app.state.dtm, request.app.state.motivo_dtm))
+    return RispostaCapacita(fase=3, funzioni=_funzioni(request.app.state.dtm, request.app.state.motivo_dtm))
 
 
 @router.get("/area-pilota", summary="Confine GeoJSON dell'area pilota (Lombardia)")
@@ -218,6 +223,87 @@ def analisi_geometria(richiesta: RichiestaGeometria, request: Request) -> Rispos
         area_pilota=AreaPilota(nome=NOME_AREA_PILOTA, stato=stato),
         altimetria=_altimetria(request.app.state.dtm, request.app.state.motivo_dtm, poligono),
         avvertenze=avvertenze,
+    )
+
+
+NOTA_MAPPA = (
+    "Ogni pixel è una cella del DTM (5 x 5 m) il cui centro cade nel terreno; stessi valori dell'analisi. "
+    "Classi di pendenza descrittive, non normative."
+)
+METODO_PROFILO = (
+    f"Campioni ogni {PASSO_M:g} m lungo la linea, quota per interpolazione bilineare tra i centri delle 4 celle "
+    "più vicine del DTM 5x5; distanze geodetiche (WGS84). Salita e discesa cumulate sono indicative."
+)
+
+
+@router.post("/analisi/mappa", response_model=RispostaMappa, summary="Mappa delle pendenze o delle esposizioni")
+def analisi_mappa(richiesta: RichiestaMappa, request: Request) -> RispostaMappa:
+    try:
+        poligono = poligono_da_geojson(richiesta.geometria)
+    except ErroreGeometria as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    dtm: SorgenteDtm | None = request.app.state.dtm
+    if dtm is None:
+        return RispostaMappa(
+            disponibile=False, messaggio=MESSAGGIO_ALTIMETRIA_ASSENTE, motivo=request.app.state.motivo_dtm,
+            tipo=richiesta.tipo,
+        )
+    try:
+        m = crea_mappa(dtm, poligono, richiesta.tipo)
+    except AltimetriaNonDisponibile as exc:
+        return RispostaMappa(
+            disponibile=False, messaggio=MESSAGGIO_ALTIMETRIA_ASSENTE, motivo=str(exc), tipo=richiesta.tipo
+        )
+    return RispostaMappa(
+        disponibile=True,
+        messaggio="Mappa calcolata con dati reali",
+        tipo=m.tipo,
+        immagine_png_base64=m.png_base64,
+        coordinate=m.coordinate,
+        larghezza=m.larghezza,
+        altezza=m.altezza,
+        legenda=[VoceLegenda(etichetta=v.etichetta, colore=v.colore, percentuale_celle=v.percentuale_celle)
+                 for v in m.legenda],
+        celle_colorate=m.celle_colorate,
+        nota=NOTA_MAPPA,
+        attribuzione=dtm.descrizione.attribuzione,
+    )
+
+
+@router.post("/analisi/profilo", response_model=RispostaProfilo, summary="Profilo altimetrico lungo una linea")
+def analisi_profilo(richiesta: RichiestaProfilo, request: Request) -> RispostaProfilo:
+    try:
+        linea = linea_da_geojson(richiesta.geometria)
+    except ErroreGeometria as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    dtm: SorgenteDtm | None = request.app.state.dtm
+    if dtm is None:
+        return RispostaProfilo(
+            disponibile=False, messaggio=MESSAGGIO_ALTIMETRIA_ASSENTE, motivo=request.app.state.motivo_dtm
+        )
+    try:
+        p = calcola_profilo(dtm, linea)
+    except AltimetriaNonDisponibile as exc:
+        return RispostaProfilo(disponibile=False, messaggio=MESSAGGIO_ALTIMETRIA_ASSENTE, motivo=str(exc))
+    return RispostaProfilo(
+        disponibile=True,
+        messaggio="Profilo calcolato con dati reali",
+        punti=[PuntoProfiloSchema(**vars(pt)) for pt in p.punti],
+        lunghezza_m=p.lunghezza_m,
+        lunghezza_inclinata_m=p.lunghezza_inclinata_m,
+        quota_minima=p.quota_minima,
+        quota_massima=p.quota_massima,
+        quota_iniziale=p.quota_iniziale,
+        quota_finale=p.quota_finale,
+        salita_m=p.salita_m,
+        discesa_m=p.discesa_m,
+        pendenza_media_percento=p.pendenza_media_percento,
+        pendenza_massima_percento=p.pendenza_massima_percento,
+        copertura_percento=p.copertura_percento,
+        passo_m=p.passo_m,
+        metodo=METODO_PROFILO,
+        avvertenze=p.avvertenze,
+        attribuzione=dtm.descrizione.attribuzione,
     )
 
 

@@ -820,3 +820,148 @@ button:disabled {
 .marcatore-quota--max {
   background: var(--rosso);
 }
+
+/* ---------- Fase 3: mappe tematiche e profilo ---------- */
+
+.strumento--profilo,
+.strumento--profilo:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.selettore {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 3px;
+  background: var(--grigio-100);
+  border-radius: 8px;
+}
+
+.selettore__opzione {
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 6px;
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--grigio-700);
+}
+
+.selettore__opzione--attiva {
+  background: var(--bianco);
+  color: var(--verde-800);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+}
+
+.legenda {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 0.8rem;
+}
+
+.legenda li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legenda__colore {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgb(15 23 42 / 0.15);
+  flex-shrink: 0;
+}
+
+.legenda__valore {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--grigio-700);
+}
+
+.grafico-profilo {
+  margin: 4px 0 8px;
+}
+
+.grafico-profilo svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: none;
+}
+
+.grafico-profilo__griglia {
+  stroke: var(--grigio-200);
+  stroke-width: 0.6;
+}
+
+.grafico-profilo__testo {
+  font-size: 8px;
+  fill: var(--grigio-500);
+  font-variant-numeric: tabular-nums;
+}
+
+.grafico-profilo__area {
+  fill: #1d4ed8;
+  fill-opacity: 0.1;
+}
+
+.grafico-profilo__linea {
+  fill: none;
+  stroke: #1d4ed8;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.grafico-profilo__cursore {
+  stroke: var(--grigio-500);
+  stroke-width: 0.8;
+  stroke-dasharray: 2 2;
+}
+
+.grafico-profilo__punto {
+  fill: var(--bianco);
+  stroke: #1d4ed8;
+  stroke-width: 1.6;
+}
+
+.grafico-profilo__didascalia {
+  font-size: 0.78rem;
+  color: var(--grigio-500);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.dati--due-colonne dt {
+  white-space: nowrap;
+}
+
+.marcatore-profilo {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bianco);
+  border: 3px solid #1d4ed8;
+  box-shadow: var(--ombra);
+}
+
+@media (max-width: 768px) {
+  .strumenti {
+    gap: 2px;
+    padding: 4px;
+  }
+
+  .strumento {
+    padding: 8px 6px;
+    font-size: 0.75rem;
+  }
+
+  .strumento--compatto span {
+    display: none;
+  }
+}

@@ -107,3 +107,65 @@ export interface RisultatoRicerca {
 export type Destinazione =
   | { tipo: "punto"; lon: number; lat: number; zoom?: number }
   | { tipo: "riquadro"; bbox: [number, number, number, number] };
+
+// ------------------------------------------------------------------ Fase 3
+
+export interface GeoJsonLineString {
+  type: "LineString";
+  coordinates: number[][];
+}
+
+export type TipoMappa = "pendenza" | "esposizione";
+
+export interface RispostaMappa {
+  disponibile: boolean;
+  messaggio: string;
+  motivo?: string | null;
+  tipo: TipoMappa;
+  immagine_png_base64?: string | null;
+  /** Angoli [lon, lat]: alto-sinistra, alto-destra, basso-destra, basso-sinistra */
+  coordinate?: [number, number][] | null;
+  larghezza?: number | null;
+  altezza?: number | null;
+  legenda: { etichetta: string; colore: string; percentuale_celle: number }[];
+  celle_colorate: number;
+  nota?: string | null;
+  attribuzione?: string | null;
+}
+
+export interface PuntoProfilo {
+  distanza_m: number;
+  quota_m: number | null;
+  lon: number;
+  lat: number;
+}
+
+export interface RispostaProfilo {
+  disponibile: boolean;
+  messaggio: string;
+  motivo?: string | null;
+  punti: PuntoProfilo[];
+  lunghezza_m?: number | null;
+  lunghezza_inclinata_m?: number | null;
+  quota_minima?: number | null;
+  quota_massima?: number | null;
+  quota_iniziale?: number | null;
+  quota_finale?: number | null;
+  salita_m?: number | null;
+  discesa_m?: number | null;
+  pendenza_media_percento?: number | null;
+  pendenza_massima_percento?: number | null;
+  copertura_percento?: number | null;
+  passo_m?: number | null;
+  metodo?: string | null;
+  avvertenze: string[];
+  attribuzione?: string | null;
+  nota_legale: string;
+}
+
+/** Stato generico di una richiesta al backend. */
+export type StatoRichiesta<T> =
+  | { stato: "vuoto" }
+  | { stato: "in_corso" }
+  | { stato: "errore"; messaggio: string }
+  | { stato: "completata"; risultato: T };

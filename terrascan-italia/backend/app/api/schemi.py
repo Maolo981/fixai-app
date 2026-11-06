@@ -163,3 +163,67 @@ class RispostaRicerca(BaseModel):
     query: str
     risultati: list[LocalitaTrovata]
     attribuzione: str
+
+
+# ------------------------------------------------------------------ Fase 3
+
+
+class RichiestaMappa(BaseModel):
+    geometria: dict[str, Any] = Field(description="Poligono GeoJSON del terreno (lon/lat WGS84).")
+    tipo: Literal["pendenza", "esposizione"]
+
+
+class VoceLegenda(BaseModel):
+    etichetta: str
+    colore: str
+    percentuale_celle: float
+
+
+class RispostaMappa(BaseModel):
+    disponibile: bool
+    messaggio: str
+    motivo: str | None = None
+    tipo: Literal["pendenza", "esposizione"]
+    immagine_png_base64: str | None = None
+    # Angoli [lon, lat] dell'immagine: alto-sinistra, alto-destra, basso-destra, basso-sinistra
+    coordinate: list[list[float]] | None = None
+    larghezza: int | None = None
+    altezza: int | None = None
+    legenda: list[VoceLegenda] = []
+    celle_colorate: int = 0
+    nota: str | None = None
+    attribuzione: str | None = None
+
+
+class RichiestaProfilo(BaseModel):
+    geometria: dict[str, Any] = Field(description="Linea GeoJSON (LineString) lon/lat WGS84.")
+
+
+class PuntoProfilo(BaseModel):
+    distanza_m: float
+    quota_m: float | None
+    lon: float
+    lat: float
+
+
+class RispostaProfilo(BaseModel):
+    disponibile: bool
+    messaggio: str
+    motivo: str | None = None
+    punti: list[PuntoProfilo] = []
+    lunghezza_m: float | None = None
+    lunghezza_inclinata_m: float | None = None
+    quota_minima: float | None = None
+    quota_massima: float | None = None
+    quota_iniziale: float | None = None
+    quota_finale: float | None = None
+    salita_m: float | None = None
+    discesa_m: float | None = None
+    pendenza_media_percento: float | None = None
+    pendenza_massima_percento: float | None = None
+    copertura_percento: float | None = None
+    passo_m: float | None = None
+    metodo: str | None = None
+    avvertenze: list[str] = []
+    attribuzione: str | None = None
+    nota_legale: str = AVVERTENZA_LEGALE

@@ -1,10 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { BarraRicerca } from "./components/BarraRicerca";
-import { MappaTerreno } from "./components/MappaTerreno";
+import { MappaTerreno, type Sovrapposizione } from "./components/MappaTerreno";
 import { PannelloRisultati, type StatoAnalisi } from "./components/PannelloRisultati";
-import { analizzaGeometria, caricaCapacita, ErroreApi } from "./lib/api";
-import type { Capacita, Destinazione, GeoJsonPolygon } from "./lib/types";
+import type { SceltaMappa } from "./components/SezioniFase3";
+import { analizzaGeometria, calcolaProfilo, caricaCapacita, caricaMappaTematica, ErroreApi } from "./lib/api";
+import type {
+  Capacita,
+  Destinazione,
+  GeoJsonLineString,
+  GeoJsonPolygon,
+  PuntoProfilo,
+  RispostaMappa,
+  RispostaProfilo,
+  StatoRichiesta,
+} from "./lib/types";
+
+function messaggioErrore(e: unknown, predefinito: string) {
+  return e instanceof ErroreApi ? e.message : predefinito;
+}
 
 export default function App() {
   const [destinazione, setDestinazione] = useState<Destinazione | null>(null);
@@ -16,6 +30,14 @@ export default function App() {
   );
   const controller = useRef<AbortController | null>(null);
 
+  // Fase 3: mappe tematiche e profilo altimetrico
+  const [terreno, setTerreno] = useState<GeoJsonPolygon | null>(null);
+  const [sceltaMappa, setSceltaMappa] = useState<SceltaMappa>("nessuna");
+  const [mappa, setMappa] = useState<StatoRichiesta<RispostaMappa>>({ stato: "vuoto" });
+  const [profilo, setProfilo] = useState<StatoRichiesta<RispostaProfilo>>({ stato: "vuoto" });
+  const [puntoProfilo, setPuntoProfilo] = useState<PuntoProfilo | null>(null);
+  const controllerProfilo = useRef<AbortController | null>(null);
+
   useEffect(() => {
     caricaCapacita()
       .then(setCapacita)
@@ -23,6 +45,7 @@ export default function App() {
   }, []);
 
   const suGeometria = useCallback(async (geometria: GeoJsonPolygon | null) => {
+    setTerreno(geometria);
     // Annulla l'eventuale richiesta precedente: conta solo l'ultima geometria.
     controller.current?.abort();
     if (!geometria) {
@@ -45,6 +68,49 @@ export default function App() {
     }
   }, []);
 
+  // La mappa tematica si ricalcola quando cambiano il terreno o la scelta.
+  useEffect(() => {
+    if (!terreno || sceltaMappa === "nessuna") {
+      setMappa({ stato: "vuoto" });
+      return;
+    }
+    const attuale = new AbortController();
+    setMappa({ stato: "in_corso" });
+    caricaMappaTematica(terreno, sceltaMappa, attuale.signal)
+      .then((risultato) => !attuale.signal.aborted && setMappa({ stato: "completata", risultato }))
+      .catch((e) => {
+        if (!attuale.signal.aborted)
+          setMappa({ stato: "errore", messaggio: messaggioErrore(e, "Errore imprevisto nella mappa.") });
+      });
+    return () => attuale.abort();
+  }, [terreno, sceltaMappa]);
+
+  const suLinea = useCallback(async (linea: GeoJsonLineString | null) => {
+    controllerProfilo.current?.abort();
+    setPuntoProfilo(null);
+    if (!linea) {
+      setProfilo({ stato: "vuoto" });
+      return;
+    }
+    const attuale = new AbortController();
+    controllerProfilo.current = attuale;
+    setProfilo({ stato: "in_corso" });
+    setPannelloAperto(true);
+    try {
+      const risultato = await calcolaProfilo(linea, attuale.signal);
+      if (!attuale.signal.aborted) setProfilo({ stato: "completata", risultato });
+    } catch (e) {
+      if (!attuale.signal.aborted)
+        setProfilo({ stato: "errore", messaggio: messaggioErrore(e, "Errore imprevisto nel profilo.") });
+    }
+  }, []);
+
+  const sovrapposizione = useMemo<Sovrapposizione | null>(() => {
+    if (mappa.stato !== "completata" || !mappa.risultato.disponibile) return null;
+    const { immagine_png_base64, coordinate } = mappa.risultato;
+    return immagine_png_base64 && coordinate ? { pngBase64: immagine_png_base64, coordinate } : null;
+  }, [mappa]);
+
   const puntiQuota = useMemo(() => {
     if (analisi.stato !== "completata") return null;
     const quote = analisi.risultato.altimetria.quote;
@@ -63,12 +129,19 @@ export default function App() {
         </div>
         <BarraRicerca onDestinazione={setDestinazione} />
         <span className="badge-fase" title="Versione di sviluppo">
-          Fase 2 · Area pilota Lombardia
+          Fase 3 · Area pilota Lombardia
         </span>
       </header>
 
       <main className="corpo">
-        <MappaTerreno destinazione={destinazione} onGeometria={suGeometria} puntiQuota={puntiQuota} />
+        <MappaTerreno
+          destinazione={destinazione}
+          onGeometria={suGeometria}
+          onLinea={suLinea}
+          puntiQuota={puntiQuota}
+          sovrapposizione={sovrapposizione}
+          puntoProfilo={puntoProfilo}
+        />
         <button
           type="button"
           className="interruttore-pannello"
@@ -77,7 +150,17 @@ export default function App() {
         >
           {pannelloAperto ? "Nascondi risultati" : "Mostra risultati"}
         </button>
-        <PannelloRisultati analisi={analisi} capacita={capacita} />
+        <PannelloRisultati
+          analisi={analisi}
+          capacita={capacita}
+          fase3={{
+            sceltaMappa,
+            mappa,
+            onSceltaMappa: setSceltaMappa,
+            profilo,
+            onPuntoProfilo: setPuntoProfilo,
+          }}
+        />
       </main>
     </div>
   );
