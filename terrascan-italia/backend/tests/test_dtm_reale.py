@@ -44,8 +44,40 @@ def test_caratteristiche_del_file(dtm):
 
 
 def test_piazza_duomo_milano_coincide_con_wms_regionale(dtm):
-    # GetFeatureInfo sul WMS DTM5_RL_wms (6/11/2026) nel punto 9,1919 E 45,4642 N: PixelValue = 119.860001
+    # Cella del DTM che contiene piazza del Duomo (9,1919 E 45,4642 N): riga 26472, colonna 11000,
+    # centro E 515004,3694 N 5034538,7481. GetFeatureInfo sul WMS ufficiale DTM5_RL_wms nel centro
+    # della cella (6/11/2026): PixelValue = 119.790001
     x, y = _A_UTM.transform(9.1919, 45.4642)
     with rasterio.open(dtm.percorso) as ds:
-        valore = next(ds.sample([(x, y)]))[0]
-    assert float(valore) == pytest.approx(119.86, abs=0.01)
+        assert ds.index(x, y) == (26472, 11000)
+        valore = ds.read(1, window=((26472, 26473), (11000, 11001)))[0, 0]
+    assert float(valore) == pytest.approx(119.79, abs=0.01)
+
+
+@pytest.mark.parametrize(
+    ("lago", "lon", "lat", "livello_noto_m"),
+    [
+        # Livelli medi nominali dei laghi (m s.l.m.), fonte indipendente dal DTM.
+        ("Como", 9.272, 45.997, 198.0),
+        ("Garda", 10.62, 45.55, 65.0),
+        ("Lugano", 9.10, 46.02, 271.0),
+        ("Varese", 8.73, 45.81, 238.0),
+    ],
+)
+def test_laghi_piatti_alla_quota_nota_sul_livello_del_mare(dtm, lago, lon, lat, livello_noto_m):
+    r = dtm.analizza(quadrato(lon, lat, 200))
+    # Sui laghi il DTM riporta il livello dell'acqua: superficie perfettamente piatta...
+    assert r.dislivello < 0.05, lago
+    assert r.pendenza_massima_percento < 0.1
+    assert r.esposizione_prevalente == "Pianeggiante"
+    # ...alla quota nota del lago entro l'accuratezza dichiarata (2 m). Questo conferma anche
+    # che le quote sono riferite al livello del mare (le quote ellissoidiche sarebbero ~47 m più alte).
+    assert r.quota_media == pytest.approx(livello_noto_m, abs=2.0), lago
+
+
+def test_analisi_di_un_terreno_reale_in_pianura(dtm):
+    # Zona agricola/produttiva vicino a Treviglio (BG): pianura, quote intorno a 120 m
+    r = dtm.analizza(quadrato(9.6105, 45.5135, 300))
+    assert r.celle_valide == r.celle_interne == 3600
+    assert 110 < r.quota_minima <= r.quota_media <= r.quota_massima < 130
+    assert r.pendenza_media_percento < 5

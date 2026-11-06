@@ -104,13 +104,34 @@ Archivio scaricato il 6/11/2026 da `https://www.cartografia.servizirl.it/downloa
 | Tipo numerico | `float32` (metri, con decimali) |
 | Valore "nodata" | −3,4028235·10³⁸ (celle fuori dalla Lombardia) |
 | Statistiche interne del file | quota minima 2,36 m, massima 4.024,98 m, media 604,3 m |
-| Datum verticale | **Non dichiarato nemmeno nel file** (nessun sistema di riferimento verticale) |
-| Impronta SHA-256 dell'archivio | vedi `backend/dati-dtm/dtm5_lombardia_2015.json`, generato da `scripts/prepara_dtm.py` |
+| Datum verticale | Non dichiarato nel file; **verificato empiricamente: quote sul livello del mare** (vedi sezione 7) |
+| Impronta SHA-256 dell'archivio | `ae96d3dca7bd728683ad964e6d3bad49792ff36857f4bc532099479513a8e1fc` |
 
 Note:
 - La griglia non parte da un metro intero (origine Est 460.001,8694 m): l'analisi usa sempre la
   georeferenziazione del file, senza ricampionare.
-- La quota minima di 2,36 m è anomala per la Lombardia (il punto più basso, lungo il Po, è intorno ai
+- La quota minima di 2,36 m (dalle statistiche interne del file) è anomala per la Lombardia (il punto più basso, lungo il Po, è intorno ai
   10-15 m s.l.m.): va indagata, ma non influisce sui terreni che non comprendono quella cella.
 - Il servizio WMS risponde a `GetFeatureInfo` con il valore della cella (`PixelValue`): lo usiamo solo per
   verificare a campione il file installato (`scripts/verifica_dtm_wms.py`).
+
+## 7. Verifiche eseguite sul dato installato (6/11/2026)
+
+| Verifica | Esito |
+|---|---|
+| Integrità dell'archivio (CRC32 di ogni file nello ZIP) | ✅ superata |
+| Conversione in GeoTIFF compresso (1,97 GB) – confronto **di tutte** le celle con l'originale | ✅ 2.066.065.200 celle identiche |
+| Confronto con il **WMS ufficiale** della Regione (`GetFeatureInfo`) su 30 celle casuali | ✅ 30/30 identiche (scarto < 0,001 mm) |
+| Laghi: superficie piatta alla quota del lago (test automatici) | ✅ vedi tabella |
+
+| Lago | Quota nel DTM | Livello medio noto (m s.l.m.) |
+|---|---|---|
+| Como | 198,00 m | ≈ 198 |
+| Garda | 65,00 m | ≈ 65 |
+| Lugano (Porlezza) | 270,51 m | ≈ 271 |
+| Varese | 238,19 m | ≈ 238 |
+| Iseo | 187,54 m | ≈ 185-186 (scarto di circa 2 m, da segnalare alla Regione) |
+
+**Conclusione sul datum verticale:** le quote corrispondono ai livelli dei laghi sul livello del mare. Se fossero
+quote ellissoidiche (WGS84) risulterebbero circa 47 m più alte. Le quote del DTM sono quindi **ortometriche
+(m s.l.m.)**, con l'accuratezza dichiarata nei metadati.

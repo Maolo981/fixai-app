@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import sys
 import time
 import urllib.parse
 import urllib.request
@@ -21,7 +22,10 @@ import urllib.request
 import numpy as np
 import rasterio
 
-from app.config import impostazioni
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # per importare il pacchetto "app"
+from app.config import impostazioni  # noqa: E402
 
 WMS = "https://www.cartografia.servizirl.it/arcgis/services/wms/DTM5_RL_wms/MapServer/WmsServer"
 TOLLERANZA_M = 0.01

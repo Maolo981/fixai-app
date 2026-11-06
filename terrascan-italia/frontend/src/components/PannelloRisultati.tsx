@@ -294,22 +294,22 @@ function RosaEsposizione({ settori }: { settori: { settore: string; percentuale_
     return `M50,50 L${p(a1)} A${r},${r} 0 0 1 ${p(a2)} Z`;
   };
   return (
-    <svg viewBox="0 0 100 100" className="rosa" role="img" aria-label="Rosa delle esposizioni">
+    <svg viewBox="-10 -10 120 120" className="rosa" role="img" aria-label="Rosa delle esposizioni">
       <circle cx="50" cy="50" r={raggio} className="rosa__cerchio" />
       {ordine.map((s, i) => {
         const v = settori.find((x) => x.settore === s)?.percentuale_celle ?? 0;
         return v > 0 ? <path key={s} d={spicchio(i, v)} className="rosa__spicchio" /> : null;
       })}
-      <text x="50" y="9" className="rosa__testo">
+      <text x="50" y="-1" className="rosa__testo">
         N
       </text>
-      <text x="93" y="53" className="rosa__testo">
+      <text x="104" y="53" className="rosa__testo">
         E
       </text>
-      <text x="50" y="97" className="rosa__testo">
+      <text x="50" y="108" className="rosa__testo">
         S
       </text>
-      <text x="7" y="53" className="rosa__testo">
+      <text x="-4" y="53" className="rosa__testo">
         O
       </text>
     </svg>

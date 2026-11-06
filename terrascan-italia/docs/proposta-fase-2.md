@@ -1,5 +1,8 @@
 # Proposta – Fase 2: integrazione dei dati altimetrici reali
 
+> **Stato: realizzata** (6/11/2026), inclusa l'esposizione dei versanti. Esiti delle verifiche in
+> [dati-dtm-lombardia.md](dati-dtm-lombardia.md).
+
 ## Obiettivo
 
 Per il terreno disegnato, calcolare con il **DTM 5×5 di Regione Lombardia** (ed. 2015):
