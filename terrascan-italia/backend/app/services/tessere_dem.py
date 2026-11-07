@@ -110,7 +110,7 @@ def quote_tessera(sorgente: SorgenteDtm, z: int, x: int, y: int) -> np.ndarray |
         # Con forma ridotta GDAL usa automaticamente le piramidi del file
         dati = ds.read(1, window=finestra, out_shape=forma, masked=True, resampling=Resampling.average)
         t = ds.window_transform(finestra)
-        trasf_lettura = t * t.scale(finestra.width / forma[1], finestra.height / forma[0])
+        trasf_lettura = t @ t.scale(finestra.width / forma[1], finestra.height / forma[0])
 
     sorgente_quote = dati.astype(np.float64).filled(np.nan)
     destinazione = np.full((DIMENSIONE, DIMENSIONE), np.nan)

@@ -185,7 +185,7 @@ La documentazione interattiva dell'API è disponibile su **http://localhost:8000
 
 ```bash
 cd terrascan-italia/backend
-uv run pytest                 # 115 test (12 richiedono il DTM installato, altrimenti vengono saltati)
+uv run pytest                 # 114 test (12 richiedono il DTM installato, altrimenti vengono saltati)
 
 cd ../frontend
 npm test                      # 52 test: formattazione, livelli, pannelli, 3D, grafico, report, landing
