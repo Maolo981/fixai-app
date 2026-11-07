@@ -20,14 +20,14 @@ import type {
   AnalisiGeometria,
   Capacita,
   PuntoProfilo,
-  RispostaMappa,
   RispostaProfilo,
+  RispostaQuota,
   StatoAltimetria,
   StatoRichiesta,
 } from "../lib/types";
 import type { CampiReport } from "../lib/api";
 import { SezioneReport } from "./SezioneReport";
-import { SezioneMappe, SezioneProfilo, type SceltaMappa } from "./SezioniFase3";
+import { SezioneProfilo } from "./SezioniFase3";
 
 export type StatoAnalisi =
   | { stato: "vuoto" }
@@ -37,9 +37,8 @@ export type StatoAnalisi =
 
 /** Stato e azioni della Fase 3 (mappe tematiche e profilo), forniti dal componente padre. */
 export interface DatiFase3 {
-  sceltaMappa: SceltaMappa;
-  mappa: StatoRichiesta<RispostaMappa>;
-  onSceltaMappa: (scelta: SceltaMappa) => void;
+  /** Quota del punto cliccato con lo strumento "Quota". */
+  quotaPunto?: StatoRichiesta<RispostaQuota>;
   profilo: StatoRichiesta<RispostaProfilo>;
   onPuntoProfilo: (punto: PuntoProfilo | null) => void;
   /** Fase 4: generazione del report PDF. */
@@ -47,10 +46,14 @@ export interface DatiFase3 {
   onReport: (campi: CampiReport, includiProfilo: boolean) => Promise<string>;
 }
 
+export type SchedaDestra = "lotto" | "altimetria" | "profilo" | "report";
+
 interface Props {
   analisi: StatoAnalisi;
   capacita: Capacita | null;
   fase3?: DatiFase3;
+  /** Scheda da mostrare; se assente si mostrano tutte le sezioni. */
+  scheda?: SchedaDestra;
 }
 
 const ETICHETTA_AREA_PILOTA = {
@@ -62,44 +65,88 @@ const ETICHETTA_AREA_PILOTA = {
 const AVVERTENZA_PREDEFINITA =
   "Le analisi sono preliminari e indicative: non sostituiscono un rilievo topografico o una perizia tecnica eseguiti da un professionista abilitato.";
 
-export function PannelloRisultati({ analisi, capacita, fase3 }: Props) {
-  const altimetriaDisponibile = analisi.stato === "completata" && analisi.risultato.altimetria.disponibile;
+export function PannelloRisultati({ analisi, capacita, fase3, scheda }: Props) {
   const profiloAttivo = capacita?.funzioni.some((f) => f.chiave === "profilo" && f.stato === "implementata") ?? false;
+  const mostra = (s: SchedaDestra) => !scheda || scheda === s;
   return (
     <aside className="pannello" aria-label="Risultati dell'analisi">
       <div className="pannello__contenuto">
-        {analisi.stato === "vuoto" && <Istruzioni />}
-        {analisi.stato === "in_corso" && (
+        {mostra("lotto") && analisi.stato === "vuoto" && <Istruzioni />}
+        {analisi.stato === "in_corso" && (mostra("lotto") || mostra("altimetria")) && (
           <div className="stato-caricamento" role="status">
             <span className="spinner" aria-hidden="true" /> Calcolo in corso…
           </div>
         )}
-        {analisi.stato === "errore" && (
+        {mostra("lotto") && analisi.stato === "errore" && (
           <div className="scheda scheda--errore" role="alert">
             <h2>Analisi non eseguita</h2>
             <p>{analisi.messaggio}</p>
             <p className="testo-secondario">Nessun valore viene mostrato finché il calcolo non va a buon fine.</p>
           </div>
         )}
-        {analisi.stato === "completata" && <Risultati r={analisi.risultato} />}
-        {analisi.stato === "completata" && fase3 && (
+        {mostra("lotto") && analisi.stato === "completata" && <Risultati r={analisi.risultato} />}
+
+        {mostra("report") && analisi.stato === "completata" && fase3 && (
           <SezioneReport haLinea={fase3.haLinea} onGenera={fase3.onReport} />
         )}
+        {scheda === "report" && analisi.stato !== "completata" && (
+          <p className="testo-secondario">Disegna un lotto per generare il report PDF.</p>
+        )}
 
-        <SezioneAltimetria analisi={analisi} capacita={capacita} />
-        {fase3 && altimetriaDisponibile && (
-          <SezioneMappe scelta={fase3.sceltaMappa} stato={fase3.mappa} onScelta={fase3.onSceltaMappa} />
+        {mostra("altimetria") && <SezioneAltimetria analisi={analisi} capacita={capacita} />}
+        {mostra("altimetria") && fase3?.quotaPunto && <SezioneQuotaPunto stato={fase3.quotaPunto} />}
+
+        {mostra("profilo") && fase3 && (
+          <SezioneProfilo
+            stato={fase3.profilo}
+            attivo={profiloAttivo || scheda === "profilo"}
+            onPuntoEvidenziato={fase3.onPuntoProfilo}
+          />
         )}
-        {fase3 && (
-          <SezioneProfilo stato={fase3.profilo} attivo={profiloAttivo} onPuntoEvidenziato={fase3.onPuntoProfilo} />
-        )}
-        {capacita && <StatoFunzioni capacita={capacita} />}
+        {mostra("lotto") && capacita && <StatoFunzioni capacita={capacita} />}
       </div>
       <footer className="pannello__avvertenza">
         <strong>Avvertenza.</strong>{" "}
         {analisi.stato === "completata" ? analisi.risultato.nota_legale : (capacita?.nota_legale ?? AVVERTENZA_PREDEFINITA)}
       </footer>
     </aside>
+  );
+}
+
+function SezioneQuotaPunto({ stato }: { stato: StatoRichiesta<RispostaQuota> }) {
+  return (
+    <section className="scheda scheda--compatta" aria-labelledby="titolo-quota-punto" data-testid="quota-punto">
+      <h2 id="titolo-quota-punto">Quota di un punto</h2>
+      {stato.stato === "vuoto" && (
+        <p className="testo-secondario">
+          Scegli lo strumento <strong>Quota</strong> e clicca un punto sulla mappa.
+        </p>
+      )}
+      {stato.stato === "in_corso" && <p className="testo-secondario">Lettura del DTM…</p>}
+      {stato.stato === "errore" && <p className="avviso">{stato.messaggio}</p>}
+      {stato.stato === "completata" && !stato.risultato.disponibile && (
+        <>
+          <p className="non-disponibile">Dati altimetrici non disponibili</p>
+          {stato.risultato.motivo && <p className="testo-secondario">{stato.risultato.motivo}</p>}
+        </>
+      )}
+      {stato.stato === "completata" && stato.risultato.disponibile && (
+        <>
+          <p className="metrica__valore" data-testid="quota-punto-valore">
+            {formattaQuota(stato.risultato.quota_m ?? 0)}
+          </p>
+          <dl className="dati dati--senza-bordo">
+            <dt>Punto</dt>
+            <dd>{formattaCoordinate(stato.risultato.lat, stato.risultato.lon)}</dd>
+            <dt>Cella DTM</dt>
+            <dd>{formattaQuota(stato.risultato.quota_cella_m ?? 0)}</dd>
+          </dl>
+          <p className="testo-secondario">
+            Quota stimata: {stato.risultato.metodo} {stato.risultato.precisione}
+          </p>
+        </>
+      )}
+    </section>
   );
 }
 

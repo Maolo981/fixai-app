@@ -3,16 +3,8 @@
  * Mostrano solo dati ricevuti dal backend; se non disponibili, lo dichiarano.
  */
 import { formattaLunghezza, formattaQuota } from "../lib/formato";
-import type { PuntoProfilo, RispostaMappa, RispostaProfilo, StatoRichiesta, TipoMappa } from "../lib/types";
+import type { PuntoProfilo, RispostaProfilo, StatoRichiesta } from "../lib/types";
 import { GraficoProfilo } from "./GraficoProfilo";
-
-export type SceltaMappa = TipoMappa | "nessuna";
-
-const NOMI_MAPPE: Record<SceltaMappa, string> = {
-  nessuna: "Nessuna",
-  pendenza: "Pendenze",
-  esposizione: "Esposizioni",
-};
 
 function numero(valore: number, decimali: number) {
   return new Intl.NumberFormat("it-IT", {
@@ -26,73 +18,6 @@ function numero(valore: number, decimali: number) {
 function conSegno(valore: number | null | undefined, segno: string) {
   const v = Math.abs(valore ?? 0);
   return Math.round(v * 10) === 0 ? "0,0 m" : `${segno}${numero(v, 1)} m`;
-}
-
-export function SezioneMappe({
-  scelta,
-  stato,
-  onScelta,
-}: {
-  scelta: SceltaMappa;
-  stato: StatoRichiesta<RispostaMappa>;
-  onScelta: (scelta: SceltaMappa) => void;
-}) {
-  return (
-    <section className="scheda" aria-labelledby="titolo-mappe">
-      <div className="scheda__intestazione">
-        <h2 id="titolo-mappe">Mappa sul terreno</h2>
-        {stato.stato === "completata" && stato.risultato.disponibile && (
-          <span className="etichetta etichetta--reale">Dati reali DTM</span>
-        )}
-      </div>
-      <div className="selettore" role="radiogroup" aria-label="Mappa da sovrapporre al terreno">
-        {(Object.keys(NOMI_MAPPE) as SceltaMappa[]).map((s) => (
-          <button
-            key={s}
-            type="button"
-            role="radio"
-            aria-checked={scelta === s}
-            className={`selettore__opzione ${scelta === s ? "selettore__opzione--attiva" : ""}`}
-            onClick={() => onScelta(s)}
-          >
-            {NOMI_MAPPE[s]}
-          </button>
-        ))}
-      </div>
-      {scelta !== "nessuna" && stato.stato === "in_corso" && (
-        <p className="testo-secondario" role="status">
-          Preparazione della mappa…
-        </p>
-      )}
-      {scelta !== "nessuna" && stato.stato === "errore" && (
-        <p className="avviso" role="alert">
-          {stato.messaggio}
-        </p>
-      )}
-      {scelta !== "nessuna" && stato.stato === "completata" && !stato.risultato.disponibile && (
-        <p className="avviso">Dati altimetrici non disponibili. {stato.risultato.motivo}</p>
-      )}
-      {scelta !== "nessuna" && stato.stato === "completata" && stato.risultato.disponibile && (
-        <>
-          <ul className="legenda" aria-label={`Legenda della mappa delle ${NOMI_MAPPE[scelta].toLowerCase()}`}>
-            {stato.risultato.legenda.map((v) => (
-              <li key={v.etichetta}>
-                <span className="legenda__colore" style={{ background: v.colore }} aria-hidden="true" />
-                <span>{v.etichetta}</span>
-                <span className="legenda__valore">{Math.round(v.percentuale_celle)}%</span>
-              </li>
-            ))}
-          </ul>
-          <p className="testo-secondario">{stato.risultato.nota}</p>
-        </>
-      )}
-      {scelta === "nessuna" && (
-        <p className="testo-secondario">
-          Colora le celle del DTM (5 × 5 m) dentro il terreno per classe di pendenza o per esposizione.
-        </p>
-      )}
-    </section>
-  );
 }
 
 export function SezioneProfilo({
@@ -131,6 +56,12 @@ export function SezioneProfilo({
       )}
       {stato.stato === "completata" && !stato.risultato.disponibile && (
         <>
+          {typeof stato.risultato.lunghezza_m === "number" && (
+            <dl className="dati dati--senza-bordo">
+              <dt>Distanza (geodetica)</dt>
+              <dd data-testid="distanza-linea">{formattaLunghezza(stato.risultato.lunghezza_m)}</dd>
+            </dl>
+          )}
           <p className="non-disponibile" data-testid="profilo-non-disponibile">
             Dati altimetrici non disponibili
           </p>
@@ -175,6 +106,28 @@ function RisultatoProfiloVista({
         <dt>Pendenza media</dt>
         <dd>{numero(p.pendenza_media_percento ?? 0, 1)} %</dd>
       </dl>
+      {p.tratti && p.tratti.length > 1 && (
+        <table className="tabella-tratti" aria-label="Tratti del profilo tra i vertici">
+          <thead>
+            <tr>
+              <th scope="col">Tratto</th>
+              <th scope="col">Lunghezza</th>
+              <th scope="col">Dislivello</th>
+              <th scope="col">Pendenza</th>
+            </tr>
+          </thead>
+          <tbody>
+            {p.tratti.map((t, i) => (
+              <tr key={t.da_m}>
+                <td>{i + 1}</td>
+                <td>{formattaLunghezza(t.lunghezza_m)}</td>
+                <td>{t.dislivello_m === null ? "n.d." : `${t.dislivello_m > 0 ? "+" : ""}${numero(t.dislivello_m, 1)} m`}</td>
+                <td>{t.pendenza_percento === null ? "n.d." : `${numero(t.pendenza_percento, 1)} %`}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
       {p.avvertenze.map((a) => (
         <p key={a} className="avviso">
           {a}

@@ -115,13 +115,21 @@ export interface GeoJsonLineString {
   coordinates: number[][];
 }
 
-export type TipoMappa = "pendenza" | "esposizione";
+export type TipoMappa = "quota" | "pendenza" | "esposizione";
+
+export interface ScalaQuota {
+  minima: number;
+  massima: number;
+  tappe: { quota: number; colore: string }[];
+  nota: string;
+}
 
 export interface RispostaMappa {
   disponibile: boolean;
   messaggio: string;
   motivo?: string | null;
   tipo: TipoMappa;
+  scala?: ScalaQuota | null;
   immagine_png_base64?: string | null;
   /** Angoli [lon, lat]: alto-sinistra, alto-destra, basso-destra, basso-sinistra */
   coordinate?: [number, number][] | null;
@@ -140,7 +148,18 @@ export interface PuntoProfilo {
   lat: number;
 }
 
+export interface TrattoProfilo {
+  da_m: number;
+  a_m: number;
+  lunghezza_m: number;
+  quota_inizio: number | null;
+  quota_fine: number | null;
+  dislivello_m: number | null;
+  pendenza_percento: number | null;
+}
+
 export interface RispostaProfilo {
+  tratti?: TrattoProfilo[];
   disponibile: boolean;
   messaggio: string;
   motivo?: string | null;
@@ -169,3 +188,41 @@ export type StatoRichiesta<T> =
   | { stato: "in_corso" }
   | { stato: "errore"; messaggio: string }
   | { stato: "completata"; risultato: T };
+
+// ------------------------------------------------------------------ Elevation Insights
+
+export interface IntervalloCurve {
+  metri: number;
+  livelli: number;
+  ammesso: boolean;
+  motivo?: string | null;
+}
+
+export interface RispostaCurve {
+  disponibile: boolean;
+  messaggio: string;
+  motivo?: string | null;
+  intervallo_m?: number | null;
+  intervalli: IntervalloCurve[];
+  quota_minima?: number | null;
+  quota_massima?: number | null;
+  numero_curve: number;
+  geojson?: GeoJSON.FeatureCollection | null;
+  metodo?: string | null;
+  attribuzione?: string | null;
+}
+
+export interface RispostaQuota {
+  disponibile: boolean;
+  messaggio: string;
+  motivo?: string | null;
+  lon: number;
+  lat: number;
+  quota_m?: number | null;
+  quota_cella_m?: number | null;
+  est_utm?: number | null;
+  nord_utm?: number | null;
+  metodo?: string | null;
+  precisione?: string | null;
+  attribuzione?: string | null;
+}

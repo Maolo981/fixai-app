@@ -119,4 +119,35 @@ describe("PannelloRisultati", () => {
     expect(screen.queryByTestId("superficie-m2")).toBeNull();
     expect(screen.queryByTestId("perimetro-m")).toBeNull();
   });
+
+  it("nella scheda Altimetria mostra la quota del punto cliccato", () => {
+    render(
+      <PannelloRisultati
+        analisi={{ stato: "vuoto" }}
+        capacita={null}
+        scheda="altimetria"
+        fase3={{
+          quotaPunto: {
+            stato: "completata",
+            risultato: {
+              disponibile: true,
+              messaggio: "ok",
+              lon: 9.1919,
+              lat: 45.4642,
+              quota_m: 119.79,
+              quota_cella_m: 119.79,
+              metodo: "Interpolazione bilineare.",
+              precisione: "Accuratezza dichiarata 0,30-2 m.",
+            },
+          },
+          profilo: { stato: "vuoto" },
+          onPuntoProfilo: () => {},
+          haLinea: false,
+          onReport: async () => "",
+        }}
+      />,
+    );
+    expect(n(screen.getByTestId("quota-punto-valore").textContent)).toBe("119,8 m");
+    expect(screen.queryByText("Analizza un terreno")).toBeNull(); // scheda Lotto nascosta
+  });
 });

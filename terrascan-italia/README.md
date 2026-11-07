@@ -6,6 +6,25 @@ Piattaforma web per l'analisi preliminare dei terreni, pensata per geometri, ing
 
 ![Profilo altimetrico ed esposizioni su un versante vitato in Valtellina](docs/img/fase3-profilo.jpg)
 
+## Novità: piattaforma SaaS (in corso)
+
+- **Landing page** su `/` (dark navy, bianco, smeraldo) con inviti "Analizza un terreno" e "Esplora la demo".
+- **Applicazione GIS** su `/app`: mappa a tutto schermo, pannello sinistro (strumenti, mappa di base, livelli con
+  interruttore, ordine, opacità e legenda) e destro a schede (Lotto, Altimetria, Profilo, Report); su smartphone i
+  pannelli diventano bottom-sheet.
+- **Mappe di base**: Satellite (ortofoto AGEA 2015 di Regione Lombardia), Stradale (OpenStreetMap), Topografica
+  (CTR/DBT di Regione Lombardia). Verifica delle fonti e licenze da confermare: [piano](docs/piano-piattaforma-saas.md).
+- **Elevation Insights** (dati reali DTM 5×5): mappa altimetrica a gradiente ritagliata sul lotto con legenda
+  min/max, opacità 0–100%, curve di livello con soli intervalli compatibili con l'accuratezza del dato (≥ 2 m),
+  modalità Altimetria / Pendenza / Esposizione, quota di un punto cliccato, pendenze dei tratti del profilo A-B,
+  distanza geodetica della linea anche senza DTM.
+- **Demo**: `/app?demo` apre un lotto di esempio in Valtellina, dichiarato come tale, analizzato con dati reali.
+
+Analisi del repository, differenze rispetto ai requisiti e piano delle fasi successive (3D, vincoli territoriali,
+report evoluto, funzioni commerciali): [docs/piano-piattaforma-saas.md](docs/piano-piattaforma-saas.md).
+
+![Applicazione GIS con Elevation Insights](docs/img/saas-app-altimetria.jpg)
+
 ## Stato del progetto: Fase 4
 
 | Funzione | Stato |
@@ -128,7 +147,8 @@ cd backend
 uv run uvicorn app.main:app --port 8000
 ```
 
-Poi apri il browser su **http://localhost:8000**. Per fermare il server premi `Ctrl + C`.
+Poi apri il browser su **http://localhost:8000** (landing) oppure **http://localhost:8000/app** (applicazione).
+Per fermare il server premi `Ctrl + C`.
 
 ## Avvio in modalità sviluppo (per modificare il codice)
 
@@ -153,10 +173,10 @@ La documentazione interattiva dell'API è disponibile su **http://localhost:8000
 
 ```bash
 cd terrascan-italia/backend
-uv run pytest                 # 91 test (9 richiedono il DTM installato, altrimenti vengono saltati)
+uv run pytest                 # 107 test (11 richiedono il DTM installato, altrimenti vengono saltati)
 
 cd ../frontend
-npm test                      # 40 test: formattazione, coordinate, client API, pannello, grafico, report
+npm test                      # 50 test: formattazione, livelli, pannelli, grafico, report, landing
 npm run typecheck             # controllo dei tipi TypeScript
 ```
 
@@ -193,6 +213,12 @@ Variabili d'ambiente del backend:
 | `TERRASCAN_NOMINATIM_EMAIL` | (vuoto) | Email di contatto, consigliata da Nominatim |
 | `TERRASCAN_NOMINATIM_URL` | `https://nominatim.openstreetmap.org/search` | Servizio di geocodifica |
 | `TERRASCAN_DTM_PATH` | `backend/dati-dtm/dtm5_lombardia_2015.tif` | Percorso del DTM |
+
+Variabile del frontend (facoltativa, al momento della compilazione):
+
+| Variabile | Uso |
+|---|---|
+| `VITE_CONTATTO_EMAIL` | Email mostrata nella sezione Contatti della landing; se assente si indica che i contatti sono in attivazione |
 
 **Nota sulla ricerca località.** Il servizio pubblico Nominatim è gratuito ma limitato (massimo 1 richiesta al secondo, nessun uso intensivo). Il backend rispetta il limite e memorizza le ricerche già fatte. Per un uso commerciale servirà un fornitore dedicato o un'istanza propria.
 

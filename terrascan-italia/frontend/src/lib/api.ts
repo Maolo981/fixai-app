@@ -9,8 +9,10 @@ import type {
   Capacita,
   GeoJsonLineString,
   GeoJsonPolygon,
+  RispostaCurve,
   RispostaMappa,
   RispostaProfilo,
+  RispostaQuota,
   RisultatoRicerca,
   TipoMappa,
 } from "./types";
@@ -92,6 +94,14 @@ export function caricaMappaTematica(geometria: GeoJsonPolygon, tipo: TipoMappa, 
 
 export function calcolaProfilo(geometria: GeoJsonLineString, segnale?: AbortSignal) {
   return postJson<RispostaProfilo>("/api/v1/analisi/profilo", { geometria }, segnale);
+}
+
+export function caricaCurve(geometria: GeoJsonPolygon, intervallo_m: number | null, segnale?: AbortSignal) {
+  return postJson<RispostaCurve>("/api/v1/analisi/curve", { geometria, intervallo_m }, segnale);
+}
+
+export function caricaQuota(lon: number, lat: number, segnale?: AbortSignal) {
+  return richiesta<RispostaQuota>(`/api/v1/quota?lon=${lon}&lat=${lat}`, {}, segnale);
 }
 
 export interface CampiReport {

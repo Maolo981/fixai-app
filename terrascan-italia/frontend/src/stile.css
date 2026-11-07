@@ -1,10 +1,10 @@
 /* TerraScan Italia — stile dell'interfaccia (Fase 1) */
 
 :root {
-  --verde-900: #0f3d22;
-  --verde-800: #14532d;
-  --verde-700: #166534;
-  --verde-100: #dcfce7;
+  --verde-900: #0b1730;
+  --verde-800: #065f46;
+  --verde-700: #059669;
+  --verde-100: #d1fae5;
   --ocra: #facc15;
   --arancio: #ea580c;
   --arancio-scuro: #9a3412;
@@ -59,65 +59,6 @@ button:disabled {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
-}
-
-/* ---------- struttura ---------- */
-
-.app {
-  display: grid;
-  grid-template-rows: var(--altezza-testata) 1fr;
-  height: 100dvh;
-}
-
-.testata {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 0 20px;
-  background: linear-gradient(90deg, var(--verde-900), var(--verde-800));
-  color: var(--bianco);
-  z-index: 3;
-}
-
-.marchio {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.marchio h1 {
-  margin: 0;
-  font-size: 1.05rem;
-  letter-spacing: 0.01em;
-}
-
-.marchio p {
-  margin: 0;
-  font-size: 0.75rem;
-  opacity: 0.8;
-}
-
-.badge-fase {
-  margin-left: auto;
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.12);
-  border: 1px solid rgb(255 255 255 / 0.25);
-}
-
-.corpo {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr;
-  min-height: 0;
-}
-
-.app--pannello-aperto .corpo {
-  grid-template-columns: 1fr var(--larghezza-pannello);
 }
 
 /* ---------- ricerca ---------- */
@@ -252,47 +193,6 @@ button:disabled {
   text-align: center;
 }
 
-.strumenti {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  display: flex;
-  gap: 6px;
-  padding: 6px;
-  background: var(--bianco);
-  border-radius: var(--raggio);
-  box-shadow: var(--ombra);
-  z-index: 2;
-}
-
-.strumento {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  padding: 8px 12px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--grigio-700);
-}
-
-.strumento:hover:not(:disabled) {
-  background: var(--grigio-100);
-}
-
-.strumento:disabled {
-  color: var(--grigio-300);
-}
-
-.strumento--attivo,
-.strumento--attivo:hover:not(:disabled) {
-  background: #fff7ed;
-  border-color: #fdba74;
-  color: var(--arancio-scuro);
-}
-
 .suggerimento {
   position: absolute;
   left: 50%;
@@ -324,22 +224,14 @@ button:disabled {
   font-size: 0.75rem;
 }
 
-.interruttore-pannello {
-  display: none;
-}
-
 /* ---------- pannello ---------- */
 
 .pannello {
-  display: none;
+  display: flex;
   flex-direction: column;
+  flex: 1;
   min-height: 0;
   background: var(--grigio-50);
-  border-left: 1px solid var(--grigio-200);
-}
-
-.app--pannello-aperto .pannello {
-  display: flex;
 }
 
 .pannello__contenuto {
@@ -609,87 +501,6 @@ button:disabled {
   }
 }
 
-/* ---------- tablet e smartphone ---------- */
-
-@media (max-width: 900px) {
-  .badge-fase {
-    display: none;
-  }
-}
-
-@media (max-width: 768px) {
-  :root {
-    --altezza-testata: auto;
-  }
-
-  .testata {
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 10px 12px;
-  }
-
-  .marchio p {
-    display: none;
-  }
-
-  .ricerca {
-    flex-basis: 100%;
-    max-width: none;
-  }
-
-  .app--pannello-aperto .corpo {
-    grid-template-columns: 1fr;
-  }
-
-  .pannello {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    max-height: 58%;
-    border-left: 0;
-    border-top: 1px solid var(--grigio-200);
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -6px 20px rgb(15 23 42 / 0.15);
-    z-index: 4;
-  }
-
-  .interruttore-pannello {
-    display: block;
-    position: absolute;
-    right: 12px;
-    bottom: 76px;
-    z-index: 5;
-    border: 0;
-    border-radius: 999px;
-    padding: 9px 14px;
-    background: var(--verde-800);
-    color: var(--bianco);
-    font-weight: 600;
-    font-size: 0.85rem;
-    box-shadow: var(--ombra);
-  }
-
-  .app--pannello-aperto .interruttore-pannello {
-    bottom: calc(58% + 10px);
-  }
-
-  .strumenti {
-    top: 10px;
-    left: 10px;
-  }
-
-  .strumento {
-    padding: 8px 9px;
-    font-size: 0.8rem;
-    gap: 4px;
-  }
-
-  .app--pannello-aperto .suggerimento {
-    display: none;
-  }
-}
-
 /* ---------- analisi altimetrica (Fase 2) ---------- */
 
 .griglia-metriche {
@@ -823,13 +634,6 @@ button:disabled {
 
 /* ---------- Fase 3: mappe tematiche e profilo ---------- */
 
-.strumento--profilo,
-.strumento--profilo:hover:not(:disabled) {
-  background: #eff6ff;
-  border-color: #93c5fd;
-  color: #1d4ed8;
-}
-
 .selettore {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -950,22 +754,6 @@ button:disabled {
   box-shadow: var(--ombra);
 }
 
-@media (max-width: 768px) {
-  .strumenti {
-    gap: 2px;
-    padding: 4px;
-  }
-
-  .strumento {
-    padding: 8px 6px;
-    font-size: 0.75rem;
-  }
-
-  .strumento--compatto span {
-    display: none;
-  }
-}
-
 /* ---------- Fase 4: report PDF ---------- */
 
 .pulsante-principale,
@@ -1030,4 +818,510 @@ button:disabled {
 .modulo__azioni {
   display: flex;
   gap: 8px;
+}
+
+
+/* ==========================================================================
+   Applicazione GIS (/app): header compatto, pannelli laterali collassabili
+   ========================================================================== */
+
+.app-gis {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--grigio-100);
+}
+
+.testata-gis {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 56px;
+  flex-shrink: 0;
+  padding: 0 14px;
+  background: #0b1730;
+  color: var(--bianco);
+  z-index: 6;
+}
+
+.marchio-gis {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--bianco);
+  font-weight: 700;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.testata-gis .ricerca {
+  flex: 1;
+  max-width: 560px;
+}
+
+.testata-gis .ricerca__form {
+  padding: 2px 2px 2px 12px;
+}
+
+.testata-gis .ricerca__form input {
+  padding: 6px 8px;
+}
+
+.testata-gis .ricerca__form button {
+  padding: 6px 14px;
+}
+
+.testata-gis__azioni {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge-area {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgb(52 211 153 / 0.45);
+  color: #6ee7b7;
+  white-space: nowrap;
+}
+
+.pulsante-icona {
+  border: 1px solid rgb(255 255 255 / 0.25);
+  background: transparent;
+  color: var(--bianco);
+  border-radius: 8px;
+  padding: 6px 11px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.pulsante-icona[aria-pressed="true"] {
+  background: rgb(255 255 255 / 0.14);
+}
+
+.banner-demo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #ecfdf5;
+  border-bottom: 1px solid #a7f3d0;
+  color: #065f46;
+  font-size: 0.85rem;
+}
+
+.banner-demo button {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: inherit;
+}
+
+.corpo-gis {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.centro-mappa {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.centro-mappa .mappa {
+  position: absolute;
+  inset: 0;
+}
+
+.lato {
+  display: flex;
+  flex-direction: column;
+  width: 316px;
+  flex-shrink: 0;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--bianco);
+  border-right: 1px solid var(--grigio-200);
+  z-index: 4;
+}
+
+.lato[hidden] {
+  display: none;
+}
+
+.lato--dx {
+  width: 384px;
+  border-right: 0;
+  border-left: 1px solid var(--grigio-200);
+  overflow: hidden;
+}
+
+/* ---------- pannello sinistro ---------- */
+
+.pannello-sx {
+  display: grid;
+  gap: 18px;
+  padding: 14px;
+}
+
+.blocco {
+  display: grid;
+  gap: 8px;
+}
+
+.blocco__titolo {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--grigio-500);
+}
+
+.griglia-strumenti {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.strumento-sx {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 9px 4px;
+  border: 1px solid var(--grigio-200);
+  border-radius: 10px;
+  background: var(--bianco);
+  color: var(--grigio-700);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.strumento-sx:hover:not(:disabled) {
+  border-color: var(--grigio-300);
+  background: var(--grigio-50);
+}
+
+.strumento-sx--attivo,
+.strumento-sx--attivo:hover:not(:disabled) {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.strumento-sx--pericolo:hover:not(:disabled) {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: var(--rosso);
+}
+
+.strumento-sx:disabled {
+  color: var(--grigio-300);
+}
+
+.selettore--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.livelli {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.livello {
+  border: 1px solid var(--grigio-200);
+  border-radius: 10px;
+  background: var(--bianco);
+}
+
+.livello__testa {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.livello__interruttore {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.87rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.livello__interruttore input {
+  width: 16px;
+  height: 16px;
+  accent-color: #059669;
+}
+
+.livello__ordine {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+}
+
+.livello__ordine button {
+  width: 24px;
+  height: 22px;
+  border: 1px solid var(--grigio-200);
+  border-radius: 5px;
+  background: var(--bianco);
+  font-size: 0.6rem;
+  color: var(--grigio-500);
+}
+
+.livello__ordine button:disabled {
+  opacity: 0.35;
+}
+
+.livello__corpo {
+  display: grid;
+  gap: 8px;
+  padding: 2px 10px 10px;
+}
+
+.livello__corpo p {
+  margin: 0;
+}
+
+.cursore,
+.campo-riga {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: var(--grigio-700);
+}
+
+.campo-riga {
+  grid-template-columns: auto 1fr;
+}
+
+.cursore input {
+  accent-color: #059669;
+}
+
+.cursore output {
+  font-variant-numeric: tabular-nums;
+  min-width: 3.2em;
+  text-align: right;
+}
+
+.campo-riga select {
+  font: inherit;
+  padding: 5px 8px;
+  border: 1px solid var(--grigio-300);
+  border-radius: 6px;
+  background: var(--bianco);
+}
+
+.legenda-gradiente {
+  display: grid;
+  gap: 4px;
+}
+
+.legenda-gradiente__barra {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+}
+
+.legenda-gradiente__etichette {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- pannello destro a schede ---------- */
+
+.schede {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--grigio-200);
+  background: var(--bianco);
+}
+
+.schede__voce {
+  flex: 1;
+  padding: 11px 6px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--grigio-500);
+}
+
+.schede__voce--attiva {
+  color: #065f46;
+  border-bottom-color: #10b981;
+}
+
+.tabella-tratti {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabella-tratti th,
+.tabella-tratti td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--grigio-100);
+  text-align: right;
+}
+
+.tabella-tratti th:first-child,
+.tabella-tratti td:first-child {
+  text-align: left;
+}
+
+.tabella-tratti th {
+  color: var(--grigio-500);
+  font-weight: 600;
+}
+
+/* ---------- indicatori sulla mappa ---------- */
+
+.marcatore-punto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.marcatore-punto__testo {
+  background: #0b1730;
+  color: var(--bianco);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: var(--ombra);
+}
+
+.marcatore-punto::after {
+  content: "";
+  width: 11px;
+  height: 11px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid var(--bianco);
+  box-shadow: var(--ombra);
+}
+
+.barra-mobile {
+  display: none;
+}
+
+/* ---------- smartphone: pannelli come bottom-sheet ---------- */
+
+@media (max-width: 768px) {
+  .testata-gis {
+    gap: 8px;
+    padding: 0 8px;
+  }
+
+  .marchio-gis span,
+  .testata-gis__azioni {
+    display: none;
+  }
+
+  .lato,
+  .lato--dx {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 58%;
+    border: 0;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 24px rgb(15 23 42 / 0.18);
+  }
+
+  .lato--dx {
+    display: flex;
+  }
+
+  .lato--dx[hidden] {
+    display: none;
+  }
+
+  .griglia-strumenti {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .strumento-sx {
+    font-size: 0.66rem;
+    padding: 8px 2px;
+  }
+
+  .barra-mobile {
+    display: flex;
+    flex-shrink: 0;
+    gap: 6px;
+    padding: 6px;
+    background: #0b1730;
+  }
+
+  .barra-mobile button {
+    flex: 1;
+    padding: 10px 6px;
+    border: 0;
+    border-radius: 8px;
+    background: rgb(255 255 255 / 0.08);
+    color: var(--bianco);
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .barra-mobile button[aria-pressed="true"] {
+    background: #10b981;
+    color: #04221a;
+  }
+
+  .suggerimento {
+    bottom: 12px;
+  }
+
+  .app-gis--sx .suggerimento,
+  .app-gis--dx .suggerimento {
+    display: none;
+  }
+}
+
+/* La barra di ricerca deve potersi restringere nell'header (evita che "Cerca" esca dallo schermo) */
+.testata-gis .ricerca,
+.testata-gis .ricerca__form {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .testata-gis .ricerca__form button {
+    padding: 6px 10px;
+  }
+
+  .banner-demo {
+    font-size: 0.78rem;
+    padding: 6px 10px;
+  }
 }
