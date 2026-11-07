@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__
@@ -66,6 +67,14 @@ def crea_app() -> FastAPI:
     # Se il frontend è stato compilato (npm run build), viene servito
     # direttamente da questo server: basta un solo comando per l'avvio.
     if CARTELLA_FRONTEND_DIST.is_dir():
+        indice = CARTELLA_FRONTEND_DIST / "index.html"
+
+        # L'applicazione GIS vive su /app (la landing su /): stessa pagina, scelta lato client.
+        @app.get("/app", include_in_schema=False)
+        @app.get("/app/{percorso:path}", include_in_schema=False)
+        def applicazione(percorso: str = "") -> FileResponse:
+            return FileResponse(indice)
+
         app.mount("/", StaticFiles(directory=CARTELLA_FRONTEND_DIST, html=True), name="frontend")
     return app
 

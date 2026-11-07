@@ -38,6 +38,19 @@ class PuntoProfilo:
 
 
 @dataclass(frozen=True)
+class TrattoProfilo:
+    """Tratto tra due vertici consecutivi della linea disegnata."""
+
+    da_m: float
+    a_m: float
+    lunghezza_m: float
+    quota_inizio: float | None
+    quota_fine: float | None
+    dislivello_m: float | None
+    pendenza_percento: float | None  # media del tratto: dislivello / lunghezza
+
+
+@dataclass(frozen=True)
 class RisultatoProfilo:
     punti: list[PuntoProfilo]
     lunghezza_m: float  # planimetrica, geodetica
@@ -53,6 +66,42 @@ class RisultatoProfilo:
     copertura_percento: float
     passo_m: float = PASSO_M
     avvertenze: list[str] = field(default_factory=list)
+    tratti: list[TrattoProfilo] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class QuotaPunto:
+    lon: float
+    lat: float
+    quota_m: float  # interpolazione bilineare tra i centri delle 4 celle vicine
+    quota_cella_m: float  # valore della cella che contiene il punto
+    est_utm: float
+    nord_utm: float
+
+
+def lunghezza_geodetica(linea_wgs84: LineString) -> float:
+    """Lunghezza della linea sull'ellissoide WGS84 (non richiede il DTM)."""
+    lon, lat = linea_wgs84.xy
+    return float(_GEOD.line_length(list(lon), list(lat)))
+
+
+def quota_punto(sorgente: SorgenteDtm, lon: float, lat: float) -> QuotaPunto:
+    """Quota stimata in un punto: bilineare tra le 4 celle vicine, più il valore della cella."""
+    from app.services.altimetria import _wgs84_a_utm
+
+    x, y = _wgs84_a_utm().transform(lon, lat)
+    b = sorgente.bounds
+    if not (b.left <= x <= b.right and b.bottom <= y <= b.top):
+        raise AltimetriaNonDisponibile("Il punto è fuori dall'area coperta dal DTM della Lombardia.")
+    finestra = sorgente.leggi_finestra((x, y, x, y), margine=2)
+    interpolata = float(quota_bilineare(finestra, np.array([x]), np.array([y]))[0])
+    t = finestra.trasformazione
+    colonna = int(math.floor((x - t.c) / t.a))
+    riga = int(math.floor((y - t.f) / t.e))
+    cella = float(finestra.z[riga, colonna])
+    if not (math.isfinite(interpolata) and math.isfinite(cella)):
+        raise AltimetriaNonDisponibile("Il DTM non ha dati in questo punto (fuori dalla Lombardia o cella vuota).")
+    return QuotaPunto(lon=lon, lat=lat, quota_m=interpolata, quota_cella_m=cella, est_utm=x, nord_utm=y)
 
 
 def quota_bilineare(finestra: FinestraDtm, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -131,6 +180,28 @@ def calcola_profilo(sorgente: SorgenteDtm, linea_wgs84: LineString) -> Risultato
     def q(indice: int) -> float | None:
         return float(quote[indice]) if valide[indice] else None
 
+    # Tratti tra i vertici disegnati: quote ai vertici (bilineari) e lunghezze geodetiche
+    vertici_utm = np.array(linea.coords)
+    quote_vertici = quota_bilineare(finestra, vertici_utm[:, 0], vertici_utm[:, 1])
+    lon_v, lat_v = linea_wgs84.xy
+    lunghezze_v = np.array(_GEOD.line_lengths(list(lon_v), list(lat_v)))
+    progressive = np.concatenate([[0.0], np.cumsum(lunghezze_v)])
+    elenco_tratti = []
+    for i, lung in enumerate(lunghezze_v):
+        z0, z1 = quote_vertici[i], quote_vertici[i + 1]
+        noto = bool(np.isfinite(z0) and np.isfinite(z1) and lung > 0)
+        elenco_tratti.append(
+            TrattoProfilo(
+                da_m=float(progressive[i]),
+                a_m=float(progressive[i + 1]),
+                lunghezza_m=float(lung),
+                quota_inizio=float(z0) if np.isfinite(z0) else None,
+                quota_fine=float(z1) if np.isfinite(z1) else None,
+                dislivello_m=float(z1 - z0) if noto else None,
+                pendenza_percento=float((z1 - z0) / lung * 100) if noto else None,
+            )
+        )
+
     return RisultatoProfilo(
         punti=[
             PuntoProfilo(
@@ -153,4 +224,5 @@ def calcola_profilo(sorgente: SorgenteDtm, linea_wgs84: LineString) -> Risultato
         pendenza_massima_percento=float(np.nanmax(pendenze)) if pendenze.size else 0.0,
         copertura_percento=copertura,
         avvertenze=avvertenze,
+        tratti=elenco_tratti,
     )

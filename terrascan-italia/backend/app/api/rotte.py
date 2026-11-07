@@ -23,6 +23,13 @@ from app.api.schemi import (
     RichiestaGeometria,
     RichiestaMappa,
     RichiestaProfilo,
+    RichiestaCurve,
+    RispostaCurve,
+    RispostaQuota,
+    IntervalloCurve as IntervalloCurveSchema,
+    ScalaQuota as ScalaQuotaSchema,
+    TappaScala,
+    TrattoProfilo as TrattoProfiloSchema,
     RichiestaReport,
     RispostaMappa,
     RispostaProfilo,
@@ -45,7 +52,8 @@ from app.services.altimetria import (
 from app.services.area_pilota import NOME_AREA_PILOTA, confine_lombardia, geometria_lombardia
 from app.services.geocodifica import ATTRIBUZIONE_OSM, ServizioRicercaNonDisponibile
 from app.services.mappe import crea_mappa
-from app.services.profilo import PASSO_M, calcola_profilo
+from app.services.curve import INTERVALLO_MINIMO_M, calcola_curve
+from app.services.profilo import PASSO_M, calcola_profilo, lunghezza_geodetica, quota_punto
 from app.services.report import CampiUtente, DatiReport, genera_pdf
 from app.services.geometria import (
     ErroreGeometria,
@@ -91,6 +99,8 @@ def _funzioni(dtm: SorgenteDtm | None, motivo_dtm: str | None) -> list[StatoFunz
         StatoFunzione(chiave="altimetria", nome="Quote e dislivello", stato=stato, note=nota_dtm),
         StatoFunzione(chiave="pendenza", nome="Pendenza", stato=stato, note=nota_dtm),
         StatoFunzione(chiave="esposizione", nome="Esposizione dei versanti", stato=stato, note=nota_dtm),
+        StatoFunzione(chiave="mappa_quota", nome="Mappa altimetrica e curve di livello", stato=stato, note=nota_dtm),
+        StatoFunzione(chiave="quota_punto", nome="Quota di un punto", stato=stato, note=nota_dtm),
         StatoFunzione(chiave="mappa_pendenze", nome="Mappe di pendenze ed esposizioni", stato=stato, note=nota_dtm),
         StatoFunzione(chiave="profilo", nome="Profilo altimetrico", stato=stato, note=nota_dtm),
         StatoFunzione(
@@ -274,6 +284,12 @@ def analisi_mappa(richiesta: RichiestaMappa, request: Request) -> RispostaMappa:
         legenda=[VoceLegenda(etichetta=v.etichetta, colore=v.colore, percentuale_celle=v.percentuale_celle)
                  for v in m.legenda],
         celle_colorate=m.celle_colorate,
+        scala=ScalaQuotaSchema(
+            minima=m.scala.minima,
+            massima=m.scala.massima,
+            tappe=[TappaScala(quota=q, colore=c) for q, c in m.scala.tappe],
+            nota="Scala relativa al lotto: i colori vanno dalla quota minima (blu) alla massima (rosso).",
+        ) if m.scala else None,
         nota=NOTA_MAPPA,
         attribuzione=dtm.descrizione.attribuzione,
     )
@@ -286,18 +302,24 @@ def analisi_profilo(richiesta: RichiestaProfilo, request: Request) -> RispostaPr
     except ErroreGeometria as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     dtm: SorgenteDtm | None = request.app.state.dtm
+    # La lunghezza (misura di distanza) è geodetica e non dipende dal DTM.
+    lunghezza = lunghezza_geodetica(linea)
     if dtm is None:
         return RispostaProfilo(
-            disponibile=False, messaggio=MESSAGGIO_ALTIMETRIA_ASSENTE, motivo=request.app.state.motivo_dtm
+            disponibile=False, messaggio=MESSAGGIO_ALTIMETRIA_ASSENTE, motivo=request.app.state.motivo_dtm,
+            lunghezza_m=lunghezza,
         )
     try:
         p = calcola_profilo(dtm, linea)
     except AltimetriaNonDisponibile as exc:
-        return RispostaProfilo(disponibile=False, messaggio=MESSAGGIO_ALTIMETRIA_ASSENTE, motivo=str(exc))
+        return RispostaProfilo(
+            disponibile=False, messaggio=MESSAGGIO_ALTIMETRIA_ASSENTE, motivo=str(exc), lunghezza_m=lunghezza
+        )
     return RispostaProfilo(
         disponibile=True,
         messaggio="Profilo calcolato con dati reali",
         punti=[PuntoProfiloSchema(**vars(pt)) for pt in p.punti],
+        tratti=[TrattoProfiloSchema(**vars(t)) for t in p.tratti],
         lunghezza_m=p.lunghezza_m,
         lunghezza_inclinata_m=p.lunghezza_inclinata_m,
         quota_minima=p.quota_minima,
@@ -354,6 +376,70 @@ def report_pdf(richiesta: RichiestaReport, request: Request) -> Response:
         content=contenuto,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="terrascan-report-{dati.codice}.pdf"'},
+    )
+
+
+METODO_CURVE = (
+    "Isolinee (marching squares, contourpy) sulle quote ai centri delle celle del DTM 5x5, ritagliate sul lotto. "
+    f"Intervalli inferiori a {INTERVALLO_MINIMO_M:g} m esclusi: l'accuratezza dichiarata arriva a 2 m."
+)
+
+
+@router.post("/analisi/curve", response_model=RispostaCurve, summary="Curve di livello del lotto")
+def analisi_curve(richiesta: RichiestaCurve, request: Request) -> RispostaCurve:
+    try:
+        poligono = poligono_da_geojson(richiesta.geometria)
+    except ErroreGeometria as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    dtm: SorgenteDtm | None = request.app.state.dtm
+    if dtm is None:
+        return RispostaCurve(disponibile=False, messaggio=MESSAGGIO_ALTIMETRIA_ASSENTE,
+                             motivo=request.app.state.motivo_dtm)
+    try:
+        c = calcola_curve(dtm, poligono, richiesta.intervallo_m)
+    except AltimetriaNonDisponibile as exc:
+        return RispostaCurve(disponibile=False, messaggio="Curve di livello non disponibili", motivo=str(exc))
+    return RispostaCurve(
+        disponibile=True,
+        messaggio="Curve di livello calcolate con dati reali",
+        intervallo_m=c.intervallo_m,
+        intervalli=[IntervalloCurveSchema(**vars(i)) for i in c.intervalli],
+        quota_minima=c.quota_minima,
+        quota_massima=c.quota_massima,
+        numero_curve=c.numero_curve,
+        geojson=c.geojson,
+        metodo=METODO_CURVE,
+        attribuzione=dtm.descrizione.attribuzione,
+    )
+
+
+@router.get("/quota", response_model=RispostaQuota, summary="Quota stimata in un punto")
+def quota(
+    request: Request,
+    lon: float = Query(..., ge=-180, le=180),
+    lat: float = Query(..., ge=-90, le=90),
+) -> RispostaQuota:
+    dtm: SorgenteDtm | None = request.app.state.dtm
+    if dtm is None:
+        return RispostaQuota(disponibile=False, messaggio=MESSAGGIO_ALTIMETRIA_ASSENTE,
+                             motivo=request.app.state.motivo_dtm, lon=lon, lat=lat)
+    try:
+        q = quota_punto(dtm, lon, lat)
+    except AltimetriaNonDisponibile as exc:
+        return RispostaQuota(disponibile=False, messaggio=MESSAGGIO_ALTIMETRIA_ASSENTE, motivo=str(exc),
+                             lon=lon, lat=lat)
+    return RispostaQuota(
+        disponibile=True,
+        messaggio="Quota stimata dal DTM",
+        lon=lon,
+        lat=lat,
+        quota_m=q.quota_m,
+        quota_cella_m=q.quota_cella_m,
+        est_utm=q.est_utm,
+        nord_utm=q.nord_utm,
+        metodo="Interpolazione bilineare tra i centri delle 4 celle (5 x 5 m) più vicine.",
+        precisione=dtm.descrizione.precisione_dichiarata,
+        attribuzione=dtm.descrizione.attribuzione,
     )
 
 

@@ -29,7 +29,20 @@ from app.services.altimetria import (
     settore_esposizione,
 )
 
-TipoMappa = Literal["pendenza", "esposizione"]
+TipoMappa = Literal["quota", "pendenza", "esposizione"]
+
+# Altimetria: gradiente multicolore continuo dal punto più basso (blu) al più alto (rosso) del lotto.
+# Le tappe sono interpolate linearmente in RGB; la scala è relativa al singolo lotto.
+GRADIENTE_QUOTA = (
+    (0.00, "#2c3e9e"),
+    (0.20, "#1f8fd1"),
+    (0.40, "#2bb5a0"),
+    (0.55, "#8bd16b"),
+    (0.70, "#f2d64b"),
+    (0.85, "#f28c38"),
+    (1.00, "#c8323a"),
+)
+TAPPE_LEGENDA_QUOTA = 5
 
 # Pendenza: dal verde (pianeggiante) al rosso scuro (molto ripido), una tinta per classe.
 COLORI_PENDENZA = ("#1a9850", "#91cf60", "#d9ef8b", "#fee08b", "#fc8d59", "#d73027", "#7f0000")
@@ -63,6 +76,15 @@ class VoceLegenda:
 
 
 @dataclass(frozen=True)
+class ScalaQuota:
+    """Scala della mappa altimetrica: quote (m) agli estremi e alle tappe intermedie."""
+
+    minima: float
+    massima: float
+    tappe: list[tuple[float, str]]  # (quota m, colore)
+
+
+@dataclass(frozen=True)
 class MappaTematica:
     tipo: TipoMappa
     png: bytes
@@ -74,6 +96,7 @@ class MappaTematica:
     celle_colorate: int
     # Estensione dell'immagine in UTM 32N: (ovest, sud, est, nord) in metri
     limiti_utm: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
+    scala: ScalaQuota | None = None
 
     @property
     def png_base64(self) -> str:
@@ -103,16 +126,46 @@ def classi_colore(tipo: TipoMappa, pendenza: np.ndarray, esposizione: np.ndarray
     return indici, voci
 
 
+def colori_gradiente(valori: np.ndarray) -> np.ndarray:
+    """Colori RGB (N x 3, uint8) per valori normalizzati 0..1 lungo il gradiente altimetrico."""
+    posizioni = np.array([p for p, _ in GRADIENTE_QUOTA])
+    componenti = np.array([_rgb(c) for _, c in GRADIENTE_QUOTA], dtype=float)
+    v = np.clip(valori, 0.0, 1.0)
+    return np.stack([np.interp(v, posizioni, componenti[:, k]) for k in range(3)], axis=-1).round().astype(np.uint8)
+
+
+def _mappa_quota(g, rgba: np.ndarray) -> tuple[int, ScalaQuota]:
+    valide = g.valide
+    z = g.finestra.z
+    minima, massima = float(z[valide].min()), float(z[valide].max())
+    escursione = massima - minima
+    normalizzate = (z[valide] - minima) / escursione if escursione > 0 else np.full(int(valide.sum()), 0.5)
+    colori = colori_gradiente(normalizzate)
+    for k in range(3):
+        rgba[k][valide] = colori[:, k]
+    rgba[3][valide] = 255
+    frazioni = np.linspace(0, 1, TAPPE_LEGENDA_QUOTA)
+    tappe = [
+        (minima + f * escursione, "#{:02x}{:02x}{:02x}".format(*colori_gradiente(np.array([f]))[0]))
+        for f in frazioni
+    ]
+    return int(valide.sum()), ScalaQuota(minima=minima, massima=massima, tappe=tappe)
+
+
 def crea_mappa(sorgente: SorgenteDtm, poligono_wgs84: Polygon, tipo: TipoMappa) -> MappaTematica:
     g = sorgente.griglie(poligono_wgs84)
-    indici, voci = classi_colore(tipo, g.pendenza, g.esposizione)
-    indici[~g.interne] = -1
-
-    altezza, larghezza = indici.shape
+    altezza, larghezza = g.finestra.z.shape
     rgba = np.zeros((4, altezza, larghezza), dtype=np.uint8)
-    colorate = indici >= 0
-    totale = int(colorate.sum())
     legenda: list[VoceLegenda] = []
+    scala: ScalaQuota | None = None
+    if tipo == "quota":
+        totale, scala = _mappa_quota(g, rgba)
+        voci = []
+        indici = np.full((altezza, larghezza), -1)
+    else:
+        indici, voci = classi_colore(tipo, g.pendenza, g.esposizione)
+        indici[~g.interne] = -1
+        totale = int((indici >= 0).sum())
     for i, (etichetta, colore) in enumerate(voci):
         maschera = indici == i
         r, gr, b = _rgb(colore)
@@ -146,4 +199,5 @@ def crea_mappa(sorgente: SorgenteDtm, poligono_wgs84: Polygon, tipo: TipoMappa) 
         legenda=legenda,
         celle_colorate=totale,
         limiti_utm=(angoli_utm[0][0], angoli_utm[2][1], angoli_utm[2][0], angoli_utm[0][1]),
+        scala=scala,
     )

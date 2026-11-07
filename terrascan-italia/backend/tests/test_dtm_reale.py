@@ -103,3 +103,23 @@ def test_mappa_pendenze_reale_valtellina(dtm):
     voci = {v.etichetta: v.percentuale_celle for v in m.legenda}
     # Versante vitato sopra Sondrio: esposizione prevalente a Sud
     assert max(voci, key=voci.get) == "Sud"
+
+
+def test_quota_puntuale_reale_duomo(dtm):
+    from app.services.profilo import quota_punto
+
+    # Centro della cella verificata contro il WMS regionale (119,79 m)
+    lon, lat = _A_WGS.transform(515004.3694, 5034538.7481)
+    q = quota_punto(dtm, lon, lat)
+    assert q.quota_cella_m == pytest.approx(119.79, abs=0.01)
+    assert q.quota_m == pytest.approx(119.79, abs=0.01)  # sul centro cella la bilineare coincide
+
+
+def test_curve_reali_valtellina_e_lago(dtm):
+    from app.services.altimetria import AltimetriaNonDisponibile
+    from app.services.curve import calcola_curve
+
+    c = calcola_curve(dtm, quadrato(9.885, 46.179, 150), None)
+    assert c.numero_curve > 0 and c.intervallo_m >= 2
+    with pytest.raises(AltimetriaNonDisponibile, match="pianeggiante"):
+        calcola_curve(dtm, quadrato(9.272, 45.997, 200), None)  # Lago di Como: piatto

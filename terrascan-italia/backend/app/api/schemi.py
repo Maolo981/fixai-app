@@ -170,7 +170,7 @@ class RispostaRicerca(BaseModel):
 
 class RichiestaMappa(BaseModel):
     geometria: dict[str, Any] = Field(description="Poligono GeoJSON del terreno (lon/lat WGS84).")
-    tipo: Literal["pendenza", "esposizione"]
+    tipo: Literal["quota", "pendenza", "esposizione"]
 
 
 class VoceLegenda(BaseModel):
@@ -179,11 +179,24 @@ class VoceLegenda(BaseModel):
     percentuale_celle: float
 
 
+class TappaScala(BaseModel):
+    quota: float
+    colore: str
+
+
+class ScalaQuota(BaseModel):
+    minima: float
+    massima: float
+    tappe: list[TappaScala]
+    nota: str
+
+
 class RispostaMappa(BaseModel):
     disponibile: bool
     messaggio: str
     motivo: str | None = None
-    tipo: Literal["pendenza", "esposizione"]
+    tipo: Literal["quota", "pendenza", "esposizione"]
+    scala: ScalaQuota | None = None
     immagine_png_base64: str | None = None
     # Angoli [lon, lat] dell'immagine: alto-sinistra, alto-destra, basso-destra, basso-sinistra
     coordinate: list[list[float]] | None = None
@@ -206,7 +219,18 @@ class PuntoProfilo(BaseModel):
     lat: float
 
 
+class TrattoProfilo(BaseModel):
+    da_m: float
+    a_m: float
+    lunghezza_m: float
+    quota_inizio: float | None
+    quota_fine: float | None
+    dislivello_m: float | None
+    pendenza_percento: float | None
+
+
 class RispostaProfilo(BaseModel):
+    tratti: list[TrattoProfilo] = []
     disponibile: bool
     messaggio: str
     motivo: str | None = None
@@ -242,3 +266,48 @@ class RichiestaReport(BaseModel):
     geometria: dict[str, Any] = Field(description="Poligono GeoJSON del terreno (lon/lat WGS84).")
     linea: dict[str, Any] | None = Field(None, description="Linea GeoJSON del profilo (facoltativa).")
     campi: CampiReport = CampiReport()
+
+
+
+# ------------------------------------------------------------------ Elevation Insights
+
+
+class RichiestaCurve(BaseModel):
+    geometria: dict[str, Any] = Field(description="Poligono GeoJSON del terreno (lon/lat WGS84).")
+    intervallo_m: float | None = Field(None, gt=0, le=1000, description="Vuoto = intervallo consigliato.")
+
+
+class IntervalloCurve(BaseModel):
+    metri: float
+    livelli: int
+    ammesso: bool
+    motivo: str | None = None
+
+
+class RispostaCurve(BaseModel):
+    disponibile: bool
+    messaggio: str
+    motivo: str | None = None
+    intervallo_m: float | None = None
+    intervalli: list[IntervalloCurve] = []
+    quota_minima: float | None = None
+    quota_massima: float | None = None
+    numero_curve: int = 0
+    geojson: dict[str, Any] | None = None
+    metodo: str | None = None
+    attribuzione: str | None = None
+
+
+class RispostaQuota(BaseModel):
+    disponibile: bool
+    messaggio: str
+    motivo: str | None = None
+    lon: float
+    lat: float
+    quota_m: float | None = None
+    quota_cella_m: float | None = None
+    est_utm: float | None = None
+    nord_utm: float | None = None
+    metodo: str | None = None
+    precisione: str | None = None
+    attribuzione: str | None = None
