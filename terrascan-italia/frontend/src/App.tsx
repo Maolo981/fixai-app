@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { BarraRicerca } from "./components/BarraRicerca";
-import { MappaTerreno, type Sovrapposizione } from "./components/MappaTerreno";
+import { MappaTerreno, type Sovrapposizione, type Vista3D } from "./components/MappaTerreno";
 import { PannelloRisultati, type SchedaDestra, type StatoAnalisi } from "./components/PannelloRisultati";
 import {
   PannelloSinistro,
@@ -81,6 +81,8 @@ export default function App() {
   const [livelloAnalisi, setLivelloAnalisi] = useState<StatoLivelloAnalisi>({ visibile: true, modo: "quota", opacita: 0.75 });
   const [livelloCurve, setLivelloCurve] = useState<StatoLivelloCurve>({ visibile: true, intervallo: null });
   const [confineVisibile, setConfineVisibile] = useState(true);
+  const [vista3d, setVista3d] = useState<Vista3D>({ attiva: false, esagerazione: 1, ombreggiatura: false });
+  const [versioneRipristino, setVersioneRipristino] = useState(0);
 
   // Risultati
   const [mappa, setMappa] = useState<StatoRichiesta<RispostaMappa>>({ stato: "vuoto" });
@@ -306,6 +308,20 @@ export default function App() {
             statoCurve={curve}
             confineVisibile={confineVisibile}
             onConfine={setConfineVisibile}
+            vista3d={vista3d}
+            onVista3d={(patch) => setVista3d((v) => ({ ...v, ...patch }))}
+            onRipristinaVista={() => {
+              setVista3d((v) => ({ ...v, attiva: false }));
+              setVersioneRipristino((n) => n + 1);
+            }}
+            motivo3d={
+              capacita === null
+                ? "servizio non raggiungibile."
+                : (() => {
+                    const f = capacita.funzioni.find((x) => x.chiave === "vista_3d");
+                    return f?.stato === "implementata" ? null : (f?.note ?? "DTM non disponibile.");
+                  })()
+            }
           />
         </aside>
 
@@ -331,6 +347,8 @@ export default function App() {
             onClickQuota={suClickQuota}
             quotaPunto={marcatoreQuota}
             geometriaIniziale={demo ? LOTTO_DEMO : null}
+            vista3d={vista3d}
+            versioneRipristino={versioneRipristino}
           />
         </section>
 

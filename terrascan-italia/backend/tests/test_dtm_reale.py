@@ -123,3 +123,22 @@ def test_curve_reali_valtellina_e_lago(dtm):
     assert c.numero_curve > 0 and c.intervallo_m >= 2
     with pytest.raises(AltimetriaNonDisponibile, match="pianeggiante"):
         calcola_curve(dtm, quadrato(9.272, 45.997, 200), None)  # Lago di Como: piatto
+
+
+def test_tessera_3d_reale_duomo(dtm):
+    """La tessera 3D nel punto del Duomo riporta la quota del DTM (entro 1 m: interpolazione visiva)."""
+    import math
+
+    from app.services.tessere_dem import limiti_tessera, quote_tessera
+
+    z = 15
+    lon, lat = 9.1919, 45.4642
+    n = 2**z
+    tx = int((lon + 180) / 360 * n)
+    ty = int((1 - math.asinh(math.tan(math.radians(lat))) / math.pi) / 2 * n)
+    quote = quote_tessera(dtm, z, tx, ty)
+    o, s, e, nord = limiti_tessera(z, tx, ty)
+    x, y = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True).transform(lon, lat)
+    colonna = int((x - o) / (e - o) * 256)
+    riga = int((nord - y) / (nord - s) * 256)
+    assert quote[riga, colonna] == pytest.approx(119.79, abs=1.0)

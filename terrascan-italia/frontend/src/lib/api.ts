@@ -155,3 +155,12 @@ export function salvaFile(file: Blob, nome: string) {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
+
+/**
+ * URL assoluto delle tessere di elevazione (Terrarium) per la vista 3D.
+ * Deve essere assoluto: MapLibre lo richiede dal proprio web worker.
+ */
+export function urlTessereDem(): string {
+  const base = /^https?:/.test(BASE_API) ? BASE_API : `${window.location.origin}${BASE_API}`;
+  return `${base}/api/v1/tessere/dem/{z}/{x}/{y}.png`;
+}

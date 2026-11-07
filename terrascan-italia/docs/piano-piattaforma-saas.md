@@ -29,7 +29,7 @@ Data: 7 novembre 2026. Ramo `terrascan-italia`, cartella `terrascan-italia/`.
 | Curve di livello configurabili con intervalli compatibili col dato | assente | nuovo servizio `curve.py` (contourpy) |
 | Quota di un punto cliccato | assente | nuovo endpoint `/api/v1/quota` |
 | Pendenze dei tratti del profilo | solo pendenza massima su passo 5 m | tratti tra i vertici della linea |
-| 3D (raster-dem) | assente | Fase successiva: tile terrain-RGB generate dal DTM |
+| 3D (raster-dem) | assente | ✅ tessere Terrarium dal DTM, vista 3D e ombreggiatura |
 | Vincoli PAI/PGRA/paesaggistici | assente | Fase successiva: registro fonti + "Non verificabile" |
 | PDF con ortofoto e overlay altimetrico | parziale | Fase successiva |
 | Account, progetti, abbonamenti | assente | Fase successiva (solo architettura) |
@@ -39,7 +39,10 @@ Data: 7 novembre 2026. Ramo `terrascan-italia`, cartella `terrascan-italia/`.
 1. **Fondamenta + Elevation Insights 2D** (questa iterazione)
    - backend: `mappe.py` (tipo `quota`), `curve.py` (curve di livello), `rotte.py` (`/quota`, `/analisi/curve`), `profilo.py` (tratti, lunghezza senza DTM);
    - frontend: `Landing.tsx`, layout `/app` con `PannelloStrumenti`, `PannelloLivelli`, pannello destro a schede; `MappaTerreno.tsx` esteso con mappe di base, livelli ordinabili, curve, quota puntuale.
-2. **3D**: endpoint di tile `raster-dem` (Terrarium) generate al volo dal DTM con cache; terreno 3D e ombreggiatura in MapLibre; esagerazione verticale solo visiva e dichiarata.
+2. **3D** ✅ realizzato (8/11/2026): endpoint `/api/v1/tessere/dem/{z}/{x}/{y}.png` (Terrarium, zoom 8–16, cache LRU e
+   `Cache-Control`), piramidi nel GeoTIFF (`scripts/aggiungi_piramidi.py`, valori a piena risoluzione verificati
+   invariati), terreno 3D e ombreggiatura in MapLibre, esagerazione solo visiva e dichiarata, ripristino vista.
+   Fuori dalla Lombardia le tessere valgono 0 m (nessun dato) e l'interfaccia lo dichiara.
 3. **Vincoli territoriali**: registro delle fonti (`backend/app/services/vincoli/`), adattatori WMS/WFS/REST per PGRA (servizio `direttiva_alluvioni_2015_wms` già individuato), PAI e vincoli paesaggistici; esito "Non verificabile" quando il dato manca.
 4. **Report PDF**: ortofoto con confine, overlay altimetrico e curve, vincoli verificati, elenco fonti con data e risoluzione.
 5. **Commerciale**: persistenza (progetti, cronologia), autenticazione e ruoli, confronto lotti; pagamenti solo dopo.

@@ -101,4 +101,25 @@ describe("PannelloSinistro", () => {
     expect(screen.getByRole("button", { name: /Modifica/ })).toBeDisabled();
     expect(screen.getByRole("button", { name: /Elimina/ })).toBeDisabled();
   });
+
+  it("comandi 3D: esagerazione dichiarata come solo visiva", () => {
+    const onVista3d = vi.fn();
+    rendi({ vista3d: { attiva: true, esagerazione: 1.5, ombreggiatura: false }, onVista3d, onRipristinaVista: vi.fn(), motivo3d: null });
+    expect(screen.getByText(/solo visiva/)).toBeInTheDocument();
+    expect(screen.getByText("×1,5")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: "2D" }));
+    expect(onVista3d).toHaveBeenCalledWith({ attiva: false });
+    fireEvent.click(screen.getByLabelText("Ombreggiatura del rilievo"));
+    expect(onVista3d).toHaveBeenCalledWith({ ombreggiatura: true });
+  });
+
+  it("3D disattivato e motivato quando il DTM non c'è", () => {
+    rendi({
+      vista3d: { attiva: false, esagerazione: 1, ombreggiatura: false },
+      onVista3d: vi.fn(),
+      motivo3d: "Il file del DTM non è installato sul server.",
+    });
+    expect(screen.getByRole("radio", { name: "3D" })).toBeDisabled();
+    expect(screen.getByText(/Vista 3D non disponibile/)).toHaveTextContent("non è installato");
+  });
 });

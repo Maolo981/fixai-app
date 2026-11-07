@@ -18,7 +18,7 @@ import {
 } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 
-import { caricaAreaPilota } from "../lib/api";
+import { caricaAreaPilota, urlTessereDem } from "../lib/api";
 import { formattaQuota } from "../lib/formato";
 import { LAYER_MAPLIBRE, MAPPE_BASE, ordineDiDisegno, type IdLivello, type MappaBase } from "../lib/livelli";
 import { creaMaschera } from "../lib/maschera";
@@ -41,6 +41,13 @@ const MODO_TERRA_DRAW: Record<Strumento, string> = {
   linea: "linestring",
   modifica: "select",
 };
+
+/** Vista 3D: solo visualizzazione, i calcoli usano sempre il DTM a piena risoluzione. */
+export interface Vista3D {
+  attiva: boolean;
+  esagerazione: number; // 1 = scala reale
+  ombreggiatura: boolean;
+}
 
 /** Immagine georeferenziata da sovrapporre alla mappa (analisi del lotto). */
 export interface Sovrapposizione {
@@ -68,6 +75,9 @@ interface Props {
   quotaPunto?: { lon: number; lat: number; testo: string } | null;
   /** Lotto da disegnare all'apertura (modalità demo). */
   geometriaIniziale?: GeoJsonPolygon | null;
+  vista3d?: Vista3D;
+  /** Ogni incremento riporta la vista dall'alto, con il Nord in alto. */
+  versioneRipristino?: number;
 }
 
 const VUOTO: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -90,6 +100,8 @@ export function MappaTerreno({
   onClickQuota,
   quotaPunto = null,
   geometriaIniziale = null,
+  vista3d = { attiva: false, esagerazione: 1, ombreggiatura: false },
+  versioneRipristino = 0,
 }: Props) {
   const iniziale = useRef(geometriaIniziale);
   const contenitore = useRef<HTMLDivElement>(null);
@@ -135,6 +147,7 @@ export function MappaTerreno({
       bounds: RIQUADRO_LOMBARDIA,
       fitBoundsOptions: { padding: 24 },
       maxBounds: LIMITI_NAVIGAZIONE,
+      maxPitch: 75,
       attributionControl: false,
       canvasContextAttributes: { preserveDrawingBuffer: true },
     });
@@ -180,6 +193,27 @@ export function MappaTerreno({
           base === "satellite" ? primoSimbolo : undefined,
         );
       }
+
+      // 1b) Rilievo dal DTM (tessere Terrarium dal nostro server): terreno 3D e ombreggiatura.
+      //     Due sorgenti distinte, come raccomandato da MapLibre per terreno e hillshade.
+      for (const id of ["dem", "dem-ombra"]) {
+        map.addSource(id, {
+          type: "raster-dem",
+          tiles: [urlTessereDem()],
+          tileSize: 256,
+          encoding: "terrarium",
+          minzoom: 8,
+          maxzoom: 16,
+          attribution: "Rilievo: DTM 5×5 © Regione Lombardia",
+        });
+      }
+      map.addLayer({
+        id: "ombreggiatura",
+        type: "hillshade",
+        source: "dem-ombra",
+        layout: { visibility: "none" },
+        paint: { "hillshade-exaggeration": 0.45, "hillshade-shadow-color": "#1e293b" },
+      });
 
       // 2) Curve di livello (sorgente vuota, riempita quando arrivano i dati)
       map.addSource("curve", { type: "geojson", data: VUOTO });
@@ -396,6 +430,33 @@ export function MappaTerreno({
     if (pronta && mappa.current) applicaMappaBase(mappa.current, mappaBase);
   }, [mappaBase, pronta]);
 
+  // Vista 3D: terreno dal DTM, esagerazione solo visiva, ombreggiatura
+  useEffect(() => {
+    const map = mappa.current;
+    if (!map || !pronta) return;
+    if (vista3d.attiva) {
+      map.setTerrain({ source: "dem", exaggeration: vista3d.esagerazione });
+    } else {
+      map.setTerrain(null);
+    }
+    if (map.getLayer("ombreggiatura")) {
+      map.setLayoutProperty("ombreggiatura", "visibility", vista3d.ombreggiatura ? "visible" : "none");
+    }
+  }, [vista3d.attiva, vista3d.esagerazione, vista3d.ombreggiatura, pronta]);
+
+  // Inclinazione automatica entrando/uscendo dal 3D
+  useEffect(() => {
+    const map = mappa.current;
+    if (!map || !pronta) return;
+    map.easeTo({ pitch: vista3d.attiva ? 60 : 0, duration: 900 });
+  }, [vista3d.attiva, pronta]);
+
+  useEffect(() => {
+    const map = mappa.current;
+    if (!map || !pronta || versioneRipristino === 0) return;
+    map.easeTo({ pitch: 0, bearing: 0, duration: 800 });
+  }, [versioneRipristino, pronta]);
+
   // Analisi del lotto (immagine georeferenziata)
   useEffect(() => {
     const map = mappa.current;
@@ -512,6 +573,11 @@ export function MappaTerreno({
       {(avvisoDisegno || suggerimenti[strumento]) && (
         <div className={`suggerimento ${avvisoDisegno ? "suggerimento--avviso" : ""}`} role={avvisoDisegno ? "alert" : "status"}>
           {avvisoDisegno ?? suggerimenti[strumento]}
+        </div>
+      )}
+      {vista3d.attiva && (
+        <div className="badge-3d" role="status">
+          Vista 3D · {vista3d.esagerazione === 1 ? "scala reale" : `esagerazione ×${String(vista3d.esagerazione).replace(".", ",")} (solo visiva)`}
         </div>
       )}
       {erroreMappa && <div className="mappa__errore">{erroreMappa}</div>}

@@ -53,6 +53,7 @@ from app.services.area_pilota import NOME_AREA_PILOTA, confine_lombardia, geomet
 from app.services.geocodifica import ATTRIBUZIONE_OSM, ServizioRicercaNonDisponibile
 from app.services.mappe import crea_mappa
 from app.services.curve import INTERVALLO_MINIMO_M, calcola_curve
+from app.services.tessere_dem import CacheTessere, TesseraNonValida
 from app.services.profilo import PASSO_M, calcola_profilo, lunghezza_geodetica, quota_punto
 from app.services.report import CampiUtente, DatiReport, genera_pdf
 from app.services.geometria import (
@@ -102,6 +103,12 @@ def _funzioni(dtm: SorgenteDtm | None, motivo_dtm: str | None) -> list[StatoFunz
         StatoFunzione(chiave="mappa_quota", nome="Mappa altimetrica e curve di livello", stato=stato, note=nota_dtm),
         StatoFunzione(chiave="quota_punto", nome="Quota di un punto", stato=stato, note=nota_dtm),
         StatoFunzione(chiave="mappa_pendenze", nome="Mappe di pendenze ed esposizioni", stato=stato, note=nota_dtm),
+        StatoFunzione(
+            chiave="vista_3d",
+            nome="Vista 3D del terreno",
+            stato=stato,
+            note=(nota_dtm + " Solo visualizzazione: i calcoli usano il DTM a piena risoluzione.").strip(),
+        ),
         StatoFunzione(chiave="profilo", nome="Profilo altimetrico", stato=stato, note=nota_dtm),
         StatoFunzione(
             chiave="report_pdf",
@@ -441,6 +448,29 @@ def quota(
         precisione=dtm.descrizione.precisione_dichiarata,
         attribuzione=dtm.descrizione.attribuzione,
     )
+
+
+_CACHE_TESSERE = CacheTessere()
+
+
+@router.get(
+    "/tessere/dem/{z}/{x}/{y}.png",
+    summary="Tessera di elevazione Terrarium per la vista 3D (solo visualizzazione)",
+    response_class=Response,
+    responses={200: {"content": {"image/png": {}}}, 204: {"description": "Nessun dato DTM nella tessera"}},
+)
+def tessera_dem(z: int, x: int, y: int, request: Request) -> Response:
+    dtm: SorgenteDtm | None = request.app.state.dtm
+    if dtm is None:
+        raise HTTPException(status_code=503, detail=request.app.state.motivo_dtm or MESSAGGIO_ALTIMETRIA_ASSENTE)
+    try:
+        contenuto = _CACHE_TESSERE.ottieni(dtm, z, x, y)
+    except TesseraNonValida as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    cache = {"Cache-Control": "public, max-age=86400"}
+    if contenuto is None:
+        return Response(status_code=204, headers=cache)
+    return Response(content=contenuto, media_type="image/png", headers=cache)
 
 
 @router.get("/ricerca", response_model=RispostaRicerca, summary="Cerca una località in Lombardia")

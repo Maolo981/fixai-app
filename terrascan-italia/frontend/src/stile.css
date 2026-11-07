@@ -1325,3 +1325,29 @@ button:disabled {
     padding: 6px 10px;
   }
 }
+
+/* ---------- vista 3D ---------- */
+
+.selettore--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.selettore__opzione:disabled {
+  color: var(--grigio-300);
+  cursor: not-allowed;
+}
+
+.badge-3d {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgb(11 23 48 / 0.85);
+  color: var(--bianco);
+  font-size: 0.78rem;
+  font-weight: 600;
+  z-index: 2;
+  pointer-events: none;
+}

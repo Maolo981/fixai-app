@@ -184,6 +184,11 @@ def main() -> None:
     converti(img, FILE_FINALE)
     celle = verifica(img, FILE_FINALE, args.verifica_completa)
 
+    # Piramidi per la vista 3D (non modificano i valori a piena risoluzione)
+    from aggiungi_piramidi import main as aggiungi_piramidi
+
+    aggiungi_piramidi()
+
     provenienza = {
         "dataset": "DTM 5X5 - Modello digitale del terreno (ed. 2015)",
         "proprietario": "Regione Lombardia",

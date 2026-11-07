@@ -5,6 +5,7 @@
 import { formattaQuota } from "../lib/formato";
 import { MAPPE_BASE, NOMI_LIVELLI, spostaLivello, type IdLivello, type MappaBase } from "../lib/livelli";
 import type { RispostaCurve, RispostaMappa, StatoRichiesta, TipoMappa } from "../lib/types";
+import type { Vista3D } from "./MappaTerreno";
 
 export type Strumento = "naviga" | "poligono" | "linea" | "quota" | "modifica";
 
@@ -37,6 +38,11 @@ interface Props {
   statoCurve: StatoRichiesta<RispostaCurve>;
   confineVisibile: boolean;
   onConfine: (v: boolean) => void;
+  vista3d?: Vista3D;
+  onVista3d?: (patch: Partial<Vista3D>) => void;
+  onRipristinaVista?: () => void;
+  /** Motivo per cui il 3D non è disponibile (es. DTM non installato); null = disponibile. */
+  motivo3d?: string | null;
 }
 
 const STRUMENTI: { id: Strumento; nome: string; aiuto: string }[] = [
@@ -87,6 +93,8 @@ export function PannelloSinistro(p: Props) {
           </button>
         </div>
       </section>
+
+      {p.vista3d && p.onVista3d && <BloccoVista {...p} />}
 
       <section className="blocco" aria-labelledby="titolo-base">
         <h2 id="titolo-base" className="blocco__titolo">
@@ -160,6 +168,72 @@ export function PannelloSinistro(p: Props) {
         </ol>
       </section>
     </div>
+  );
+}
+
+function BloccoVista({ vista3d, onVista3d, onRipristinaVista, motivo3d }: Props) {
+  if (!vista3d || !onVista3d) return null;
+  const disponibile = !motivo3d;
+  return (
+    <section className="blocco" aria-labelledby="titolo-vista">
+      <h2 id="titolo-vista" className="blocco__titolo">
+        Vista
+      </h2>
+      <div className="selettore selettore--2" role="radiogroup" aria-label="Vista 2D o 3D">
+        {[false, true].map((tre) => (
+          <button
+            key={String(tre)}
+            type="button"
+            role="radio"
+            aria-checked={vista3d.attiva === tre}
+            disabled={tre && !disponibile}
+            className={`selettore__opzione ${vista3d.attiva === tre ? "selettore__opzione--attiva" : ""}`}
+            onClick={() => onVista3d({ attiva: tre })}
+          >
+            {tre ? "3D" : "2D"}
+          </button>
+        ))}
+      </div>
+      {!disponibile && <p className="testo-secondario">Vista 3D non disponibile: {motivo3d}</p>}
+      {disponibile && vista3d.attiva && (
+        <>
+          <label className="cursore">
+            <span>Esagerazione</span>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.5}
+              value={vista3d.esagerazione}
+              onChange={(e) => onVista3d({ esagerazione: Number(e.target.value) })}
+              aria-valuetext={`${vista3d.esagerazione} volte`}
+            />
+            <output>×{String(vista3d.esagerazione).replace(".", ",")}</output>
+          </label>
+          <p className="testo-secondario">
+            ×1 = scala reale. L'esagerazione è solo visiva: misure e report usano sempre le quote reali.
+          </p>
+        </>
+      )}
+      <label className="livello__interruttore">
+        <input
+          type="checkbox"
+          checked={vista3d.ombreggiatura}
+          disabled={!disponibile}
+          onChange={(e) => onVista3d({ ombreggiatura: e.target.checked })}
+        />
+        <span>Ombreggiatura del rilievo</span>
+      </label>
+      <button type="button" className="pulsante-secondario" onClick={onRipristinaVista}>
+        Ripristina vista (Nord in alto, dall'alto)
+      </button>
+      {disponibile && (
+        <p className="testo-secondario">
+          Rilievo dal DTM 5×5 della Lombardia; fuori regione il terreno appare piatto (nessun dato). Ruota con il tasto
+          destro o Ctrl + trascina; su smartphone con due dita.
+        </p>
+      )}
+    </section>
   );
 }
 

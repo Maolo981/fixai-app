@@ -19,6 +19,12 @@ Piattaforma web per l'analisi preliminare dei terreni, pensata per geometri, ing
   modalità Altimetria / Pendenza / Esposizione, quota di un punto cliccato, pendenze dei tratti del profilo A-B,
   distanza geodetica della linea anche senza DTM.
 - **Demo**: `/app?demo` apre un lotto di esempio in Valtellina, dichiarato come tale, analizzato con dati reali.
+- **Vista 3D**: rilievo dal DTM 5×5 (tessere Terrarium generate dal server, circa 100 ms a tessera grazie alle
+  piramidi del file), rotazione, inclinazione, ripristino della vista, ombreggiatura del rilievo. L'esagerazione
+  verticale (×1–×3) è dichiarata come solo visiva: misure e report usano sempre le quote reali. Fuori dalla
+  Lombardia il terreno appare piatto (nessun dato) e l'interfaccia lo indica.
+
+![Vista 3D del lotto demo](docs/img/saas-vista-3d.png)
 
 Analisi del repository, differenze rispetto ai requisiti e piano delle fasi successive (3D, vincoli territoriali,
 report evoluto, funzioni commerciali): [docs/piano-piattaforma-saas.md](docs/piano-piattaforma-saas.md).
@@ -123,6 +129,12 @@ cd terrascan-italia/backend
 uv run python scripts/prepara_dtm.py --pulisci
 ```
 
+Lo script crea anche le piramidi usate dalla vista 3D. Se il DTM era già installato prima della vista 3D, basta:
+
+```bash
+uv run python scripts/aggiungi_piramidi.py     # circa 1-2 minuti; i valori originali non cambiano
+```
+
 Facoltativo: verifica a campione del DTM installato con il servizio WMS ufficiale della Regione:
 
 ```bash
@@ -173,10 +185,10 @@ La documentazione interattiva dell'API è disponibile su **http://localhost:8000
 
 ```bash
 cd terrascan-italia/backend
-uv run pytest                 # 107 test (11 richiedono il DTM installato, altrimenti vengono saltati)
+uv run pytest                 # 115 test (12 richiedono il DTM installato, altrimenti vengono saltati)
 
 cd ../frontend
-npm test                      # 50 test: formattazione, livelli, pannelli, grafico, report, landing
+npm test                      # 52 test: formattazione, livelli, pannelli, 3D, grafico, report, landing
 npm run typecheck             # controllo dei tipi TypeScript
 ```
 
