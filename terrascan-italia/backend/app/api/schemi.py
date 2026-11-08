@@ -80,6 +80,8 @@ class Pendenza(BaseModel):
     media_gradi: float
     massima_percento: float
     massima_gradi: float
+    minima_percento: float
+    minima_gradi: float
     classi: list[ClassePendenza]
     metodo: str
 

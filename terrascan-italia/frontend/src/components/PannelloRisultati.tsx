@@ -4,6 +4,7 @@
  * Mostra soltanto valori ricevuti dal backend. Le funzioni non ancora
  * implementate sono dichiarate esplicitamente come "non disponibili".
  */
+import type { ReactNode } from "react";
 import {
   etichettaClasse,
   formattaPendenza,
@@ -54,6 +55,8 @@ interface Props {
   fase3?: DatiFase3;
   /** Scheda da mostrare; se assente si mostrano tutte le sezioni. */
   scheda?: SchedaDestra;
+  /** Controlli di legenda, opacità e curve mostrati in cima alla scheda Altimetria. */
+  controlliInsights?: ReactNode;
 }
 
 const ETICHETTA_AREA_PILOTA = {
@@ -65,7 +68,7 @@ const ETICHETTA_AREA_PILOTA = {
 const AVVERTENZA_PREDEFINITA =
   "Le analisi sono preliminari e indicative: non sostituiscono un rilievo topografico o una perizia tecnica eseguiti da un professionista abilitato.";
 
-export function PannelloRisultati({ analisi, capacita, fase3, scheda }: Props) {
+export function PannelloRisultati({ analisi, capacita, fase3, scheda, controlliInsights }: Props) {
   const profiloAttivo = capacita?.funzioni.some((f) => f.chiave === "profilo" && f.stato === "implementata") ?? false;
   const mostra = (s: SchedaDestra) => !scheda || scheda === s;
   return (
@@ -93,6 +96,11 @@ export function PannelloRisultati({ analisi, capacita, fase3, scheda }: Props) {
           <p className="testo-secondario">Disegna un lotto per generare il report PDF.</p>
         )}
 
+        {mostra("altimetria") && controlliInsights && analisi.stato === "completata" && analisi.risultato.altimetria.disponibile && (
+          <section className="scheda scheda--insights" aria-label="Visualizzazione altimetrica">
+            {controlliInsights}
+          </section>
+        )}
         {mostra("altimetria") && <SezioneAltimetria analisi={analisi} capacita={capacita} />}
         {mostra("altimetria") && fase3?.quotaPunto && <SezioneQuotaPunto stato={fase3.quotaPunto} />}
 
@@ -290,20 +298,35 @@ function RisultatiAltimetria({ alt }: { alt: StatoAltimetria }) {
         <span className="etichetta etichetta--reale">Dati reali DTM</span>
       </div>
 
-      <div className="griglia-metriche">
-        <Metrica nome="Quota minima" valore={formattaQuota(quote.minima)} testId="quota-minima" />
-        <Metrica nome="Quota massima" valore={formattaQuota(quote.massima)} testId="quota-massima" />
-        <Metrica nome="Quota media" valore={formattaQuota(quote.media)} />
-        <Metrica nome="Dislivello" valore={formattaQuota(quote.dislivello)} testId="dislivello" />
+      <div className="griglia-insights">
+        <div className="insight">
+          <span className="metrica__nome">Dislivello</span>
+          <span className="insight__valore" data-testid="dislivello">
+            {formattaQuota(quote.dislivello)}
+          </span>
+          <span className="insight__dettaglio">
+            Min <strong data-testid="quota-minima">{formattaQuota(quote.minima)}</strong> · Max{" "}
+            <strong data-testid="quota-massima">{formattaQuota(quote.massima)}</strong>
+          </span>
+          <span className="insight__dettaglio">Media {formattaQuota(quote.media)}</span>
+        </div>
+        <div className="insight">
+          <span className="metrica__nome">Pendenza media</span>
+          <span className="insight__valore" data-testid="pendenza-media">
+            {formattaPendenza(pendenza.media_percento, pendenza.media_gradi)}
+          </span>
+          <span className="insight__dettaglio">
+            {pendenza.minima_percento !== undefined && (
+              <>
+                Min <strong>{formattaPendenza(pendenza.minima_percento, pendenza.minima_gradi ?? 0)}</strong> ·{" "}
+              </>
+            )}
+            Max <strong>{formattaPendenza(pendenza.massima_percento, pendenza.massima_gradi)}</strong>
+          </span>
+        </div>
       </div>
 
-      <h3 className="sottotitolo">Pendenza</h3>
-      <dl className="dati dati--senza-bordo">
-        <dt>Media</dt>
-        <dd data-testid="pendenza-media">{formattaPendenza(pendenza.media_percento, pendenza.media_gradi)}</dd>
-        <dt>Massima</dt>
-        <dd>{formattaPendenza(pendenza.massima_percento, pendenza.massima_gradi)}</dd>
-      </dl>
+      <h3 className="sottotitolo">Distribuzione delle pendenze</h3>
       <ul className="barre" aria-label="Distribuzione delle pendenze">
         {pendenza.classi.map((c) => (
           <li key={c.da_percento}>
@@ -349,17 +372,6 @@ function RisultatiAltimetria({ alt }: { alt: StatoAltimetria }) {
         <p>{esposizione.metodo}</p>
       </details>
     </section>
-  );
-}
-
-function Metrica({ nome, valore, testId }: { nome: string; valore: string; testId?: string }) {
-  return (
-    <div className="metrica metrica--compatta">
-      <span className="metrica__nome">{nome}</span>
-      <span className="metrica__valore" data-testid={testId}>
-        {valore}
-      </span>
-    </div>
   );
 }
 

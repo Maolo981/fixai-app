@@ -49,6 +49,8 @@ export interface StatoAltimetria {
     media_gradi: number;
     massima_percento: number;
     massima_gradi: number;
+    minima_percento?: number;
+    minima_gradi?: number;
     classi: { da_percento: number; a_percento: number | null; percentuale_celle: number }[];
     metodo: string;
   } | null;

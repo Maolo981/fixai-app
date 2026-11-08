@@ -1351,3 +1351,69 @@ button:disabled {
   z-index: 2;
   pointer-events: none;
 }
+
+/* ---------- Elevation Insights: pannello unificato e pulsante 3D ---------- */
+
+.scheda--insights {
+  display: grid;
+  gap: 12px;
+}
+
+.scheda--insights .livello__corpo {
+  padding: 0;
+}
+
+.griglia-insights {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.insight {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--grigio-50);
+  border: 1px solid var(--grigio-100);
+}
+
+.insight__valore {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--verde-900);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.insight__dettaglio {
+  font-size: 0.75rem;
+  color: var(--grigio-500);
+  font-variant-numeric: tabular-nums;
+}
+
+.insight__dettaglio strong {
+  color: var(--grigio-700);
+  font-weight: 600;
+}
+
+.pulsante-3d {
+  position: absolute;
+  top: 116px;
+  right: 10px;
+  z-index: 2;
+  width: 29px;
+  height: 29px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--bianco);
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 0.1);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--grigio-700);
+}
+
+.pulsante-3d--attivo {
+  background: #10b981;
+  color: #04221a;
+}

@@ -98,6 +98,7 @@ class RisultatoAltimetria:
     punto_massimo: Punto
     pendenza_media_percento: float
     pendenza_massima_percento: float
+    pendenza_minima_percento: float
     classi_pendenza: list[tuple[float, float, float]]  # (da %, a %, quota % di celle)
     esposizione_prevalente: str
     esposizione_settori: dict[str, float]  # settore -> % di celle, incluso "Pianeggiante"
@@ -308,7 +309,7 @@ class SorgenteDtm:
 
         if celle_con_pendenza:
             p = pendenza[con_pendenza]
-            pend_media, pend_max = float(p.mean()), float(p.max())
+            pend_media, pend_max, pend_min = float(p.mean()), float(p.max()), float(p.min())
             classi = []
             for da, a in zip(LIMITI_CLASSI_PENDENZA[:-1], LIMITI_CLASSI_PENDENZA[1:]):
                 quota = float(((p >= da) & (p < a)).sum()) / p.size * 100
@@ -335,6 +336,7 @@ class SorgenteDtm:
             punto_massimo=punto(int(np.argmax(quote))),
             pendenza_media_percento=pend_media,
             pendenza_massima_percento=pend_max,
+            pendenza_minima_percento=pend_min,
             classi_pendenza=classi,
             esposizione_prevalente=prevalente,
             esposizione_settori=distribuzione,

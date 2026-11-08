@@ -16,8 +16,12 @@ from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
+import rasterio
 from rasterio.errors import NotGeoreferencedWarning
+from rasterio.enums import Resampling
+from rasterio.features import geometry_mask
 from rasterio.io import MemoryFile
+from rasterio.warp import reproject
 from shapely.geometry import Polygon
 
 from app.services.altimetria import (
@@ -25,23 +29,27 @@ from app.services.altimetria import (
     SETTORI_ESPOSIZIONE,
     SOGLIA_PIANEGGIANTE_PERCENTO,
     SorgenteDtm,
+    _in_utm,
     _utm_a_wgs84,
     settore_esposizione,
 )
 
 TipoMappa = Literal["quota", "pendenza", "esposizione"]
 
-# Altimetria: gradiente multicolore continuo dal punto più basso (blu) al più alto (rosso) del lotto.
+# Altimetria: gradiente a spettro completo dal punto più basso (viola) al più alto (rosso) del lotto.
 # Le tappe sono interpolate linearmente in RGB; la scala è relativa al singolo lotto.
 GRADIENTE_QUOTA = (
-    (0.00, "#2c3e9e"),
-    (0.20, "#1f8fd1"),
-    (0.40, "#2bb5a0"),
-    (0.55, "#8bd16b"),
-    (0.70, "#f2d64b"),
-    (0.85, "#f28c38"),
-    (1.00, "#c8323a"),
+    (0.00, "#8a2be2"),
+    (0.16, "#3b4cdb"),
+    (0.33, "#1fb5e8"),
+    (0.50, "#2ecc71"),
+    (0.66, "#e9e33a"),
+    (0.83, "#f59331"),
+    (1.00, "#e03131"),
 )
+# Fattore di sovracampionamento per la resa sfumata della mappa altimetrica (5 m -> 1,25 m)
+SOVRACAMPIONAMENTO_QUOTA = 4
+LATO_MASSIMO_IMMAGINE = 2048
 TAPPE_LEGENDA_QUOTA = 5
 
 # Pendenza: dal verde (pianeggiante) al rosso scuro (molto ripido), una tinta per classe.
@@ -134,32 +142,63 @@ def colori_gradiente(valori: np.ndarray) -> np.ndarray:
     return np.stack([np.interp(v, posizioni, componenti[:, k]) for k in range(3)], axis=-1).round().astype(np.uint8)
 
 
-def _mappa_quota(g, rgba: np.ndarray) -> tuple[int, ScalaQuota]:
-    valide = g.valide
-    z = g.finestra.z
-    minima, massima = float(z[valide].min()), float(z[valide].max())
+def _scala_quota(minima: float, massima: float) -> ScalaQuota:
     escursione = massima - minima
-    normalizzate = (z[valide] - minima) / escursione if escursione > 0 else np.full(int(valide.sum()), 0.5)
-    colori = colori_gradiente(normalizzate)
-    for k in range(3):
-        rgba[k][valide] = colori[:, k]
-    rgba[3][valide] = 255
     frazioni = np.linspace(0, 1, TAPPE_LEGENDA_QUOTA)
     tappe = [
         (minima + f * escursione, "#{:02x}{:02x}{:02x}".format(*colori_gradiente(np.array([f]))[0]))
         for f in frazioni
     ]
-    return int(valide.sum()), ScalaQuota(minima=minima, massima=massima, tappe=tappe)
+    return ScalaQuota(minima=minima, massima=massima, tappe=tappe)
+
+
+def _immagine_quota_sfumata(g, poligono_utm) -> tuple[np.ndarray, rasterio.Affine, ScalaQuota]:
+    """Mappa altimetrica sfumata: quote del DTM interpolate (bilineare) su una griglia più fine.
+
+    La scala (minimo/massimo) è quella delle celle reali interne al lotto, come nelle statistiche;
+    l'interpolazione serve solo alla resa visiva e il bordo segue il perimetro disegnato.
+    """
+    z = g.finestra.z
+    minima, massima = float(z[g.valide].min()), float(z[g.valide].max())
+    altezza, larghezza = z.shape
+    fattore = max(1, min(SOVRACAMPIONAMENTO_QUOTA, LATO_MASSIMO_IMMAGINE // max(altezza, larghezza)))
+    t = g.finestra.trasformazione
+    t_fine = t @ rasterio.Affine.scale(1 / fattore)
+    fine = np.full((altezza * fattore, larghezza * fattore), np.nan)
+    reproject(
+        source=z,
+        destination=fine,
+        src_transform=t,
+        src_crs="EPSG:32632",
+        src_nodata=np.nan,
+        dst_transform=t_fine,
+        dst_crs="EPSG:32632",
+        dst_nodata=np.nan,
+        resampling=Resampling.bilinear,
+    )
+    dentro = geometry_mask([poligono_utm], out_shape=fine.shape, transform=t_fine, invert=True) & np.isfinite(fine)
+    escursione = massima - minima
+    valori = fine[dentro]
+    normalizzate = (valori - minima) / escursione if escursione > 0 else np.full(valori.size, 0.5)
+    colori = colori_gradiente(normalizzate)
+    rgba = np.zeros((4, *fine.shape), dtype=np.uint8)
+    for k in range(3):
+        rgba[k][dentro] = colori[:, k]
+    rgba[3][dentro] = 255
+    return rgba, t_fine, _scala_quota(minima, massima)
 
 
 def crea_mappa(sorgente: SorgenteDtm, poligono_wgs84: Polygon, tipo: TipoMappa) -> MappaTematica:
     g = sorgente.griglie(poligono_wgs84)
     altezza, larghezza = g.finestra.z.shape
     rgba = np.zeros((4, altezza, larghezza), dtype=np.uint8)
+    t = g.finestra.trasformazione
     legenda: list[VoceLegenda] = []
     scala: ScalaQuota | None = None
     if tipo == "quota":
-        totale, scala = _mappa_quota(g, rgba)
+        rgba, t, scala = _immagine_quota_sfumata(g, _in_utm(poligono_wgs84))
+        altezza, larghezza = rgba.shape[1:]
+        totale = int(g.valide.sum())  # celle reali del DTM nel lotto
         voci = []
         indici = np.full((altezza, larghezza), -1)
     else:
@@ -183,7 +222,6 @@ def crea_mappa(sorgente: SorgenteDtm, poligono_wgs84: Polygon, tipo: TipoMappa) 
                 png.write(rgba)
             contenuto = memoria.read()
 
-    t = g.finestra.trasformazione
     def angolo(colonna: int, riga: int) -> tuple[float, float]:
         return t.c + colonna * t.a + riga * t.b, t.f + colonna * t.d + riga * t.e
 

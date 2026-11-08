@@ -53,6 +53,8 @@ export interface Vista3D {
 export interface Sovrapposizione {
   pngBase64: string;
   coordinate: [number, number][];
+  /** true = immagine già sfumata (altimetria): interpolazione lineare; false = celle nette (classi). */
+  liscia?: boolean;
 }
 
 interface Props {
@@ -78,6 +80,12 @@ interface Props {
   vista3d?: Vista3D;
   /** Ogni incremento riporta la vista dall'alto, con il Nord in alto. */
   versioneRipristino?: number;
+  /** Riquadro del lotto [ovest, sud, est, nord]: entrando nel 3D la camera lo inquadra per intero. */
+  limitiLotto?: [number, number, number, number] | null;
+  /** Pulsante 2D/3D sulla mappa (assente se il 3D non è disponibile). */
+  onCambia3d?: (attiva: boolean) => void;
+  /** Direzione di vista del 3D (gradi da Nord): di fianco al pendio, così il rilievo si legge di profilo. */
+  bearing3d?: number;
 }
 
 const VUOTO: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -102,7 +110,14 @@ export function MappaTerreno({
   geometriaIniziale = null,
   vista3d = { attiva: false, esagerazione: 1, ombreggiatura: false },
   versioneRipristino = 0,
+  limitiLotto = null,
+  onCambia3d,
+  bearing3d = -20,
 }: Props) {
+  const bearingAttuale = useRef(bearing3d);
+  bearingAttuale.current = bearing3d;
+  const limitiAttuali = useRef(limitiLotto);
+  limitiAttuali.current = limitiLotto;
   const iniziale = useRef(geometriaIniziale);
   const contenitore = useRef<HTMLDivElement>(null);
   const mappa = useRef<maplibregl.Map | null>(null);
@@ -129,13 +144,6 @@ export function MappaTerreno({
   const applicaMappaBase = (map: maplibregl.Map, base: MappaBase) => {
     for (const m of ["satellite", "topografica"] as const) {
       if (map.getLayer(`base-${m}`)) map.setLayoutProperty(`base-${m}`, "visibility", m === base ? "visible" : "none");
-    }
-    // Curve chiare sull'ortofoto, scure sulle carte
-    if (map.getLayer("curve-linee")) {
-      const colore = base === "satellite" ? "#fef9c3" : "#7c2d12";
-      map.setPaintProperty("curve-linee", "line-color", colore);
-      map.setPaintProperty("curve-etichette", "text-color", colore);
-      map.setPaintProperty("curve-etichette", "text-halo-color", base === "satellite" ? "#1c1917" : "#ffffff");
     }
   };
 
@@ -217,14 +225,25 @@ export function MappaTerreno({
 
       // 2) Curve di livello (sorgente vuota, riempita quando arrivano i dati)
       map.addSource("curve", { type: "geojson", data: VUOTO });
+      // Alone chiaro sotto la linea scura: leggibile sia sul gradiente sia sull'ortofoto
+      map.addLayer({
+        id: "curve-alone",
+        type: "line",
+        source: "curve",
+        paint: {
+          "line-color": "#ffffff",
+          "line-width": ["case", ["get", "direttrice"], 3.4, 2.2],
+          "line-opacity": 0.35,
+        },
+      });
       map.addLayer({
         id: "curve-linee",
         type: "line",
         source: "curve",
         paint: {
-          "line-color": "#7c2d12",
-          "line-width": ["case", ["get", "direttrice"], 1.8, 0.9],
-          "line-opacity": 0.9,
+          "line-color": "#111827",
+          "line-width": ["case", ["get", "direttrice"], 1.6, 0.8],
+          "line-opacity": 0.8,
         },
       });
       map.addLayer({
@@ -238,7 +257,7 @@ export function MappaTerreno({
           "text-size": 10.5,
           "symbol-spacing": 220,
         },
-        paint: { "text-color": "#7c2d12", "text-halo-color": "#ffffff", "text-halo-width": 1.4 },
+        paint: { "text-color": "#111827", "text-halo-color": "#ffffff", "text-halo-width": 1.4 },
       });
 
       // 3) Area pilota (Lombardia): maschera esterna e confine
@@ -444,11 +463,20 @@ export function MappaTerreno({
     }
   }, [vista3d.attiva, vista3d.esagerazione, vista3d.ombreggiatura, pronta]);
 
-  // Inclinazione automatica entrando/uscendo dal 3D
+  // Entrando nel 3D la camera inquadra tutto il lotto in obliquo; uscendo torna dall'alto.
   useEffect(() => {
     const map = mappa.current;
     if (!map || !pronta) return;
-    map.easeTo({ pitch: vista3d.attiva ? 60 : 0, duration: 900 });
+    const limiti = limitiAttuali.current;
+    if (vista3d.attiva && limiti) {
+      const bearing = bearingAttuale.current;
+      const camera = map.cameraForBounds(limiti, { padding: 70, bearing });
+      if (camera?.center && camera.zoom !== undefined) {
+        map.easeTo({ center: camera.center, zoom: camera.zoom - 0.6, bearing, pitch: 60, duration: 1200 });
+        return;
+      }
+    }
+    map.easeTo({ pitch: vista3d.attiva ? 58 : 0, bearing: vista3d.attiva ? map.getBearing() : 0, duration: 900 });
   }, [vista3d.attiva, pronta]);
 
   useEffect(() => {
@@ -474,8 +502,13 @@ export function MappaTerreno({
       id: "mappa-tematica",
       type: "raster",
       source: "mappa-tematica",
-      // "nearest": ogni cella del DTM resta un quadrato netto, senza sfumature inventate.
-      paint: { "raster-opacity": opacita, "raster-resampling": "nearest", "raster-fade-duration": 0 },
+      // Classi (pendenza/esposizione): "nearest", ogni cella resta un quadrato netto.
+      // Altimetria: l'immagine è già interpolata dal server, quindi "linear".
+      paint: {
+        "raster-opacity": opacita,
+        "raster-resampling": sovrapposizione.liscia ? "linear" : "nearest",
+        "raster-fade-duration": 0,
+      },
     });
     applicaOrdine(map, stato.current.ordine);
     // L'opacità è gestita dall'effetto dedicato: non ricreare l'immagine a ogni spostamento del cursore.
@@ -574,6 +607,17 @@ export function MappaTerreno({
         <div className={`suggerimento ${avvisoDisegno ? "suggerimento--avviso" : ""}`} role={avvisoDisegno ? "alert" : "status"}>
           {avvisoDisegno ?? suggerimenti[strumento]}
         </div>
+      )}
+      {onCambia3d && (
+        <button
+          type="button"
+          className={`pulsante-3d ${vista3d.attiva ? "pulsante-3d--attivo" : ""}`}
+          aria-pressed={vista3d.attiva}
+          title={vista3d.attiva ? "Torna alla vista 2D" : "Vista 3D del terreno"}
+          onClick={() => onCambia3d(!vista3d.attiva)}
+        >
+          {vista3d.attiva ? "2D" : "3D"}
+        </button>
       )}
       {vista3d.attiva && (
         <div className="badge-3d" role="status">

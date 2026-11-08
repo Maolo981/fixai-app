@@ -145,6 +145,8 @@ def _altimetria(dtm: SorgenteDtm | None, motivo_dtm: str | None, poligono: Polyg
             media_gradi=r.gradi(r.pendenza_media_percento),
             massima_percento=r.pendenza_massima_percento,
             massima_gradi=r.gradi(r.pendenza_massima_percento),
+            minima_percento=r.pendenza_minima_percento,
+            minima_gradi=r.gradi(r.pendenza_minima_percento),
             classi=[
                 ClassePendenza(da_percento=da, a_percento=None if a == float("inf") else a, percentuale_celle=q)
                 for da, a, q in r.classi_pendenza
@@ -295,7 +297,7 @@ def analisi_mappa(richiesta: RichiestaMappa, request: Request) -> RispostaMappa:
             minima=m.scala.minima,
             massima=m.scala.massima,
             tappe=[TappaScala(quota=q, colore=c) for q, c in m.scala.tappe],
-            nota="Scala relativa al lotto: i colori vanno dalla quota minima (blu) alla massima (rosso).",
+            nota="Scala relativa al lotto: i colori vanno dalla quota minima (viola) alla massima (rosso).",
         ) if m.scala else None,
         nota=NOTA_MAPPA,
         attribuzione=dtm.descrizione.attribuzione,

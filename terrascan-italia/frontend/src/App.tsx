@@ -8,6 +8,8 @@ import { BarraRicerca } from "./components/BarraRicerca";
 import { MappaTerreno, type Sovrapposizione, type Vista3D } from "./components/MappaTerreno";
 import { PannelloRisultati, type SchedaDestra, type StatoAnalisi } from "./components/PannelloRisultati";
 import {
+  CorpoAnalisi,
+  CorpoCurve,
   PannelloSinistro,
   type StatoLivelloAnalisi,
   type StatoLivelloCurve,
@@ -26,7 +28,7 @@ import {
   type CampiReport,
 } from "./lib/api";
 import { formattaQuota } from "./lib/formato";
-import { ORDINE_PREDEFINITO, type IdLivello, type MappaBase } from "./lib/livelli";
+import { bearingDiProfilo, ORDINE_PREDEFINITO, type IdLivello, type MappaBase } from "./lib/livelli";
 import type {
   Capacita,
   Destinazione,
@@ -218,12 +220,24 @@ export default function App() {
 
   const sovrapposizione = useMemo<Sovrapposizione | null>(() => {
     if (!livelloAnalisi.visibile || mappa.stato !== "completata" || !mappa.risultato.disponibile) return null;
-    const { immagine_png_base64, coordinate } = mappa.risultato;
-    return immagine_png_base64 && coordinate ? { pngBase64: immagine_png_base64, coordinate } : null;
+    const { immagine_png_base64, coordinate, tipo } = mappa.risultato;
+    return immagine_png_base64 && coordinate
+      ? { pngBase64: immagine_png_base64, coordinate, liscia: tipo === "quota" }
+      : null;
   }, [mappa, livelloAnalisi.visibile]);
 
   const geojsonCurve =
     livelloCurve.visibile && curve.stato === "completata" && curve.risultato.disponibile ? curve.risultato.geojson ?? null : null;
+
+  const limitiLotto = useMemo<[number, number, number, number] | null>(() => {
+    if (!terreno) return null;
+    const anello = terreno.coordinates[0];
+    const lon = anello.map((c) => c[0]);
+    const lat = anello.map((c) => c[1]);
+    return [Math.min(...lon), Math.min(...lat), Math.max(...lon), Math.max(...lat)];
+  }, [terreno]);
+
+  const disponibile3d = capacita?.funzioni.some((f) => f.chiave === "vista_3d" && f.stato === "implementata") ?? false;
 
   const puntiQuota = useMemo(() => {
     if (analisi.stato !== "completata") return null;
@@ -349,6 +363,11 @@ export default function App() {
             geometriaIniziale={demo ? LOTTO_DEMO : null}
             vista3d={vista3d}
             versioneRipristino={versioneRipristino}
+            limitiLotto={limitiLotto}
+            bearing3d={bearingDiProfilo(
+              analisi.stato === "completata" ? analisi.risultato.altimetria.esposizione?.prevalente : null,
+            )}
+            onCambia3d={disponibile3d ? (attiva) => setVista3d((v) => ({ ...v, attiva })) : undefined}
           />
         </section>
 
@@ -370,6 +389,22 @@ export default function App() {
             analisi={analisi}
             capacita={capacita}
             scheda={scheda}
+            controlliInsights={
+              <>
+                <CorpoAnalisi
+                  analisi={livelloAnalisi}
+                  onAnalisi={(patch) => setLivelloAnalisi((v) => ({ ...v, ...patch, visibile: true }))}
+                  mappa={mappa}
+                  haTerreno={terreno !== null}
+                />
+                <CorpoCurve
+                  curve={livelloCurve}
+                  onCurve={(patch) => setLivelloCurve((v) => ({ ...v, ...patch, visibile: true }))}
+                  statoCurve={curve}
+                  haTerreno={terreno !== null}
+                />
+              </>
+            }
             fase3={{
               quotaPunto,
               profilo,

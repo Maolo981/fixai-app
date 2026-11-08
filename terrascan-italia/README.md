@@ -14,13 +14,14 @@ Piattaforma web per l'analisi preliminare dei terreni, pensata per geometri, ing
   pannelli diventano bottom-sheet.
 - **Mappe di base**: Satellite (ortofoto AGEA 2015 di Regione Lombardia), Stradale (OpenStreetMap), Topografica
   (CTR/DBT di Regione Lombardia). Verifica delle fonti e licenze da confermare: [piano](docs/piano-piattaforma-saas.md).
-- **Elevation Insights** (dati reali DTM 5×5): mappa altimetrica a gradiente ritagliata sul lotto con legenda
-  min/max, opacità 0–100%, curve di livello con soli intervalli compatibili con l'accuratezza del dato (≥ 2 m),
+- **Elevation Insights** (dati reali DTM 5×5): mappa altimetrica a gradiente sfumato (dal viola al rosso;
+  quote interpolate in modo bilineare solo per la resa visiva, bordo esatto sul perimetro) con legenda min/max, opacità 0–100%, curve di livello con soli intervalli compatibili con l'accuratezza del dato (≥ 2 m),
   modalità Altimetria / Pendenza / Esposizione, quota di un punto cliccato, pendenze dei tratti del profilo A-B,
   distanza geodetica della linea anche senza DTM.
 - **Demo**: `/app?demo` apre un lotto di esempio in Valtellina, dichiarato come tale, analizzato con dati reali.
 - **Vista 3D**: rilievo dal DTM 5×5 (tessere Terrarium generate dal server, circa 100 ms a tessera grazie alle
-  piramidi del file), rotazione, inclinazione, ripristino della vista, ombreggiatura del rilievo. L'esagerazione
+  piramidi del file), pulsante 2D/3D sulla mappa, camera che inquadra tutto il lotto di fianco al pendio
+  (direzione calcolata dall'esposizione prevalente), rotazione, inclinazione, ripristino, ombreggiatura. L'esagerazione
   verticale (×1–×3) è dichiarata come solo visiva: misure e report usano sempre le quote reali. Fuori dalla
   Lombardia il terreno appare piatto (nessun dato) e l'interfaccia lo indica.
 
@@ -185,10 +186,10 @@ La documentazione interattiva dell'API è disponibile su **http://localhost:8000
 
 ```bash
 cd terrascan-italia/backend
-uv run pytest                 # 114 test (12 richiedono il DTM installato, altrimenti vengono saltati)
+uv run pytest                 # 115 test (12 richiedono il DTM installato, altrimenti vengono saltati)
 
 cd ../frontend
-npm test                      # 52 test: formattazione, livelli, pannelli, 3D, grafico, report, landing
+npm test                      # 53 test: formattazione, livelli, pannelli, 3D, grafico, report, landing
 npm run typecheck             # controllo dei tipi TypeScript
 ```
 

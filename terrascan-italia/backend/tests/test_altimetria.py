@@ -73,6 +73,7 @@ def test_piano_che_sale_verso_est(tmp_path):
     assert r.dislivello == pytest.approx(0.12 * 195.0, abs=1e-3)
     assert r.pendenza_media_percento == pytest.approx(12.0, abs=1e-3)
     assert r.pendenza_massima_percento == pytest.approx(12.0, abs=1e-3)
+    assert r.pendenza_minima_percento == pytest.approx(12.0, abs=1e-3)
     assert r.gradi(r.pendenza_media_percento) == pytest.approx(math.degrees(math.atan(0.12)), abs=1e-4)
     assert r.esposizione_prevalente == "O"
     assert r.esposizione_settori["O"] == pytest.approx(100.0)

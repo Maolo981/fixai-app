@@ -52,11 +52,16 @@ def test_gradiente_altimetrico_va_dal_minimo_al_massimo(tmp_path):
     assert m.scala.tappe[-1][1] == GRADIENTE_QUOTA[-1][1]
     img = rgba(m.png)
     opache = np.argwhere(img[3] == 255)
-    assert len(opache) == 1600 == m.celle_colorate
+    # Resa sfumata: griglia 4 volte più fine (16 pixel per cella), ritagliata sul perimetro;
+    # le celle reali del DTM nel lotto restano 1600.
+    assert m.celle_colorate == 1600
+    assert len(opache) == 1600 * 16
+    assert (m.larghezza, m.altezza) == (4 * (m.limiti_utm[2] - m.limiti_utm[0]) / CELLA, 4 * (m.limiti_utm[3] - m.limiti_utm[1]) / CELLA)
     righe, colonne = opache[:, 0], opache[:, 1]
     sx, dx = colonne.min(), colonne.max()
     r = righe[0]
     # Bordo Ovest (più basso) = primo colore del gradiente, bordo Est (più alto) = ultimo
+    # (oltre l'ultimo centro cella l'interpolazione esce dalla scala e viene limitata agli estremi)
     assert tuple(img[:3, r, sx]) == hex_rgb(GRADIENTE_QUOTA[0][1])
     assert tuple(img[:3, r, dx]) == hex_rgb(GRADIENTE_QUOTA[-1][1])
     # Fuori dal lotto: trasparente
@@ -199,3 +204,21 @@ def test_quadrato_helper_coerente():
     x, y = A_UTM.transform(*poligono.exterior.coords[0])
     assert x == pytest.approx(X0, abs=1e-6) and y == pytest.approx(SUD, abs=1e-6)
     assert math.isclose(CELLA, 5.0)
+
+
+def test_gradiente_sfumato_monotono_su_un_piano(tmp_path):
+    """Su un piano che sale verso Est i colori lungo una riga seguono il gradiente senza salti."""
+    from app.services.mappe import colori_gradiente
+
+    m = crea_mappa(piano(tmp_path), TERRENO, "quota")
+    img = rgba(m.png)
+    riga = img.shape[1] // 2
+    colonne = np.nonzero(img[3, riga] == 255)[0]
+    # Ricostruisce la frazione 0..1 di ogni pixel confrontando con una tavolozza fine del gradiente
+    tavolozza = colori_gradiente(np.linspace(0, 1, 1001)).astype(int)
+    frazioni = []
+    for c in colonne:
+        d = np.abs(tavolozza - img[:3, riga, c].astype(int)).sum(axis=1)
+        frazioni.append(np.argmin(d) / 1000)
+    assert all(b >= a - 0.01 for a, b in zip(frazioni, frazioni[1:]))
+    assert frazioni[0] == 0 and frazioni[-1] == 1

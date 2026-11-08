@@ -237,7 +237,13 @@ function BloccoVista({ vista3d, onVista3d, onRipristinaVista, motivo3d }: Props)
   );
 }
 
-function CorpoAnalisi({ analisi, onAnalisi, mappa, haTerreno }: Props) {
+/** Controlli dell'analisi del lotto (modalità, opacità, legenda): usati qui e nella scheda Altimetria. */
+export function CorpoAnalisi({
+  analisi,
+  onAnalisi,
+  mappa,
+  haTerreno,
+}: Pick<Props, "analisi" | "onAnalisi" | "mappa" | "haTerreno">) {
   return (
     <div className="livello__corpo">
       <div className="selettore selettore--3" role="radiogroup" aria-label="Tipo di analisi">
@@ -307,7 +313,13 @@ export function Legenda({ mappa }: { mappa: RispostaMappa }) {
   );
 }
 
-function CorpoCurve({ curve, onCurve, statoCurve, haTerreno }: Props) {
+/** Controlli delle curve di livello: usati qui e nella scheda Altimetria. */
+export function CorpoCurve({
+  curve,
+  onCurve,
+  statoCurve,
+  haTerreno,
+}: Pick<Props, "curve" | "onCurve" | "statoCurve" | "haTerreno">) {
   const intervalli = statoCurve.stato === "completata" ? statoCurve.risultato.intervalli : [];
   return (
     <div className="livello__corpo">

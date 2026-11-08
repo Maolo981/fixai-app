@@ -57,11 +57,24 @@ export function spostaLivello(ordine: IdLivello[], id: IdLivello, direzione: -1 
 /** Livelli MapLibre che compongono ciascun livello logico (dal basso verso l'alto). */
 export const LAYER_MAPLIBRE: Record<IdLivello, string[]> = {
   analisi: ["mappa-tematica"],
-  curve: ["curve-linee", "curve-etichette"],
+  curve: ["curve-alone", "curve-linee", "curve-etichette"],
   confine: ["maschera", "confine-area-pilota"],
 };
 
 /** Ordine di disegno dei layer MapLibre (dal basso verso l'alto) a partire dall'ordine logico. */
 export function ordineDiDisegno(ordine: IdLivello[]): string[] {
   return [...ordine].reverse().flatMap((id) => LAYER_MAPLIBRE[id]);
+}
+
+const AZIMUT_SETTORI: Record<string, number> = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SO: 225, O: 270, NO: 315 };
+
+/**
+ * Direzione della camera 3D (gradi da Nord) per vedere il pendio di profilo:
+ * si guarda lungo le curve di livello, con la discesa alla sinistra della vista.
+ * Per lotti pianeggianti si usa una vista obliqua standard.
+ */
+export function bearingDiProfilo(esposizionePrevalente: string | undefined | null): number {
+  if (!esposizionePrevalente || !(esposizionePrevalente in AZIMUT_SETTORI)) return -20;
+  const b = AZIMUT_SETTORI[esposizionePrevalente] + 90;
+  return b > 180 ? b - 360 : b;
 }
